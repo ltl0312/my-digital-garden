@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #FBFBFA;
+    --text-primary: #121212;
+    --text-secondary: #5A5A58;
+    --accent-color: #8C6D46;
+    --border-color: #E8E8E3;
+    --card-bg: #F4F4F0;
+  }
+
+  .dark {
+    --bg-primary: #121212;
+    --text-primary: #E6E6E1;
+    --text-secondary: #A0A09C;
+    --accent-color: #D4A359;
+    --border-color: #2A2A28;
+    --card-bg: #1A1A18;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}

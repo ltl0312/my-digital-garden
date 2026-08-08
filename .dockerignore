@@ -1,0 +1,29 @@
+# 依赖与构建产物（容器内重新生成）
+node_modules
+.nuxt
+.output
+.nitro
+.cache
+dist
+
+# 环境与本地数据（运行时经 compose 挂载注入）
+.env
+.env.*
+content
+prisma/generated
+
+# 版本控制与文档
+.git
+.gitignore
+.github
+*.md
+
+# 运维产物
+logs
+*.log
+
+# IDE
+.DS_Store
+.fleet
+.idea
+.vscode

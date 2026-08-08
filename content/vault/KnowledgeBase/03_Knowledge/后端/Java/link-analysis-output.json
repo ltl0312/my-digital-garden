@@ -1,0 +1,509 @@
+{
+  "MOC": "Java后端",
+  "MOC_path": "E:/KnowledgeBase/03_Knowledge/后端/Java/MOC - Java后端.md",
+  "FILES_READ_COUNT": 47,
+  "KEEP": [
+    {
+      "source": "Java-数据类型与类型转换",
+      "target": "Java-常用API与工具类",
+      "reason": "Same-subdir prerequisite: basic data types needed as foundation for wrapper classes"
+    },
+    {
+      "source": "Java-数据类型与类型转换",
+      "target": "Java-集合框架-泛型与foreach",
+      "reason": "Cross-subdir (Java基础 -> 异常与集合)"
+    },
+    {
+      "source": "Java-运算符",
+      "target": "Java-控制语句",
+      "reason": "Same-subdir prerequisite: relational/logical operators needed for if/switch conditions"
+    },
+    {
+      "source": "Java-控制语句",
+      "target": "Java-运算符",
+      "reason": "Same-subdir prerequisite: labeled as 前置知识 in note"
+    },
+    {
+      "source": "Java-常用API与工具类",
+      "target": "Java-数据类型与类型转换",
+      "reason": "Same-subdir prerequisite: labeled as 前置知识 in note"
+    },
+    {
+      "source": "Java-常用API与工具类",
+      "target": "Java-Object类与String基础",
+      "reason": "Same-subdir prerequisite: String immutability needed for StringBuilder discussion"
+    },
+    {
+      "source": "Java-数组",
+      "target": "Java-集合框架-Collection与List",
+      "reason": "Cross-subdir (Java基础 -> 异常与集合)"
+    },
+    {
+      "source": "Java-方法重载与递归",
+      "target": "Java-面向对象-方法覆盖与多态",
+      "reason": "Cross-subdir (Java基础 -> 面向对象)"
+    },
+    {
+      "source": "Java-Object类与String基础",
+      "target": "Java-集合框架-Map详解",
+      "reason": "Cross-subdir (Java基础 -> 异常与集合)"
+    },
+    {
+      "source": "Java-Object类与String基础",
+      "target": "Java-集合框架-Collection与List",
+      "reason": "Cross-subdir (Java基础 -> 异常与集合)"
+    },
+    {
+      "source": "Java-IO流体系",
+      "target": "Java-异常处理",
+      "reason": "Cross-subdir (IO流 -> 异常与集合)"
+    },
+    {
+      "source": "Java-IO流体系",
+      "target": "Java-IO流-序列化与Properties",
+      "reason": "Same-subdir prerequisite: understanding IO streams foundation needed before serialization"
+    },
+    {
+      "source": "Java-IO流-序列化与Properties",
+      "target": "Java-IO流体系",
+      "reason": "Same-subdir prerequisite: labeled as 前置知识 in note"
+    },
+    {
+      "source": "Java-多线程-同步与锁机制",
+      "target": "Java-多线程-基础概念与实现",
+      "reason": "Same-subdir prerequisite: labeled as 前置知识 in note"
+    },
+    {
+      "source": "Java-多线程-高级特性",
+      "target": "Java-多线程-基础概念与实现",
+      "reason": "Same-subdir prerequisite: thread basics needed before advanced features"
+    },
+    {
+      "source": "Java-多线程-高级特性",
+      "target": "Java-多线程-同步与锁机制",
+      "reason": "Same-subdir prerequisite: wait/notify requires synchronized understanding"
+    },
+    {
+      "source": "Java-多线程-高级特性",
+      "target": "Java-Object类与String基础",
+      "reason": "Cross-subdir (多线程 -> Java基础)"
+    },
+    {
+      "source": "Java-异常处理",
+      "target": "Java-IO流体系",
+      "reason": "Cross-subdir (异常与集合 -> IO流)"
+    },
+    {
+      "source": "Java-异常处理",
+      "target": "Java-面向对象-final关键字与常量",
+      "reason": "Cross-subdir (异常与集合 -> 面向对象)"
+    },
+    {
+      "source": "Java-集合框架-Collection与List",
+      "target": "Java-数组",
+      "reason": "Cross-subdir (异常与集合 -> Java基础)"
+    },
+    {
+      "source": "Java-集合框架-Map详解",
+      "target": "Java-Object类与String基础",
+      "reason": "Cross-subdir (异常与集合 -> Java基础)"
+    },
+    {
+      "source": "Java-集合框架-Set与排序",
+      "target": "Java-面向对象-内部类与匿名内部类",
+      "reason": "Cross-subdir (异常与集合 -> 面向对象)"
+    },
+    {
+      "source": "Java-集合框架-泛型与foreach",
+      "target": "Java-常用API与工具类",
+      "reason": "Cross-subdir (异常与集合 -> Java基础)"
+    },
+    {
+      "source": "Java-面向对象-继承与super关键字",
+      "target": "Java-面向对象-对象与this关键字",
+      "reason": "Same-subdir prerequisite: labeled as 前置知识 in note"
+    },
+    {
+      "source": "Java-面向对象-接口",
+      "target": "Java-面向对象-方法覆盖与多态",
+      "reason": "Same-subdir prerequisite: polymorphism is prerequisite for interface decoupling"
+    },
+    {
+      "source": "Java-面向对象-方法覆盖与多态",
+      "target": "Java-方法重载与递归",
+      "reason": "Cross-subdir (面向对象 -> Java基础)"
+    },
+    {
+      "source": "Java-面向对象-final关键字与常量",
+      "target": "Java-异常处理",
+      "reason": "Cross-subdir (面向对象 -> 异常与集合)"
+    },
+    {
+      "source": "Java-面向对象-final关键字与常量",
+      "target": "Java-常用API与工具类",
+      "reason": "Cross-subdir (面向对象 -> Java基础)"
+    },
+    {
+      "source": "Java-面向对象-内部类与匿名内部类",
+      "target": "Java-集合框架-Set与排序",
+      "reason": "Cross-subdir (面向对象 -> 异常与集合)"
+    },
+    {
+      "source": "Java-注解",
+      "target": "Java-反射机制",
+      "reason": "Same-subdir prerequisite: reflection needed to read annotations at runtime"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-OOP与格式规约",
+      "target": "Java-面向对象-对象与this关键字",
+      "reason": "Cross-subdir (开发手册 -> 面向对象)"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-单元测试规约",
+      "target": "阿里巴巴Java开发手册-OOP与格式规约",
+      "reason": "Same-subdir prerequisite: good OOP design is prerequisite for testability"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-异常日志与工程规约",
+      "target": "Java-异常处理",
+      "reason": "Cross-subdir (开发手册 -> 异常与集合)"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-控制语句与注释规约",
+      "target": "Java-控制语句",
+      "reason": "Cross-subdir (开发手册 -> Java基础)"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-控制语句与注释规约",
+      "target": "Java-运算符",
+      "reason": "Cross-subdir (开发手册 -> Java基础)"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-MySQL数据库规约",
+      "target": "阿里巴巴Java开发手册-命名与格式规约",
+      "reason": "Same-subdir prerequisite: naming conventions guide table naming rules"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-MySQL数据库规约",
+      "target": "MyBatis-Plus工程化实践",
+      "reason": "Cross-subdir (开发手册 -> SpringBoot)"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-并发编程安全规约",
+      "target": "Java-多线程-基础概念与实现",
+      "reason": "Cross-subdir (开发手册 -> 多线程)"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-并发编程安全规约",
+      "target": "Java-多线程-同步与锁机制",
+      "reason": "Cross-subdir (开发手册 -> 多线程)"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-命名与格式规约",
+      "target": "Java-Object类与String基础",
+      "reason": "Cross-subdir (开发手册 -> Java基础)"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-集合处理避坑",
+      "target": "Java-Object类与String基础",
+      "reason": "Cross-subdir (开发手册 -> Java基础)"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-集合处理避坑",
+      "target": "Java-集合框架-Map详解",
+      "reason": "Cross-subdir (开发手册 -> 异常与集合)"
+    },
+    {
+      "source": "阿里巴巴Java开发手册-集合处理避坑",
+      "target": "Java-集合框架-Collection与List",
+      "reason": "Cross-subdir (开发手册 -> 异常与集合)"
+    },
+    {
+      "source": "JWT无状态鉴权与安全机制",
+      "target": "SpringBoot3-自动装配原理与MVC生命周期",
+      "reason": "Same-subdir prerequisite: MVC lifecycle needed to understand where JWT interceptors fit"
+    },
+    {
+      "source": "RBAC权限模型与五表设计",
+      "target": "JWT无状态鉴权与安全机制",
+      "reason": "Same-subdir prerequisite: authentication (JWT) must precede authorization (RBAC) in request flow"
+    },
+    {
+      "source": "SpringBoot-桌面应用打包方案对比",
+      "target": "SpringBoot3-自动装配原理与MVC生命周期",
+      "reason": "Same-subdir prerequisite: understanding auto-wiring and packaging needed for deployment"
+    },
+    {
+      "source": "SpringBoot-离线桌面应用架构设计",
+      "target": "SpringBoot-桌面应用打包方案对比",
+      "reason": "Same-subdir prerequisite: packaging options must be known before designing architecture"
+    },
+    {
+      "source": "Thymeleaf3-核心语法与模板引擎",
+      "target": "SpringBoot3-自动装配原理与MVC生命周期",
+      "reason": "Same-subdir prerequisite: Thymeleaf as ViewResolver depends on Spring MVC"
+    },
+    {
+      "source": "SpringBoot3-可观测性与测试增强",
+      "target": "SpringBoot3-自动装配原理与MVC生命周期",
+      "reason": "Same-subdir prerequisite: labeled as 前置知识 in note"
+    },
+    {
+      "source": "SpringBoot3-可观测性与测试增强",
+      "target": "阿里巴巴Java开发手册-单元测试规约",
+      "reason": "Cross-subdir (SpringBoot -> 开发手册)"
+    },
+    {
+      "source": "SpringBoot3-外部化配置与Record绑定",
+      "target": "SpringBoot3-自动装配原理与MVC生命周期",
+      "reason": "Same-subdir prerequisite: labeled as 前置知识 in note"
+    },
+    {
+      "source": "SpringBoot3-外部化配置与Record绑定",
+      "target": "阿里巴巴Java开发手册-OOP与格式规约",
+      "reason": "Cross-subdir (SpringBoot -> 开发手册)"
+    }
+  ],
+  "REMOVE": [
+    {
+      "source": "Java-运算符",
+      "target": "Java-Object类与String基础",
+      "exact_text_to_delete": "[[Java-Object类与String基础]]",
+      "reason": "Same-subdir 'see also' (common pit reference). Operators and Object/String can be learned in either order."
+    },
+    {
+      "source": "Java-控制语句",
+      "target": "Java-常用API与工具类",
+      "exact_text_to_delete": "[[Java-常用API与工具类]]",
+      "reason": "Same-subdir 'see also' (enum alternative mention). Can learn enum in either order."
+    },
+    {
+      "source": "Java-Object类与String基础",
+      "target": "Java-常用API与工具类",
+      "exact_text_to_delete": "[[Java-常用API与工具类]]",
+      "reason": "Same-subdir 'see also' (进阶方向 reference to StringBuilder). String and Common APIs are parallel topics."
+    },
+    {
+      "source": "Java-常用API与工具类",
+      "target": "Java-控制语句",
+      "exact_text_to_delete": "[[Java-控制语句]]",
+      "reason": "Same-subdir 'see also' (enum vs boolean confusion). Can learn either first."
+    },
+    {
+      "source": "Java-IO流体系",
+      "target": "Java-IO流-序列化与Properties",
+      "exact_text_to_delete": "[[Java-IO流-序列化与Properties]]",
+      "reason": "Same-subdir 'see also' (File class/properties reference). Basic IO works without serialization knowledge."
+    },
+    {
+      "source": "Java-集合框架-Collection与List",
+      "target": "Java-集合框架-Set与排序",
+      "exact_text_to_delete": "[[Java-集合框架-Set与排序]]",
+      "reason": "Same-subdir horizontal link. List and Set are parallel collection families, learnable in either order."
+    },
+    {
+      "source": "Java-集合框架-Collection与List",
+      "target": "Java-集合框架-Map详解",
+      "exact_text_to_delete": "[[Java-集合框架-Map详解]]",
+      "reason": "Same-subdir horizontal link. Collection/List and Map are parallel branches, learnable in either order."
+    },
+    {
+      "source": "Java-集合框架-Collection与List",
+      "target": "Java-集合框架-泛型与foreach",
+      "exact_text_to_delete": "[[Java-集合框架-泛型与foreach]]",
+      "reason": "Same-subdir horizontal link. Generics enhance Collections but are independently learnable."
+    },
+    {
+      "source": "Java-集合框架-Map详解",
+      "target": "Java-集合框架-Collection与List",
+      "exact_text_to_delete": "[[Java-集合框架-Collection与List]]",
+      "reason": "Same-subdir horizontal link. Mutual 'see also' bidirectional reference."
+    },
+    {
+      "source": "Java-集合框架-Set与排序",
+      "target": "Java-集合框架-Map详解",
+      "exact_text_to_delete": "[[Java-集合框架-Map详解]]",
+      "reason": "Same-subdir horizontal link. TreeSet and TreeMap are parallel implementations."
+    },
+    {
+      "source": "Java-集合框架-Set与排序",
+      "target": "Java-集合框架-Collection与List",
+      "exact_text_to_delete": "[[Java-集合框架-Collection与List]]",
+      "reason": "Same-subdir horizontal link. Set and List are parallel collection interfaces."
+    },
+    {
+      "source": "Java-集合框架-泛型与foreach",
+      "target": "Java-集合框架-Collection与List",
+      "exact_text_to_delete": "[[Java-集合框架-Collection与List]]",
+      "reason": "Same-subdir horizontal link. 'Collection framework overview' reference."
+    },
+    {
+      "source": "Java-面向对象-对象与this关键字",
+      "target": "Java-面向对象-继承与super关键字",
+      "exact_text_to_delete": "[[Java-面向对象-继承与super关键字]]",
+      "reason": "Same-subdir 'see also' (this vs super comparison). Objects and Inheritance are sequential but the link direction is 'see also'."
+    },
+    {
+      "source": "Java-面向对象-对象与this关键字",
+      "target": "Java-面向对象-方法覆盖与多态",
+      "exact_text_to_delete": "[[Java-面向对象-方法覆盖与多态]]",
+      "reason": "Same-subdir 'see also' (polymorphic this reference). Basic objects do not require override knowledge."
+    },
+    {
+      "source": "Java-面向对象-继承与super关键字",
+      "target": "Java-面向对象-接口",
+      "exact_text_to_delete": "[[Java-面向对象-接口]]",
+      "reason": "Same-subdir 'see also' (横向对比). Inheritance and Interface are parallel OOP mechanisms."
+    },
+    {
+      "source": "Java-面向对象-继承与super关键字",
+      "target": "Java-面向对象-final关键字与常量",
+      "exact_text_to_delete": "[[Java-面向对象-final关键字与常量]]",
+      "reason": "Same-subdir 'see also' (易混淆概念). Final is a modifier, not a prerequisite for inheritance."
+    },
+    {
+      "source": "Java-面向对象-方法覆盖与多态",
+      "target": "Java-面向对象-接口",
+      "exact_text_to_delete": "[[Java-面向对象-接口]]",
+      "reason": "Same-subdir 'see also' (进阶方向). Override/polymorphism and interfaces are learnable in either order."
+    },
+    {
+      "source": "Java-面向对象-方法覆盖与多态",
+      "target": "Java-面向对象-抽象类与抽象方法",
+      "exact_text_to_delete": "[[Java-面向对象-抽象类与抽象方法]]",
+      "reason": "Same-subdir 'see also' (进阶方向). Two related but parallel concepts."
+    },
+    {
+      "source": "Java-面向对象-抽象类与抽象方法",
+      "target": "Java-面向对象-接口",
+      "exact_text_to_delete": "[[Java-面向对象-接口]]",
+      "reason": "Same-subdir 'see also' (对比). Abstract classes and interfaces are parallel concepts."
+    },
+    {
+      "source": "Java-面向对象-抽象类与抽象方法",
+      "target": "Java-面向对象-方法覆盖与多态",
+      "exact_text_to_delete": "[[Java-面向对象-方法覆盖与多态]]",
+      "reason": "Same-subdir 'see also' (polymorphism reference). Abstract classes and methods can be understood independently."
+    },
+    {
+      "source": "Java-面向对象-抽象类与抽象方法",
+      "target": "Java-面向对象-final关键字与常量",
+      "exact_text_to_delete": "[[Java-面向对象-final关键字与常量]]",
+      "reason": "Same-subdir 'see also' (final vs abstract comparison). Opposite modifiers, no prerequisite order."
+    },
+    {
+      "source": "Java-面向对象-接口",
+      "target": "Java-面向对象-方法覆盖与多态",
+      "exact_text_to_delete": "[[Java-面向对象-方法覆盖与多态]]",
+      "reason": "Same-subdir 'see also' reference. The prerequisite link is one-directional (接口 -> 多态) which is KEPT."
+    },
+    {
+      "source": "Java-面向对象-final关键字与常量",
+      "target": "Java-面向对象-继承与super关键字",
+      "exact_text_to_delete": "[[Java-面向对象-继承与super关键字]]",
+      "reason": "Same-subdir 'see also' (final blocks inheritance reference). Can learn either first."
+    },
+    {
+      "source": "Java-面向对象-内部类与匿名内部类",
+      "target": "Java-面向对象-接口",
+      "exact_text_to_delete": "[[Java-面向对象-接口]]",
+      "reason": "Same-subdir 'see also' (interface implementation reference). Can learn either first."
+    },
+    {
+      "source": "阿里巴巴Java开发手册-OOP与格式规约",
+      "target": "阿里巴巴Java开发手册-命名与格式规约",
+      "exact_text_to_delete": "[[阿里巴巴Java开发手册-命名与格式规约]]",
+      "reason": "Same-subdir 'see also' (横向对比). Two parallel specification topics within the handbook."
+    },
+    {
+      "source": "阿里巴巴Java开发手册-异常日志与工程规约",
+      "target": "阿里巴巴Java开发手册-并发编程安全规约",
+      "exact_text_to_delete": "[[阿里巴巴Java开发手册-并发编程安全规约]]",
+      "reason": "Same-subdir 'see also' (横向对比). Different sections of the handbook."
+    },
+    {
+      "source": "阿里巴巴Java开发手册-控制语句与注释规约",
+      "target": "阿里巴巴Java开发手册-命名与格式规约",
+      "exact_text_to_delete": "[[阿里巴巴Java开发手册-命名与格式规约]]",
+      "reason": "Same-subdir 'see also' (横向对比). Different sections of the handbook."
+    },
+    {
+      "source": "阿里巴巴Java开发手册-设计规约",
+      "target": "阿里巴巴Java开发手册-异常日志与工程规约",
+      "exact_text_to_delete": "[[阿里巴巴Java开发手册-异常日志与工程规约]]",
+      "reason": "Same-subdir 'see also' (横向对比). Different sections of the handbook."
+    },
+    {
+      "source": "阿里巴巴Java开发手册-并发编程安全规约",
+      "target": "阿里巴巴Java开发手册-集合处理避坑",
+      "exact_text_to_delete": "[[阿里巴巴Java开发手册-集合处理避坑]]",
+      "reason": "Same-subdir 'see also' (HashMap resize reference). Different sections of the handbook."
+    },
+    {
+      "source": "阿里巴巴Java开发手册-命名与格式规约",
+      "target": "阿里巴巴Java开发手册-集合处理避坑",
+      "exact_text_to_delete": "[[阿里巴巴Java开发手册-集合处理避坑]]",
+      "reason": "Same-subdir 'see also'. Different sections of the handbook."
+    },
+    {
+      "source": "阿里巴巴Java开发手册-集合处理避坑",
+      "target": "阿里巴巴Java开发手册-命名与格式规约",
+      "exact_text_to_delete": "[[阿里巴巴Java开发手册-命名与格式规约]]",
+      "reason": "Same-subdir 'see also'. Different sections of the handbook."
+    },
+    {
+      "source": "SpringBoot3-自动装配原理与MVC生命周期",
+      "target": "JWT无状态鉴权与安全机制",
+      "exact_text_to_delete": "[[JWT无状态鉴权与安全机制]]",
+      "reason": "Same-subdir 'see also' (interceptor chain mention). Auto-wiring does not require JWT knowledge."
+    },
+    {
+      "source": "JWT无状态鉴权与安全机制",
+      "target": "RBAC权限模型与五表设计",
+      "exact_text_to_delete": "[[RBAC权限模型与五表设计]]",
+      "reason": "Same-subdir horizontal link. JWT (authentication) and RBAC (authorization) are conceptually parallel security layers."
+    },
+    {
+      "source": "RBAC权限模型与五表设计",
+      "target": "JWT无状态鉴权与安全机制",
+      "exact_text_to_delete": "[[JWT无状态鉴权与安全机制]]",
+      "reason": "Bidirectional pair with JWT-RBAC. One of the pair is kept (RBAC->JWT as operational dependency). This reciprocal link is redundant."
+    },
+    {
+      "source": "SpringBoot-生产环境避坑实录",
+      "target": "JWT无状态鉴权与安全机制",
+      "exact_text_to_delete": "[[JWT无状态鉴权与安全机制]]",
+      "reason": "Same-subdir 'see also' (OPTIONS preflight reference). Pitfalls note references JWT but does not depend on it."
+    },
+    {
+      "source": "SpringBoot-生产环境避坑实录",
+      "target": "MyBatis-Plus工程化实践",
+      "exact_text_to_delete": "[[MyBatis-Plus工程化实践]]",
+      "reason": "Same-subdir 'see also' (listByIds reference). Can learn each independently."
+    },
+    {
+      "source": "SpringBoot-桌面应用打包方案对比",
+      "target": "SpringBoot-离线桌面应用架构设计",
+      "exact_text_to_delete": "[[SpringBoot-离线桌面应用架构设计]]",
+      "reason": "Same-subdir 'see also' (进阶方向). Packaging comparison does not require offline architecture knowledge."
+    },
+    {
+      "source": "SpringBoot-桌面应用打包方案对比",
+      "target": "SpringBoot-离线桌面应用架构设计",
+      "exact_text_to_delete": "[[SpringBoot-离线桌面应用架构设计]]",
+      "reason": "Same-subdir 'see also' (进阶方向). The prerequisite direction is the opposite (packaging -> architecture)."
+    },
+    {
+      "source": "SpringBoot-离线桌面应用架构设计",
+      "target": "SpringBoot-GraalVM与Launch4j打包-配置指南",
+      "exact_text_to_delete": "[[SpringBoot-GraalVM与Launch4j打包-配置指南]]",
+      "reason": "Same-subdir 'see also' (practical guide reference). Architecture design does not depend on specific config details."
+    },
+    {
+      "source": "SpringBoot3-可观测性与测试增强",
+      "target": "SpringBoot3-外部化配置与Record绑定",
+      "exact_text_to_delete": "[[SpringBoot3-外部化配置与Record绑定]]",
+      "reason": "Same-subdir 'see also' (Testcontainers connection reference). Can learn observability independently from external config."
+    }
+  ]
+}

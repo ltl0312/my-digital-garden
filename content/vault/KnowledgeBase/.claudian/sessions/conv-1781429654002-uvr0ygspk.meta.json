@@ -1,0 +1,23 @@
+{
+  "id": "conv-1781429654002-uvr0ygspk",
+  "providerId": "claude",
+  "title": "解答 Claude Code 连接问题",
+  "titleGenerationStatus": "success",
+  "createdAt": 1781429654014,
+  "updatedAt": 1781448184911,
+  "lastResponseAt": 1781448184911,
+  "sessionId": "8d9a167e-505c-4cb2-99b0-5a147e7c8745",
+  "providerState": {
+    "providerSessionId": "8d9a167e-505c-4cb2-99b0-5a147e7c8745"
+  },
+  "usage": {
+    "model": "deepseek-v4-pro[1m]",
+    "inputTokens": 30493,
+    "cacheCreationInputTokens": 0,
+    "cacheReadInputTokens": 0,
+    "contextWindow": 1000000,
+    "contextTokens": 30493,
+    "percentage": 3,
+    "contextWindowIsAuthoritative": true
+  }
+}

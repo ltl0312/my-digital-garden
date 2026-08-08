@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client"
+  output   = "generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Maturity {
+  SEEDLING  // 幼苗
+  GROWING   // 成长
+  EVERGREEN // 常青/归档
+}
+
+model Note {
+  id           String     @id @default(uuid())
+  slug         String     @unique // 唯一 URL 别名或文件相对路径标识
+  title        String
+  content      String     @db.Text // Markdown 源码
+  htmlContent  String     @db.Text // AST 渲染后的 HTML
+  summary      String?    @db.Text // 自动截取的正文摘要
+  maturity     Maturity   @default(SEEDLING)
+  isPublished  Boolean    @default(true)
+  metadata     Json       @default("{}") // 存储解析后的 JSONB YAML 动态字段
+  readingTime  Int        @default(0)    // 预计阅读时长
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  tags         NoteTag[]
+  outgoing     NoteLink[] @relation("OutgoingLinks")
+  incoming     NoteLink[] @relation("IncomingLinks")
+
+  @@index([slug])
+  @@index([isPublished])
+  @@index([maturity])
+}
+
+model Tag {
+  id    Int       @id @default(autoincrement())
+  name  String    @unique
+  notes NoteTag[]
+}
+
+model NoteTag {
+  noteId String
+  tagId  Int
+  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, tagId])
+}
+
+model NoteLink {
+  sourceId String
+  targetId String
+  source   Note   @relation("OutgoingLinks", fields: [sourceId], references: [id], onDelete: Cascade)
+  target   Note   @relation("IncomingLinks", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@id([sourceId, targetId])
+}
+
+model AccessKey {
+  id         String    @id @default(uuid())
+  key        String    @unique
+  label      String?
+  role       String    @default("user") // "admin" | "user"
+  isActive   Boolean   @default(true) // 禁用后立即失效
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([isActive])
+}

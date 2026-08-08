@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: garden-db
+    restart: always
+    environment:
+      POSTGRES_USER: garden_user
+      POSTGRES_PASSWORD: SecureProdPassword987! # 生产环境请改用 .env 变量注入，勿硬编码
+      POSTGRES_DB: garden_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  syncthing:
+    image: syncthing/syncthing:latest
+    container_name: garden-syncthing
+    hostname: cloud-server
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /var/vault:/var/syncthing/Vault
+    ports:
+      - "8384:8384"
+      - "22000:22000/tcp"
+      - "22000:22000/udp"
+      - "21027:21027/udp"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

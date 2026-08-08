@@ -1,0 +1,72 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": false,
+  "collapse-color-groups": true,
+  "colorGroups": [
+    {
+      "query": "file:MOC",
+      "color": {
+        "a": 1,
+        "rgb": 10033947
+      }
+    },
+    {
+      "query": "path:03_Knowledge/前端  ",
+      "color": {
+        "a": 1,
+        "rgb": 223649
+      }
+    },
+    {
+      "query": "path:03_Knowledge/后端  ",
+      "color": {
+        "a": 1,
+        "rgb": 292951
+      }
+    },
+    {
+      "query": "path:03_Knowledge/计算机基础  ",
+      "color": {
+        "a": 1,
+        "rgb": 4405450
+      }
+    },
+    {
+      "query": "path:03_Knowledge/数据库  ",
+      "color": {
+        "a": 1,
+        "rgb": 12730636
+      }
+    },
+    {
+      "query": "path:03_Knowledge/运维  ",
+      "color": {
+        "a": 1,
+        "rgb": 7041664
+      }
+    },
+    {
+      "query": "path:03_Knowledge/软件工程  ",
+      "color": {
+        "a": 1,
+        "rgb": 10210427
+      }
+    }
+  ],
+  "collapse-display": true,
+  "showArrow": false,
+  "textFadeMultiplier": -0.8,
+  "nodeSizeMultiplier": 1.71920415224914,
+  "lineSizeMultiplier": 1.10882352941176,
+  "collapse-forces": false,
+  "centerStrength": 0.0951557093425606,
+  "repelStrength": 10,
+  "linkStrength": 0.558823529411765,
+  "linkDistance": 30,
+  "scale": 0.45050813858014976,
+  "close": true
+}

@@ -1,0 +1,239 @@
+{
+  "main": {
+    "id": "9769072c85c74f6f",
+    "type": "split",
+    "children": [
+      {
+        "id": "407893760479168d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d2a373102b6dc1c0",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "03_Knowledge/前端/TypeScript/泛型.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "泛型"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "a569a79c5d474204",
+    "type": "split",
+    "children": [
+      {
+        "id": "c2a3b2a53369d491",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9e0c83d2a08664a6",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "51bef047c03f20d4",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "tag:#前端",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "9df2140721c4ca2e",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 289.5
+  },
+  "right": {
+    "id": "37031d535e410bb7",
+    "type": "split",
+    "children": [
+      {
+        "id": "8ebe73146cc7ad5d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ca40df272f155ec0",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "反向链接"
+            }
+          },
+          {
+            "id": "3660f616843fe12d",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "03_Knowledge/后端/Java/SpringBoot/SpringBoot-桌面应用打包方案对比.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "SpringBoot-桌面应用打包方案对比 的出链列表"
+            }
+          },
+          {
+            "id": "00074a0140076761",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "4cab57805ad16747",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "6595089486b2d14f",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "CLAUDE.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "CLAUDE 的大纲"
+            }
+          },
+          {
+            "id": "b3a249e96a646470",
+            "type": "leaf",
+            "state": {
+              "type": "claudian-view",
+              "state": {},
+              "icon": "bot",
+              "title": "Claudian"
+            }
+          }
+        ],
+        "currentTab": 2
+      }
+    ],
+    "direction": "horizontal",
+    "width": 430.5,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false,
+      "obsidian42-brat:BRAT": false,
+      "realclaudian:Open Claudian": false,
+      "obsidian-excalidraw-plugin:新建绘图文件": false
+    }
+  },
+  "active": "d2a373102b6dc1c0",
+  "lastOpenFiles": [
+    "未命名 2.base",
+    "未命名.md",
+    "未命名 1.base",
+    "未命名.base",
+    "03_Knowledge/前端/TypeScript/泛型.md",
+    "03_Knowledge/前端/TypeScript/基础与特殊类型.md",
+    "03_Knowledge/前端/TypeScript/接口与函数类型.md",
+    "03_Knowledge/前端/TypeScript/MOC - TypeScript.md",
+    "03_Knowledge/软件工程/MOC - 软件工程.md",
+    "03_Knowledge/MOC - 知识库总览.md",
+    "03_Knowledge/Drawing 2026-06-21 19.41.22.excalidraw.md",
+    "03_Knowledge/前端/CSS3/背景渐变与边框.md",
+    "03_Knowledge/软件工程/接单实战/环境配置/接单工具箱与环境配置指南.md",
+    "03_Knowledge/软件工程/接单实战/环境配置",
+    "03_Knowledge/软件工程/多端发布/环境配置/多端部署-运维环境配置指南.md",
+    "03_Knowledge/软件工程/多端发布/环境配置",
+    "03_Knowledge/软件工程/多端测试/环境配置/多端测试-自动化环境配置指南.md",
+    "03_Knowledge/软件工程/多端测试/环境配置",
+    "03_Knowledge/软件工程/多端设计/环境配置/多端开发-跨平台环境配置指南.md",
+    "03_Knowledge/软件工程/多端设计/环境配置",
+    "03_Knowledge/软件工程/项目管理/环境配置/SDLC-核心工具与环境配置.md",
+    "03_Knowledge/软件工程/项目管理/环境配置",
+    "03_Knowledge/计算机基础/数据科学/环境配置/Pandas-环境配置与项目初始化.md",
+    "03_Knowledge/计算机基础/数据科学/环境配置",
+    "03_Knowledge/计算机基础/操作系统/操作系统概述/环境配置/环境配置与项目初始化.md",
+    "03_Knowledge/计算机基础/操作系统/操作系统概述/环境配置",
+    "03_Knowledge/运维/Nginx/环境配置/静态资源-环境配置.md",
+    "03_Knowledge/运维/Nginx/环境配置/环境配置与项目初始化.md",
+    "03_Knowledge/运维/Nginx/环境配置/反向代理-环境配置.md",
+    "03_Knowledge/运维/Nginx/环境配置/HTTPS运维-环境配置.md",
+    "03_Knowledge/运维/Git/环境配置/高级技巧-环境配置与项目初始化.md",
+    "03_Knowledge/运维/Git/环境配置/远程协作-环境配置与项目初始化.md",
+    "03_Knowledge/运维/Git/环境配置/环境配置与项目初始化.md",
+    "03_Knowledge/运维/Git/环境配置/基本操作-环境配置与项目初始化.md",
+    "03_Knowledge/运维/Git/环境配置/分支管理-环境配置与项目初始化.md"
+  ]
+}
