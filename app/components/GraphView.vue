@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)]">
+  <div class="rounded-2xl glass-card overflow-hidden">
     <svg ref="svgRef" class="w-full h-[70vh] block"></svg>
   </div>
 </template>
@@ -222,5 +222,16 @@ const resetLayout = () => {
   }
 }
 
-defineExpose({ resetLayout })
+// 物理模拟开关（ui.md 浮动控件）
+const isPhysicsActive = ref(true)
+const togglePhysics = () => {
+  isPhysicsActive.value = !isPhysicsActive.value
+  if (isPhysicsActive.value) {
+    simulation?.alpha(0.5).restart()
+  } else {
+    simulation?.stop()
+  }
+}
+
+defineExpose({ resetLayout, togglePhysics, isPhysicsActive })
 </script>

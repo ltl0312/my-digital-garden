@@ -61,13 +61,13 @@ useHead({ title: '全部笔记 · 拾光' })
         <input
           v-model="searchInput"
           placeholder="搜索标题或正文…"
-          class="flex-1 min-w-[200px] px-3 py-2 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-sm focus:border-[var(--accent-color)] outline-none"
+          class="flex-1 min-w-[200px] px-3 py-2 rounded-lg bg-slate-100 dark:bg-obsidian-800 border border-slate-200 dark:border-white/10 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-garden-500/60 focus:ring-1 focus:ring-garden-500/30 transition-all"
           @keyup.enter="submitSearch"
         />
         <input
           v-model="tagInput"
           placeholder="按标签筛选…"
-          class="flex-1 min-w-[150px] px-3 py-2 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] text-sm focus:border-[var(--accent-color)] outline-none"
+          class="flex-1 min-w-[150px] px-3 py-2 rounded-lg bg-slate-100 dark:bg-obsidian-800 border border-slate-200 dark:border-white/10 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-garden-500/60 focus:ring-1 focus:ring-garden-500/30 transition-all"
           @keyup.enter="submitTag"
         />
       </div>
@@ -75,11 +75,11 @@ useHead({ title: '全部笔记 · 拾光' })
         <button
           v-for="t in tags.slice(0, 20)"
           :key="t.name"
-          class="text-xs px-2 py-1 rounded bg-[var(--card-bg)] border border-[var(--border-color)] hover:border-[var(--accent-color)] transition"
-          :class="{ 'border-[var(--accent-color)] text-[var(--accent-color)]': activeTag === t.name }"
+          class="text-xs px-2.5 py-1 rounded-md cursor-pointer transition-all bg-slate-200/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10"
+          :class="{ 'bg-garden-500 text-slate-950 font-bold shadow-sm': activeTag === t.name }"
           @click="updateQuery({ tag: activeTag === t.name ? undefined : t.name, page: undefined })"
         >
-          #{{ t.name }} <span class="text-[var(--text-secondary)]">({{ t.count }})</span>
+          #{{ t.name }} <span class="text-[9px] opacity-60">({{ t.count }})</span>
         </button>
       </div>
     </header>
@@ -88,36 +88,36 @@ useHead({ title: '全部笔记 · 拾光' })
       <li v-for="note in list.notes" :key="note.slug">
         <NuxtLink
           :to="`/notes/${note.slug}`"
-          class="block p-4 rounded-lg bg-[var(--card-bg)] border border-[var(--border-color)] hover:border-[var(--accent-color)] transition"
+          class="block p-4 rounded-2xl glass-card hover:border-garden-500/50 transition-all duration-200 hover:-translate-y-0.5"
         >
           <div class="flex items-center gap-3 mb-1">
-            <span class="px-2 py-0.5 rounded text-xs bg-[var(--bg-primary)] uppercase font-semibold">{{ note.maturity }}</span>
-            <span class="text-xs text-[var(--text-secondary)]">{{ formatDate(note.updatedAt) }}</span>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-garden-500/10 text-garden-800 dark:text-garden-300 border-garden-500/20 uppercase">{{ note.maturity }}</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">{{ formatDate(note.updatedAt) }}</span>
           </div>
-          <div class="font-medium mb-1">{{ note.title }}</div>
-          <div class="text-xs text-[var(--text-secondary)] line-clamp-2">{{ note.summary || '暂无摘要' }}</div>
-          <div class="flex flex-wrap gap-2 mt-2">
+          <div class="font-semibold text-slate-900 dark:text-white mb-1">{{ note.title }}</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 font-light">{{ note.summary || '暂无摘要' }}</div>
+          <div class="flex flex-wrap gap-1.5 mt-2">
             <NuxtLink
               v-for="t in note.tags"
               :key="t.tag.name"
               :to="`/notes?tag=${encodeURIComponent(t.tag.name)}`"
-              class="text-xs text-[var(--accent-color)] hover:underline"
+              class="text-[11px] font-medium text-garden-800 dark:text-garden-300 bg-garden-500/10 hover:bg-garden-500/20 border border-garden-500/20 px-2 py-0.5 rounded-full transition-colors"
             >#{{ t.tag.name }}</NuxtLink>
           </div>
         </NuxtLink>
       </li>
     </ul>
-    <p v-else class="text-sm text-[var(--text-secondary)] mb-8">没有找到匹配的笔记</p>
+    <p v-else class="text-sm text-slate-400 dark:text-slate-500 mb-8">没有找到匹配的笔记</p>
 
     <nav v-if="list && list.totalPages > 1" class="flex items-center justify-center gap-4">
       <button
-        class="px-3 py-1.5 rounded-lg text-sm bg-[var(--card-bg)] border border-[var(--border-color)] disabled:opacity-40"
+        class="px-3 py-1.5 rounded-lg text-sm glass-card text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-40"
         :disabled="page <= 1"
         @click="updateQuery({ page: String(page - 1) })"
       >上一页</button>
-      <span class="text-sm text-[var(--text-secondary)]">{{ page }} / {{ list.totalPages }}</span>
+      <span class="text-sm text-slate-500 dark:text-slate-400">{{ page }} / {{ list.totalPages }}</span>
       <button
-        class="px-3 py-1.5 rounded-lg text-sm bg-[var(--card-bg)] border border-[var(--border-color)] disabled:opacity-40"
+        class="px-3 py-1.5 rounded-lg text-sm glass-card text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-40"
         :disabled="page >= list.totalPages"
         @click="updateQuery({ page: String(page + 1) })"
       >下一页</button>

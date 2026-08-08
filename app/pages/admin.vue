@@ -40,26 +40,26 @@ useHead({ title: '管理后台 · 拾光' })
   <div class="max-w-4xl mx-auto px-4 py-8">
     <h1 class="text-2xl font-bold tracking-tight mb-6">管理后台</h1>
 
-    <section class="mb-8 rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-5">
-      <h2 class="text-lg font-semibold mb-4">生成密钥</h2>
+    <section class="mb-8 rounded-2xl glass-card p-5">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">生成密钥</h2>
       <div class="flex flex-wrap gap-3 items-end">
-        <label class="flex flex-col gap-1 text-xs text-[var(--text-secondary)]">
+        <label class="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400">
           备注名
-          <input v-model="label" placeholder="如：朋友小明" class="px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-sm outline-none" />
+          <input v-model="label" placeholder="如：朋友小明" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-white/10 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-garden-500/60 transition-all" />
         </label>
-        <label class="flex flex-col gap-1 text-xs text-[var(--text-secondary)]">
+        <label class="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400">
           角色
-          <select v-model="role" class="px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-sm outline-none">
+          <select v-model="role" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-white/10 text-sm text-slate-800 dark:text-slate-200 focus:outline-none transition-all">
             <option value="user">普通用户</option>
             <option value="admin">管理员</option>
           </select>
         </label>
-        <button class="px-4 py-2 rounded-lg text-sm bg-[var(--accent-color)] text-white" @click="createKey">生成密钥</button>
+        <button class="px-4 py-2 rounded-lg text-sm bg-gradient-to-r from-garden-500 to-emerald-600 text-white font-semibold shadow-lg shadow-garden-500/20 transition-all" @click="createKey">生成密钥</button>
       </div>
-      <p v-if="notice" class="mt-3 text-sm text-[var(--accent-color)] break-all">{{ notice }}</p>
+      <p v-if="notice" class="mt-3 text-sm text-garden-700 dark:text-garden-300 break-all">{{ notice }}</p>
     </section>
 
-    <section class="rounded-xl border border-[var(--border-color)] bg-[var(--card-bg)] p-5">
+    <section class="rounded-2xl glass-card p-5">
       <h2 class="text-lg font-semibold mb-4">密钥列表（{{ keys.length }}）</h2>
       <table class="w-full text-sm">
         <thead>

@@ -18,6 +18,7 @@
     "gray-matter": "^4.0.3",
     "h3": "2.0.1-rc.26",
     "katex": "^0.18.1",
+    "lucide-vue-next": "^0.545.0",
     "nuxt": "^4.5.1",
     "prisma": "^7.9.1",
     "rehype-katex": "^7.0.1",

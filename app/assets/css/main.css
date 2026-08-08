@@ -2,6 +2,119 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========== Lumina 设计语言（ui.md 迁移） ========== */
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Glassmorphism Cards - Dual Theme Adaptability */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+}
+
+.dark .glass-card {
+  background: rgba(17, 24, 39, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Glassmorphism Header */
+.glass-header {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.dark .glass-header {
+  background: rgba(11, 15, 23, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Luminous Ambient Background Mesh */
+.bg-mesh {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(34, 197, 94, 0.09) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
+}
+
+.dark .bg-mesh {
+  background-color: #0B0F17;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(34, 197, 94, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.06) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+}
+
+/* Wiki-Links Styling - Luminous Green in both themes（正文内链接） */
+.prose .wiki-link,
+.prose a {
+  color: #15803d;
+  text-decoration: none;
+  border-bottom: 1.5px solid rgba(22, 163, 74, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+}
+
+.dark .prose .wiki-link,
+.dark .prose a {
+  color: #4ade80;
+  border-bottom-color: rgba(74, 222, 128, 0.4);
+}
+
+.prose a:hover {
+  color: #166534;
+  border-bottom-color: #16a34a;
+}
+
+.dark .prose a:hover {
+  color: #86efac;
+  border-bottom-color: #4ade80;
+}
+
+/* 主题切换同步：切换瞬间所有元素过渡统一 0.2s（背景/文字/边框），避免割裂 */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease !important;
+}
+
+/* Selection highlight */
+::selection {
+  background: rgba(34, 197, 94, 0.25);
+  color: #15803d;
+}
+
+.dark ::selection {
+  background: rgba(34, 197, 94, 0.35);
+  color: #86efac;
+}
+
+/* ========== 护眼 CSS 变量（保留，兼容 var(--...) 引用） ========== */
+
 @layer base {
   :root {
     --bg-primary: #FBFBFA;
