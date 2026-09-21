@@ -23,7 +23,13 @@ async function buildTree(dir: string, rel: string, maturityMap: Map<string, stri
   for (const e of entries) {
     if (e.name.startsWith('.')) continue
     const full = path.join(dir, e.name)
-    if (e.isDirectory()) {
+    // Windows 的 junction / 符号链接：dirent.isDirectory() 为 false（报 symlink），
+    // 需 stat 跟随链接后判断真实类型，否则 vault 目录本身是指向真实仓库的链接时整棵树为空
+    let isDir = e.isDirectory()
+    if (!isDir && e.isSymbolicLink()) {
+      isDir = await fs.stat(full).then(s => s.isDirectory()).catch(() => false)
+    }
+    if (isDir) {
       nodes.push({ name: e.name, type: 'dir', children: await buildTree(full, path.join(rel, e.name), maturityMap) })
     } else if (e.name.endsWith('.md')) {
       const slug = path.join(rel, e.name).replace(/\\/g, '/').replace(/\.md$/, '')

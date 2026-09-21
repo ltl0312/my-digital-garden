@@ -192,7 +192,7 @@ const submitCreate = async (dir: string, siblings: TreeNode[] = []) => {
             <p v-if="createError" class="mt-0.5 text-xs text-danger">{{ createError }}</p>
           </div>
 
-          <div v-if="isExpanded(pathOf(node))" class="mt-0.5">
+          <div v-if="isExpanded(pathOf(node))" class="mt-0.5 ml-2.5 pl-2.5 border-l border-line">
             <FileTree
               :nodes="node.children || []"
               :can-create="canCreate"

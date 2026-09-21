@@ -115,6 +115,8 @@
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-2: 0 8px 22px -8px rgba(0, 0, 0, 0.6);
     --shadow-3: 0 28px 64px -24px rgba(0, 0, 0, 0.75);
+
+    color-scheme: dark;
   }
 
   html {
@@ -123,6 +125,10 @@
        若把根字号改成 15px，会连带把字号与间距整体缩小 6%（text-xs 会变成 11.25px，低于 12px 下限）。 */
     font-size: 16px;
     line-height: var(--lh-ui);
+    /* 原生控件（select 弹层 / 日期 / 滚动条）跟随页面主题：
+       缺省时 Chromium 按系统偏好渲染 —— 系统深色 + 页面亮色会出现
+       「select 展开瞬间黑块」并残留遮挡（用户实测缺陷）。 */
+    color-scheme: light;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -176,6 +182,15 @@
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+
+/* ========== 原生 select 弹层兜底 ==========
+   即使 color-scheme 已声明，个别平台仍按元素背景渲染 option；
+   显式指定 surface/ink 保证弹层在亮暗两套下都可读。 */
+select option,
+select optgroup {
+  background-color: var(--surface);
+  color: var(--ink);
+}
 
 /* ========== 兼容层：既有类名改由 DAWN 令牌驱动 ==========
    （E2/E3 会逐步把这些写法换成语义化的 surface/ink/border 工具类） */

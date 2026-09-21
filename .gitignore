@@ -39,3 +39,9 @@ prisma/generated
 
 # 成熟度自动回写前生成的本地备份（运行时产物）
 content/vault/.maturity-backup/
+
+# vault 内的本地工具与工作区目录（Obsidian 插件 / AI 会话 / 同步工具，不入库）
+content/vault/KnowledgeBase/.obsidian/
+content/vault/KnowledgeBase/.claudian/
+content/vault/KnowledgeBase/.sync/
+content/vault/KnowledgeBase/_sync/

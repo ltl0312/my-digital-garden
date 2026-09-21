@@ -49,6 +49,8 @@ let dragLeft = 0
 const startResize = (e: PointerEvent) => {
   resizing.value = true
   document.body.style.cursor = 'col-resize'
+  // 拖拽期间禁用文本选择：否则手柄拖过正文/树行会拖蓝一片文字
+  document.body.style.userSelect = 'none'
   // 以侧栏左边缘为基准换算宽度（左侧还有 60px 图标栏，不能直接用视口坐标）
   const host = (e.currentTarget as HTMLElement)?.parentElement
   dragLeft = host?.getBoundingClientRect().left ?? 0
@@ -74,6 +76,7 @@ onMounted(() => {
     if (resizing.value) {
       resizing.value = false
       document.body.style.cursor = ''
+      document.body.style.userSelect = ''
       localStorage.setItem(SIDEBAR_KEY, String(sidebarWidth.value))
     }
   })
