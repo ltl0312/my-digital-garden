@@ -1,5 +1,6 @@
 ---
 aliases: [Java继承, super关键字, extends, 构造方法调用链]
+maturity: GROWING
 tags:
   - status/已完成
   - type/笔记

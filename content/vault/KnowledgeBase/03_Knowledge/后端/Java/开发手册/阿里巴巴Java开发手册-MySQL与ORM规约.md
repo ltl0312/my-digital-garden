@@ -1,5 +1,6 @@
 ---
 aliases: [MySQL建表规约, 索引规约, SQL编写规约, ORM映射规约, 阿里数据库规约]
+maturity: GROWING
 tags:
   - status/待处理
   - type/笔记

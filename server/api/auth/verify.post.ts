@@ -1,8 +1,39 @@
-import { createError, defineEventHandler, readBody } from 'h3'
+import { createError, defineEventHandler, readBody, type H3Event } from 'h3'
 import { prisma } from '../../utils/db'
 import { setAuthCookie } from '../../utils/auth'
 
+// ---- 简单内存限流：登录尝试（按 IP，滑动窗口） ----
+// 防御密钥暴力猜测。单机部署下够用；多实例时各进程独立计数（可接受）。
+const attempts = new Map<string, number[]>()
+const LIMIT = { windowMs: 60_000, max: 10 } // 每 IP 每分钟 10 次
+
+function clientIp(event: H3Event): string {
+  // Nginx 反代后取 X-Forwarded-For 首段；直连取 socket 地址
+  const fwd = event.headers.get('x-forwarded-for')
+  if (fwd) return fwd.split(',')[0].trim() || 'unknown'
+  return event.node?.req?.socket?.remoteAddress || 'unknown'
+}
+
+function checkRateLimit(event: H3Event) {
+  const ip = clientIp(event)
+  const now = Date.now()
+  const arr = (attempts.get(ip) || []).filter(t => now - t < LIMIT.windowMs)
+  if (arr.length >= LIMIT.max) {
+    throw createError({ statusCode: 429, message: '尝试过于频繁，请 1 分钟后再试' })
+  }
+  arr.push(now)
+  attempts.set(ip, arr)
+  // 防内存增长：条目过多时清空全部空窗口记录
+  if (attempts.size > 10_000) {
+    for (const [k, v] of attempts) {
+      if (!v.length || now - v[v.length - 1] > LIMIT.windowMs) attempts.delete(k)
+    }
+  }
+}
+
 export default defineEventHandler(async (event) => {
+  checkRateLimit(event)
+
   const body = await readBody<{ key?: string }>(event)
   const key = (body.key || '').trim()
   if (!key) throw createError({ statusCode: 400, message: '请输入密钥' })

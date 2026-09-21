@@ -1,5 +1,6 @@
 ---
 aliases: [数据库设计, E-R图, 概念结构设计, 逻辑结构设计, E-R转关系模式, isa联系]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

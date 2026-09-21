@@ -1,5 +1,6 @@
 ---
 aliases: [Java 异常处理规约, 日志规约, 单元测试规约, 安全规约]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 后端/Java]
 created: "2026-06-16 20:07"
 updated: "2026-06-16 20:07"

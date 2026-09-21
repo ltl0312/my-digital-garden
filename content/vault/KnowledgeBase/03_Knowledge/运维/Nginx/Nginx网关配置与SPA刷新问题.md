@@ -1,5 +1,6 @@
 ---
 aliases: [Nginx网关, SPA刷新404, try_files, Gzip压缩, 反向代理, 跨域]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

@@ -1,5 +1,6 @@
 ---
 aliases: [Object类, toString, equals, hashCode, finalize, String类基础]
+maturity: GROWING
 tags:
   - status/已完成
   - type/笔记

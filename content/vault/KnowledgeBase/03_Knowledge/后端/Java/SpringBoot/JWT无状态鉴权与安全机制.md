@@ -1,5 +1,6 @@
 ---
 aliases: [JWT鉴权, JSON Web Token, 无状态认证, Token安全, 拦截器]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

@@ -1,5 +1,6 @@
 ---
 aliases: [Vue3响应式, Proxy, Composition API, script setup, Object.defineProperty]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

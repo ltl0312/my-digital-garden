@@ -6,7 +6,7 @@
 
 # ---- 构建阶段 ----
 FROM node:24-alpine AS build
-RUN npm i -g pnpm@11.1.3
+RUN npm i -g pnpm@12
 WORKDIR /app
 
 # 依赖层（利用 Docker 层缓存）
@@ -24,7 +24,7 @@ RUN pnpm build
 
 # ---- 运行阶段 ----
 FROM node:24-alpine AS runtime
-RUN npm i -g pnpm@11.1.3
+RUN npm i -g pnpm@12
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -37,6 +37,7 @@ RUN pnpm install --frozen-lockfile --prod
 
 # 构建产物与启动脚本
 COPY --from=build /app/.output ./.output
+COPY scripts ./scripts
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 

@@ -1,3 +1,11 @@
+﻿packages:
+  - '.'
+nodeLinker: hoisted
+shamefullyHoist: true
+# pnpm ≥ 11 的原生构建放行（键值映射；缺省会以 ERR_PNPM_IGNORED_BUILDS 非零退出，
+# 导致容器内 pnpm install --frozen-lockfile 失败）：
+# - @prisma/engines / prisma：下载查询引擎与生成客户端所必需
+# - esbuild：安装平台二进制所必需
 allowBuilds:
   '@prisma/engines': true
   esbuild: true

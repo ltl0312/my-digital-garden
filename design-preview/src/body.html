@@ -1,0 +1,865 @@
+<!-- =====================================================================
+     拾光 · DAWN 设计语言 v2 — 可交互界面原型（静态展示稿）
+     说明：本文件为独立预览稿，不依赖项目构建，不读取项目数据接口。
+     所有内容为真实花园数据快照，仅用于视觉与交互评审。
+     ===================================================================== -->
+
+<!-- ============================ 图标精灵 ============================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="i-sprout"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></g>
+    <g id="i-home"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></g>
+    <g id="i-book"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></g>
+    <g id="i-network"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></g>
+    <g id="i-sliders"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></g>
+    <g id="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></g>
+    <g id="i-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></g>
+    <g id="i-panel"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></g>
+    <g id="i-panel-r"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m7 9 2 3-2 3"/></g>
+    <g id="i-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></g>
+    <g id="i-plus"><path d="M5 12h14"/><path d="M12 5v14"/></g>
+    <g id="i-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></g>
+    <g id="i-chev-r"><path d="m9 18 6-6-6-6"/></g>
+    <g id="i-chev-d"><path d="m6 9 6 6 6-6"/></g>
+    <g id="i-chev-l"><path d="m15 18-6-6 6-6"/></g>
+    <g id="i-arrow-r"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></g>
+    <g id="i-arrow-ur"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></g>
+    <g id="i-calendar"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></g>
+    <g id="i-clock"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></g>
+    <g id="i-link"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/></g>
+    <g id="i-tree"><path d="M21 12h-8"/><path d="M21 6h-8"/><path d="M21 18h-8"/><path d="M3 6v4c0 1.1.9 2 2 2h3"/><path d="M3 10v6c0 1.1.9 2 2 2h3"/></g>
+    <g id="i-folder"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></g>
+    <g id="i-folder-open"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.2 10H20a2 2 0 0 1 1.9 2.5l-1.5 6a2 2 0 0 1-1.9 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.7.9l.8 1.2a2 2 0 0 0 1.7.9H18a2 2 0 0 1 2 2v2"/></g>
+    <g id="i-file"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></g>
+    <g id="i-tag"><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r=".6" fill="currentColor"/></g>
+    <g id="i-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></g>
+    <g id="i-copy"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></g>
+    <g id="i-check"><path d="M20 6 9 17l-5-5"/></g>
+    <g id="i-eye"><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/></g>
+    <g id="i-eye-off"><path d="M10.73 5.08a10.7 10.7 0 0 1 11.2 6.57 1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.44 2.49"/><path d="M14.08 14.16a3 3 0 0 1-4.24-4.24"/><path d="M17.48 17.5a10.75 10.75 0 0 1-15.42-5.15 1 1 0 0 1 0-.7 10.75 10.75 0 0 1 4.45-5.14"/><path d="m2 2 20 20"/></g>
+    <g id="i-trash"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></g>
+    <g id="i-alert"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></g>
+    <g id="i-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></g>
+    <g id="i-zap"><path d="M4 14a1 1 0 0 1-.8-1.6l9.9-10.2a.5.5 0 0 1 .9.5l-1.9 6a1 1 0 0 0 .9 1.3h7a1 1 0 0 1 .8 1.6l-9.9 10.2a.5.5 0 0 1-.9-.5l1.9-6a1 1 0 0 0-.9-1.3z"/></g>
+    <g id="i-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></g>
+    <g id="i-zoom-in"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></g>
+    <g id="i-zoom-out"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="8" x2="14" y1="11" y2="11"/></g>
+    <g id="i-pencil"><path d="M21.2 6.8a1 1 0 0 0-4-4L3.8 16.2a2 2 0 0 0-.5.8l-1.3 4.4a.5.5 0 0 0 .6.6l4.4-1.3a2 2 0 0 0 .8-.5z"/><path d="m15 5 4 4"/></g>
+    <g id="i-save"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></g>
+    <g id="i-logout"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></g>
+    <g id="i-key"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></g>
+    <g id="i-shield"><path d="M20 13c0 5-3.5 7.5-7.7 8.9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.5 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></g>
+    <g id="i-grid"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></g>
+    <g id="i-sparkles"><path d="M9.9 15.5A2 2 0 0 0 8.5 14.1l-6.1-1.6a.5.5 0 0 1 0-1L8.5 9.9A2 2 0 0 0 9.9 8.5l1.6-6.1a.5.5 0 0 1 1 0l1.6 6.1a2 2 0 0 0 1.4 1.4l6.1 1.6a.5.5 0 0 1 0 1l-6.1 1.6a2 2 0 0 0-1.4 1.4l-1.6 6.1a.5.5 0 0 1-1 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></g>
+    <g id="i-menu"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></g>
+    <g id="i-list"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></g>
+    <g id="i-compass"><circle cx="12" cy="12" r="10"/><polygon points="16.2 7.8 14.1 14.1 7.8 16.2 9.9 9.9 16.2 7.8"/></g>
+    <g id="i-ok"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></g>
+    <g id="i-corner"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></g>
+    <g id="i-layers"><path d="M12.8 2.2a2 2 0 0 0-1.6 0L2.6 6.1a1 1 0 0 0 0 1.8l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 0-1.8z"/><path d="m6.1 9.5-3.5 1.6a1 1 0 0 0 0 1.8l8.6 3.9a2 2 0 0 0 1.6 0l8.6-3.9a1 1 0 0 0 0-1.8l-3.5-1.6"/></g>
+    <g id="i-refresh"><path d="M3 12a9 9 0 1 0 9-9 9.7 9.7 0 0 0-6.7 2.7L3 8"/><path d="M3 3v5h5"/></g>
+    <g id="i-lock"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></g>
+    <g id="i-target"><circle cx="12" cy="12" r="9"/><line x1="21" x2="18" y1="12" y2="12"/><line x1="6" x2="3" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="3"/><line x1="12" x2="12" y1="21" y2="18"/></g>
+    <g id="i-hash"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></g>
+    <g id="i-dots"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></g>
+    <g id="i-folder-plus"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><line x1="12" x2="12" y1="10" y2="16"/><line x1="9" x2="15" y1="13" y2="13"/></g>
+    <g id="i-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></g>
+    <g id="i-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></g>
+    <g id="i-crown"><path d="M11.6 3.3a.5.5 0 0 1 .9 0l2.9 5.6a1 1 0 0 0 1.5.3l4.3-3.7a.5.5 0 0 1 .8.5l-2.8 10.2a1 1 0 0 1-1 .8H5.8a1 1 0 0 1-1-.7L2.1 6a.5.5 0 0 1 .8-.5l4.2 3.7a1 1 0 0 0 1.6-.3z"/><path d="M5 21h14"/></g>
+    <g id="i-ban"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></g>
+    <g id="i-scroll"><path d="M12 3v18"/><circle cx="12" cy="12" r="9"/></g>
+    <g id="i-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></g>
+    <g id="i-file-plus"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 12v6"/><path d="M9 15h6"/></g>
+    <g id="i-loader"><line x1="12" x2="12" y1="2" y2="6"/><line x1="12" x2="12" y1="18" y2="22"/><line x1="4.93" x2="7.76" y1="4.93" y2="7.76"/><line x1="16.24" x2="19.07" y1="16.24" y2="19.07"/><line x1="2" x2="6" y1="12" y2="12"/><line x1="18" x2="22" y1="12" y2="12"/><line x1="4.93" x2="7.76" y1="19.07" y2="16.24"/><line x1="16.24" x2="19.07" y1="7.76" y2="4.93"/></g>
+    <g id="i-clipboard"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></g>
+    <g id="i-hard-drive"><line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/></g>
+  </defs>
+</svg>
+
+<div id="frame">
+  <div class="app" id="app" data-screen="home">
+
+    <!-- ============================ 图标栏 ============================ -->
+    <aside class="rail">
+      <a class="brand" data-goto="home" title="拾光 · 数字花园" aria-label="拾光">
+        <svg class="i"><use href="#i-sprout"/></svg>
+      </a>
+      <!-- 侧栏收起后才出现：展开入口与侧栏同侧，都在左边 -->
+      <button id="railExpand" title="展开侧栏（⌘\）" aria-label="展开侧栏" aria-expanded="false">
+        <svg class="i"><use href="#i-panel-r"/></svg>
+      </button>
+      <nav class="rail-nav" aria-label="主导航">
+        <button class="rail-btn" data-goto="home" title="首页" aria-current="true"><svg class="i"><use href="#i-home"/></svg></button>
+        <button class="rail-btn" data-goto="notes" title="笔记"><svg class="i"><use href="#i-book"/></svg></button>
+        <button class="rail-btn" data-goto="graph" title="知识图谱"><svg class="i"><use href="#i-network"/></svg></button>
+        <button class="rail-btn" data-goto="keys" title="我的密钥"><svg class="i"><use href="#i-key"/></svg></button>
+        <button class="rail-btn only-manage" data-goto="admin" title="管理后台"><svg class="i"><use href="#i-users"/></svg></button>
+      </nav>
+      <div class="rail-spacer"></div>
+      <button class="rail-btn" id="railTheme" title="切换主题"><svg class="i"><use href="#i-sun"/></svg></button>
+      <button class="rail-btn" id="railUser" title="当前身份"><span class="avatar sm" id="railUserAvatar">初</span></button>
+    </aside>
+
+    <div class="shell">
+      <!-- ============================ 顶栏 ============================ -->
+      <header class="topbar">
+        <button class="icon-btn drawer-btn" id="drawerBtn" aria-label="打开目录"><svg class="i"><use href="#i-menu"/></svg></button>
+        <div class="topbar-title">
+          <span class="mark"><svg class="i"><use href="#i-sprout"/></svg></span>
+          <div class="crumbs" id="crumbs"></div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <button class="search-trigger" id="searchTrigger">
+          <svg class="i"><use href="#i-search"/></svg>
+          <span>搜索笔记、标签、想法…</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <div class="topbar-actions">
+          <div class="more-wrap only-manage">
+            <button class="btn btn-primary btn-sm" id="newBtn" aria-haspopup="menu" aria-expanded="false">
+              <svg class="i"><use href="#i-plus"/></svg><span class="btn-label">新建</span>
+              <svg class="i chev"><use href="#i-chev-d"/></svg>
+            </button>
+            <div class="menu hide" id="newMenu" role="menu">
+              <button class="menu-item" role="menuitem" id="newNoteBtn"><svg class="i"><use href="#i-file-plus"/></svg>新建笔记</button>
+              <button class="menu-item" role="menuitem" id="newFolderMenuBtn"><svg class="i"><use href="#i-folder-plus"/></svg>新建文件夹</button>
+              <div class="menu-sep"></div>
+              <button class="menu-item" role="menuitem" id="importMenuBtn"><svg class="i"><use href="#i-upload"/></svg>导入笔记（批量）</button>
+            </div>
+          </div>
+          <span class="vsep"></span>
+          <button class="icon-btn" id="themeBtn" title="切换主题"><svg class="i"><use href="#i-sun"/></svg></button>
+          <div class="user-wrap">
+            <button class="icon-btn" id="userBtn" title="当前身份"><span class="avatar" id="userAvatar">初</span></button>
+            <div class="user-menu hide" id="userMenu">
+              <div class="um-head">
+                <span class="avatar" id="umAvatar">初</span>
+                <div><b id="umName">初始管理员</b><span id="umDesc">可管理全部密钥</span></div>
+              </div>
+              <hr>
+              <button class="um-item" data-goto="keys"><svg class="i"><use href="#i-key"/></svg>我的密钥</button>
+              <button class="um-item only-manage" data-goto="admin"><svg class="i"><use href="#i-users"/></svg>密钥管理</button>
+              <button class="um-item" id="umTheme"><svg class="i"><use href="#i-moon"/></svg>切换主题</button>
+              <button class="um-item danger" data-goto="login"><svg class="i"><use href="#i-logout"/></svg>退出登录</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="body">
+        <!-- ============================ 上下文侧栏 ============================ -->
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-head">
+            <div class="vault-line">
+              <div>
+                <div class="vault-name"><i class="dot"></i>Garden Vault</div>
+                <div class="vault-meta"><span class="mono" id="metaNotes">287</span> 篇笔记 · <span class="mono">55</span> 个标签</div>
+              </div>
+              <button class="icon-btn" id="sidebarCollapse" title="收起侧栏"><svg class="i"><use href="#i-chev-l"/></svg></button>
+            </div>
+            <div class="input-wrap" style="margin-top:12px">
+              <svg class="i"><use href="#i-filter"/></svg>
+              <input class="input has-clear" id="treeFilter" placeholder="过滤目录与笔记…">
+              <button class="clear hide" id="treeFilterClear"><svg class="i"><use href="#i-x"/></svg></button>
+            </div>
+          </div>
+          <div class="sidebar-scroll">
+            <div class="side-row">
+              <div class="segmented fluid" id="sidePanelSeg" role="tablist">
+                <button role="tab" data-panel="tree" aria-selected="true">结构</button>
+                <button role="tab" data-panel="domain">领域</button>
+                <button role="tab" data-panel="tag">标签</button>
+              </div>
+              <button class="icon-btn tiny hide" id="importBtn" title="批量导入笔记（单个文件或整个文件夹）">
+                <svg class="i"><use href="#i-upload"/></svg>
+              </button>
+              <button class="icon-btn tiny hide" id="newFolderBtn" title="在 vault 中新建文件夹">
+                <svg class="i"><use href="#i-folder-plus"/></svg>
+              </button>
+            </div>
+            <div class="side-panel" data-panel="tree" id="panelTree"></div>
+            <div class="side-panel hide" data-panel="domain" id="panelDomain"></div>
+            <div class="side-panel hide" data-panel="tag" id="panelTag"></div>
+          </div>
+          <div class="clip-bar hide" id="clipBar"></div>
+          <div class="sidebar-foot">
+            <span class="sync"><i class="pulse"></i>Vault 已同步</span>
+            <span class="mono" id="sideCount">287</span>
+          </div>
+        </aside>
+        <div class="resizer" id="resizer" title="拖动调整侧栏宽度"></div>
+
+        <main class="main">
+          <!-- ============================ 登录 ============================ -->
+          <section class="screen screen-login">
+            <div class="login">
+              <div class="login-art">
+                <div class="brand-lg">
+                  <span class="mark"><svg class="i"><use href="#i-sprout"/></svg></span>
+                  <div><b>拾光</b><small>Non-linear Knowledge Sanctuary</small></div>
+                </div>
+                <div class="login-copy">
+                  <span class="eyebrow">Private Knowledge Garden</span>
+                  <h1>把散落的想法，<br>种成一座<em>花园</em>。</h1>
+                  <p>本地 Obsidian 笔记自动同步入库，双向链接编织成网，知识图谱呈现全貌。这里是只属于你的非线性知识圣地。</p>
+                  <div class="login-feats">
+                    <div class="login-feat"><span class="ico"><svg class="i"><use href="#i-link"/></svg></span><div><b>双向链接</b><span>WikiLink 三级解析，反链自动汇聚</span></div></div>
+                    <div class="login-feat"><span class="ico"><svg class="i"><use href="#i-network"/></svg></span><div><b>知识图谱</b><span>287 节点力导向，拖拽固定布局</span></div></div>
+                    <div class="login-feat"><span class="ico"><svg class="i"><use href="#i-book"/></svg></span><div><b>沉浸阅读</b><span>阅读进度、目录定位、护眼配色</span></div></div>
+                    <div class="login-feat"><span class="ico"><svg class="i"><use href="#i-shield"/></svg></span><div><b>密钥访问</b><span>权限分级，登录状态保持 30 天</span></div></div>
+                  </div>
+                </div>
+                <svg class="garden-art" viewBox="0 0 380 300" fill="none" aria-hidden="true">
+                  <path d="M20 300V150c0-40 30-70 70-70s70 30 70 70v150" stroke="currentColor" stroke-width="1" opacity=".35"/>
+                  <path d="M120 300V190c0-32 26-58 58-58s58 26 58 58v110" stroke="currentColor" stroke-width="1" opacity=".25"/>
+                  <path d="M228 300V224c0-26 20-46 46-46s46 20 46 46v76" stroke="currentColor" stroke-width="1" opacity=".2"/>
+                  <circle cx="90" cy="80" r="34" stroke="currentColor" stroke-width="1" opacity=".4"/>
+                  <circle cx="178" cy="132" r="22" stroke="currentColor" stroke-width="1" opacity=".3"/>
+                  <circle cx="274" cy="178" r="16" stroke="currentColor" stroke-width="1" opacity=".25"/>
+                  <line x1="90" y1="80" x2="178" y2="132" stroke="currentColor" stroke-width="1" opacity=".3"/>
+                  <line x1="178" y1="132" x2="274" y2="178" stroke="currentColor" stroke-width="1" opacity=".25"/>
+                  <line x1="90" y1="80" x2="274" y2="178" stroke="currentColor" stroke-width="1" opacity=".12"/>
+                </svg>
+              </div>
+              <div class="login-form-wrap">
+                <form class="login-form" id="loginForm" novalidate>
+                  <span class="eyebrow">Welcome back</span>
+                  <h2 style="margin-top:6px">进入花园</h2>
+                  <p class="sub">私人知识花园，请输入访问密钥</p>
+                  <div class="field">
+                    <label for="loginKey">访问密钥</label>
+                    <div class="input-wrap">
+                      <svg class="i" style="left:12px"><use href="#i-key"/></svg>
+                      <input class="input" id="loginKey" type="password" placeholder="请输入密钥" autocomplete="current-password">
+                      <button class="pw-toggle" type="button" id="pwToggle" aria-label="显示密钥"><svg class="i"><use href="#i-eye"/></svg></button>
+                    </div>
+                  </div>
+                  <div class="login-error hide" id="loginError">
+                    <svg class="i"><use href="#i-alert"/></svg><span>密钥无效或已被禁用，请检查后重试</span>
+                  </div>
+                  <button class="btn btn-primary" type="submit" id="loginSubmit">进入花园</button>
+                  <div class="login-note">
+                    <svg class="i"><use href="#i-info"/></svg>
+                    <span>密钥永久有效 · 登录状态保持 30 天，过期需重新输入密钥。忘记密钥可联系管理员在后台重新生成。</span>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================ 首页 ============================ -->
+          <section class="screen screen-home">
+            <div class="page">
+              <div class="page-narrow">
+                <div class="hero">
+                  <span class="eyebrow">Non-linear Knowledge Sanctuary · 数字花园</span>
+                  <h1><svg class="i spark"><use href="#i-sparkles"/></svg>拾光</h1>
+                  <p>双向链接、自动图谱、<em>沉浸阅读</em> —— 让每一条笔记都能被重新找到。</p>
+                  <div class="hero-actions">
+                    <button class="btn btn-primary" data-goto="notes"><svg class="i"><use href="#i-book"/></svg>开始浏览</button>
+                    <button class="btn btn-ghost" data-goto="graph"><svg class="i"><use href="#i-network"/></svg>打开知识图谱</button>
+                    <button class="btn btn-quiet" id="heroSearch"><svg class="i"><use href="#i-search"/></svg>搜索<kbd style="margin-left:4px">⌘K</kbd></button>
+                  </div>
+                </div>
+
+                <div class="stats" id="homeStats"></div>
+
+                <div class="home-grid">
+                  <section>
+                    <div class="sec-head">
+                      <h2><svg class="i" style="width:17px;height:17px;color:var(--ink-3)"><use href="#i-clock"/></svg>最近更新</h2>
+                      <a class="more" data-goto="notes">全部笔记<svg class="i"><use href="#i-arrow-r"/></svg></a>
+                    </div>
+                    <div class="note-list" id="homeRecent"></div>
+                  </section>
+                  <aside style="display:flex;flex-direction:column;gap:16px">
+                    <section class="card card-pad">
+                      <div class="sec-label" style="padding:0;margin:0 0 8px">快速入口</div>
+                      <div class="entry-list">
+                        <a class="entry" data-goto="notes"><span class="ico"><svg class="i"><use href="#i-book"/></svg></span><div><b>全部笔记</b><span>287 篇 · 分页浏览</span></div><span class="arrow"><svg class="i"><use href="#i-chev-r"/></svg></span></a>
+                        <a class="entry" data-goto="graph"><span class="ico"><svg class="i"><use href="#i-network"/></svg></span><div><b>知识图谱</b><span>287 节点 · 278 条链接</span></div><span class="arrow"><svg class="i"><use href="#i-chev-r"/></svg></span></a>
+                        <a class="entry" data-goto="keys"><span class="ico"><svg class="i"><use href="#i-key"/></svg></span><div><b>我的访问密钥</b><span>查看 / 复制当前身份密钥</span></div><span class="arrow"><svg class="i"><use href="#i-chev-r"/></svg></span></a>
+                      </div>
+                    </section>
+                    <section class="card card-pad">
+                      <div class="sec-label" style="padding:0;margin:0 0 10px">常用标签</div>
+                      <div class="tag-cloud" id="homeTags"></div>
+                    </section>
+                    <div class="synced">
+                      <i class="pulse"></i>
+                      <span>Vault 已同步 · 最近同步 <b class="mono">2 分钟前</b></span>
+                    </div>
+                  </aside>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================ 全部笔记 ============================ -->
+          <section class="screen screen-notes">
+            <div class="page">
+              <div class="page-wide">
+                <div class="sec-head">
+                  <div>
+                    <span class="eyebrow">Library</span>
+                    <h2 style="margin-top:4px">全部笔记</h2>
+                  </div>
+                  <div class="segmented" id="densitySeg" role="group" aria-label="列表密度">
+                    <button data-density="comfort" aria-selected="true">标准</button>
+                    <button data-density="compact">紧凑</button>
+                  </div>
+                </div>
+
+                <div class="list-toolbar">
+                  <div class="input-wrap">
+                    <svg class="i"><use href="#i-search"/></svg>
+                    <input class="input has-clear" id="qInput" placeholder="搜索标题或正文…">
+                    <button class="clear hide" id="qClear"><svg class="i"><use href="#i-x"/></svg></button>
+                  </div>
+                  <select class="select" id="sortSel" style="width:auto;min-width:150px">
+                    <option value="updated">最近更新</option>
+                    <option value="title">标题 A→Z</option>
+                    <option value="read">阅读时长</option>
+                  </select>
+                </div>
+
+                <div class="maturity-bar" id="maturityBar" role="group" aria-label="按成熟度筛选"></div>
+                <div class="active-filters" id="activeFilters"></div>
+                <div class="result-line" id="resultLine"></div>
+                <div class="note-list" id="noteList"></div>
+                <nav class="pager" id="pager"></nav>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================ 笔记详情 ============================ -->
+          <section class="screen screen-note">
+            <div class="page" id="notePage">
+              <div class="detail-wrap">
+                <div class="detail-main">
+                  <div class="read-progress"><i id="readBar"></i></div>
+
+                  <nav class="detail-crumbs" id="noteCrumbs"></nav>
+
+                  <div id="noteView">
+                    <header class="detail-head">
+                      <div class="badges" id="noteBadges"></div>
+                      <div class="title-row">
+                        <h1 id="noteTitle"></h1>
+                        <div class="detail-actions" id="noteActions"></div>
+                      </div>
+                      <div class="detail-meta" id="noteMeta"></div>
+                      <div class="detail-tags" id="noteTags"></div>
+                    </header>
+                    <article class="prose" id="noteBody"></article>
+                    <section class="backlinks">
+                      <div class="h">
+                        <svg class="i"><use href="#i-corner"/></svg>
+                        <span>反向链接</span>
+                        <span class="n" id="blCount"></span>
+                      </div>
+                      <div class="bl-grid" id="blGrid"></div>
+                    </section>
+                  </div>
+
+                  <div id="noteEditor" class="editor hide">
+                    <div class="meta-bar">
+                      <span style="display:flex;align-items:center;gap:8px"><svg class="i"><use href="#i-pencil"/></svg>正在编辑 · 保存后写入 vault，watcher 自动同步入库</span>
+                      <span class="mono" style="font-weight:500;opacity:.8" id="editStat">0 字</span>
+                    </div>
+                    <textarea class="textarea" id="editorArea" spellcheck="false"></textarea>
+                    <div class="bar">
+                      <span class="left"><svg class="i" style="width:14px;height:14px"><use href="#i-info"/></svg>支持 Markdown、[[WikiLink]]、LaTeX 公式</span>
+                      <span style="display:flex;gap:8px">
+                        <button class="btn btn-ghost" id="editCancel">取消</button>
+                        <button class="btn btn-danger" id="editDelete"><svg class="i"><use href="#i-trash"/></svg>删除</button>
+                        <button class="btn btn-primary" id="editSave"><svg class="i"><use href="#i-save"/></svg>保存</button>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <aside class="toc-rail" id="tocRail"></aside>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================ 知识图谱 ============================ -->
+          <section class="screen screen-graph">
+            <div class="graph-stage" id="graphStage">
+              <svg class="graph-svg" id="graphSvg">
+                <g id="gRoot">
+                  <g id="gEdges" stroke="var(--graph-edge)" fill="none"></g>
+                  <g id="gNodes"></g>
+                </g>
+              </svg>
+
+              <div class="g-float tl">
+                <div class="g-panel g-search">
+                  <svg class="i"><use href="#i-target"/></svg>
+                  <input id="gSearch" placeholder="定位笔记节点…">
+                </div>
+                <div class="g-hits hide" id="gHits"></div>
+              </div>
+
+              <div class="g-float tr">
+                <div class="g-panel g-tools">
+                  <button class="icon-btn" id="gZoomIn" title="放大"><svg class="i"><use href="#i-zoom-in"/></svg></button>
+                  <button class="icon-btn" id="gZoomOut" title="缩小"><svg class="i"><use href="#i-zoom-out"/></svg></button>
+                  <button class="icon-btn" id="gFit" title="适配视图"><svg class="i"><use href="#i-maximize"/></svg></button>
+                  <div class="g-divider"></div>
+                  <button class="icon-btn is-on" id="gPhysics" title="物理引擎开关"><svg class="i"><use href="#i-zap"/></svg></button>
+                  <button class="icon-btn" id="gSettingsBtn" title="图谱设置"><svg class="i"><use href="#i-sliders"/></svg></button>
+                </div>
+              </div>
+
+              <div class="g-float bl">
+                <div class="g-panel g-legend" id="gLegend"></div>
+              </div>
+
+              <div class="g-float br">
+                <div class="g-panel g-stats" id="gStats"></div>
+              </div>
+
+              <div class="g-settings g-panel hide" id="gSettings"></div>
+              <div class="g-tip hide" id="gTip"></div>
+            </div>
+          </section>
+
+          <!-- ============================ 我的密钥（所有角色可见） ============================ -->
+          <section class="screen screen-keys">
+            <div class="page">
+              <div class="page-wide">
+                <div class="sec-head">
+                  <div>
+                    <span class="eyebrow">My access key</span>
+                    <h2 style="margin-top:4px">我的访问密钥</h2>
+                  </div>
+                  <div id="myRoleChip"></div>
+                </div>
+
+                <div class="admin-grid">
+                  <section class="card">
+                    <div class="card-head">
+                      <h2>当前身份</h2>
+                      <span class="hint" id="myIdentityHint"></span>
+                    </div>
+                    <div class="card-pad" id="myIdentity"></div>
+                  </section>
+
+                  <section class="card">
+                    <div class="card-head">
+                      <h2>权限范围说明</h2>
+                      <span class="hint">由当前角色决定 · 服务端同样校验</span>
+                    </div>
+                    <div class="card-pad" id="myPerms"></div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================ 管理后台（仅管理员可见） ============================ -->
+          <section class="screen screen-admin">
+            <div class="page">
+              <div class="page-wide" id="adminBody">
+                <div class="sec-head">
+                  <div>
+                    <span class="eyebrow">Access control</span>
+                    <h2 style="margin-top:4px">访问密钥管理</h2>
+                  </div>
+                  <div id="adminRoleChip"></div>
+                </div>
+
+                <div class="stat-row" id="keyOverview"></div>
+
+                <div class="admin-grid">
+                  <section class="card" id="genCard">
+                    <div class="card-head">
+                      <h2>生成访问密钥</h2>
+                      <span class="hint" id="genHint"></span>
+                    </div>
+                    <div class="card-pad">
+                      <div class="key-form">
+                        <div class="field" style="flex:1;min-width:220px">
+                          <label for="keyLabel">备注名</label>
+                          <input class="input" id="keyLabel" placeholder="如：朋友小明（便于日后识别）">
+                        </div>
+                        <div class="field">
+                          <label>角色权限</label>
+                          <div class="segmented" id="roleSeg" role="group"></div>
+                          <span class="hint" id="roleSegHint"></span>
+                        </div>
+                        <button class="btn btn-primary" id="genKey"><svg class="i"><use href="#i-key"/></svg>生成密钥</button>
+                      </div>
+                      <div class="key-result hide" id="keyResult"></div>
+                    </div>
+                  </section>
+
+                  <section class="card">
+                    <div class="card-head">
+                      <h2>可见密钥</h2>
+                      <div class="stat-inline" id="keyStats"></div>
+                    </div>
+                    <div class="scope-note" id="scopeNote"></div>
+                    <div class="table-scroll">
+                      <table class="table" id="keyTable"></table>
+                    </div>
+                  </section>
+                </div>
+              </div>
+
+              <!-- 普通用户直接访问该路由时的兜底（服务端同样返回 403） -->
+              <div class="denied hide" id="adminDenied">
+                <span class="ico"><svg class="i"><use href="#i-lock"/></svg></span>
+                <h2>无访问权限</h2>
+                <p>当前身份为 <b id="deniedRole">普通用户</b>，访问密钥管理仅对管理员开放。
+                  如需密钥，请联系管理员为你创建。</p>
+                <div class="denied-actions">
+                  <button class="btn btn-primary" data-goto="keys">查看我的密钥</button>
+                  <button class="btn btn-ghost" data-goto="home">返回首页</button>
+                </div>
+                <div class="denied-meta">
+                  <svg class="i"><use href="#i-info"/></svg>
+                  <span>这是界面层的可见性控制；服务端仍会对越权请求返回 403，双重保险。</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- ============================ 浮层 ============================ -->
+    <div class="scrim hide" id="scrim"></div>
+
+    <div class="palette hide" id="palette" role="dialog" aria-modal="true" aria-label="命令面板">
+      <div class="palette-box">
+        <div class="palette-input">
+          <svg class="i"><use href="#i-search"/></svg>
+          <input id="paletteInput" placeholder="搜索笔记、标签…" autocomplete="off">
+          <kbd>ESC</kbd>
+        </div>
+        <div class="palette-list" id="paletteList"></div>
+        <div class="palette-foot">
+          <span class="k"><kbd>↑</kbd><kbd>↓</kbd>移动</span>
+          <span class="k"><kbd>↵</kbd>打开</span>
+          <span class="k"><kbd>ESC</kbd>关闭</span>
+          <span class="sp"></span>
+          <span id="paletteCount"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 批量导入笔记（单个文件 / 整个文件夹） ==================== -->
+    <div class="modal hide" id="modalImport" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+      <div class="modal-box is-wide">
+        <div class="modal-head">
+          <span class="ico"><svg class="i"><use href="#i-upload"/></svg></span>
+          <div>
+            <h2 id="importTitle">批量导入笔记</h2>
+            <p>从本地导入单个文件或整个文件夹，并指定导入到 vault 中的具体位置。</p>
+          </div>
+          <button class="icon-btn modal-x" id="importClose" aria-label="关闭"><svg class="i"><use href="#i-x"/></svg></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- ① 来源 -->
+          <section class="imp-step">
+            <div class="imp-step-h">
+              <span class="n">1</span>
+              <div><b>选择来源</b><span>支持 <code>.md</code> / <code>.markdown</code> / <code>.txt</code>，可拖拽文件或文件夹</span></div>
+              <div class="imp-step-x" id="impSrcChip"></div>
+            </div>
+            <div class="dropzone" id="dropzone" tabindex="0" role="button"
+                 aria-label="拖拽文件或文件夹到此处，或点击下方按钮选择">
+              <span class="dz-ico"><svg class="i"><use href="#i-upload"/></svg></span>
+              <div class="dz-main">
+                <b>把文件或文件夹拖到这里</b>
+                <span>文件夹导入会保留原有的目录层级</span>
+              </div>
+              <div class="dz-acts">
+                <button class="btn btn-ghost btn-sm" id="pickFiles" type="button">
+                  <svg class="i"><use href="#i-file-plus"/></svg>选择文件
+                </button>
+                <button class="btn btn-ghost btn-sm" id="pickDir" type="button">
+                  <svg class="i"><use href="#i-folder-plus"/></svg>选择文件夹
+                </button>
+              </div>
+              <input type="file" id="fileInput" multiple accept=".md,.markdown,.txt" hidden>
+              <input type="file" id="dirInput" webkitdirectory directory multiple hidden>
+            </div>
+            <div class="imp-demo">
+              <span>评审用示例：</span>
+              <button class="link-btn" data-demo="ok">合规集合（8 篇 / 12.6 MB）</button>
+              <span class="dot-sep">·</span>
+              <button class="link-btn" data-demo="over-file">单文件超限（1 篇 / 6.2 MB）</button>
+              <span class="dot-sep">·</span>
+              <button class="link-btn" data-demo="over-folder">文件夹超限（26 篇 / 104 MB）</button>
+            </div>
+          </section>
+
+          <!-- ② 目标位置 -->
+          <section class="imp-step">
+            <div class="imp-step-h">
+              <span class="n">2</span>
+              <div><b>导入到目标位置</b><span>可精确指定导入到 vault 中的哪一层目录</span></div>
+            </div>
+            <div class="imp-grid">
+              <div class="field">
+                <label for="impParent">父目录</label>
+                <select class="select" id="impParent"></select>
+              </div>
+              <div class="field">
+                <label for="impSub">新建子文件夹 <span class="opt">可选</span></label>
+                <input class="input" id="impSub" placeholder="例如：导入-2026-09">
+              </div>
+            </div>
+            <div class="imp-rule">
+              <span class="ir-ic"><svg class="i"><use href="#i-shield"/></svg></span>
+              <div>
+                <b>文件名不可重复</b>
+                <span>同一目录下不允许存在同名笔记 —— 与目标目录已有文件重名、或本批选择内部重名，
+                  都会被阻止导入。请先重命名，或换一个子文件夹。</span>
+              </div>
+            </div>
+            <label class="check"><input type="checkbox" id="impKeep" checked><span>保留来源的子目录层级（关闭后所有文件平铺到目标目录）</span></label>
+            <div class="path-preview">
+              <span>将导入到</span>
+              <code id="impPath">content/vault/</code>
+            </div>
+          </section>
+
+          <!-- ③ 大小校验 -->
+          <section class="imp-step">
+            <div class="imp-step-h">
+              <span class="n">3</span>
+              <div><b>大小校验</b><span>单文件 ≤ <b>5 MB</b> · 单个文件夹合计 ≤ <b>100 MB</b></span></div>
+              <div class="imp-step-x" id="impCheckChip"></div>
+            </div>
+            <div class="imp-empty" id="impEmpty">
+              <svg class="i"><use href="#i-hard-drive"/></svg>
+              <span>还没有选择文件 —— 选择后会在这里逐条列出大小与校验结果</span>
+            </div>
+            <div class="imp-block hide" id="impBlock"></div>
+            <div class="imp-meters" id="impMeters"></div>
+            <div class="imp-list-wrap hide" id="impListWrap">
+              <div class="imp-list-head">
+                <span>文件清单</span>
+                <span class="imp-list-actions">
+                  <span class="imp-hint" id="impListSum"></span>
+                  <button class="link-btn" id="impClear">清空</button>
+                </span>
+              </div>
+              <div class="imp-list" id="impList"></div>
+            </div>
+          </section>
+
+          <!-- ④ 结果 -->
+          <section class="imp-step hide" id="impStepRes">
+            <div class="imp-step-h">
+              <span class="n ok"><svg class="i"><use href="#i-check"/></svg></span>
+              <div><b>导入完成</b><span id="impResSub"></span></div>
+            </div>
+            <div class="imp-result" id="impResult"></div>
+          </section>
+        </div>
+
+        <div class="modal-foot">
+          <span class="left" id="impFoot"></span>
+          <button class="btn btn-ghost" id="importCancel">取消</button>
+          <button class="btn btn-primary" id="importStart" disabled>
+            <svg class="i"><use href="#i-upload"/></svg><span id="importStartLabel">开始导入</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal hide" id="modalNew" role="dialog" aria-modal="true" aria-labelledby="newNoteTitle">
+      <div class="modal-box">
+        <div class="modal-head">
+          <span class="ico"><svg class="i"><use href="#i-plus"/></svg></span>
+          <div>
+            <h2 id="newNoteTitle">新建笔记</h2>
+            <p>在选定目录下创建一个新的 Markdown 笔记，创建后可立即编辑。</p>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label for="newNoteName">笔记标题</label>
+            <input class="input" id="newNoteName" placeholder="例如：Vue3 响应式原理">
+          </div>
+          <div class="field">
+            <label for="newNoteDir">存放目录</label>
+            <select class="select" id="newNoteDir"></select>
+            <span class="hint">默认存放在当前浏览的目录下。</span>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <span class="left">文件将写入 <b class="mono">content/vault</b></span>
+          <button class="btn btn-ghost" id="newNoteCancel">取消</button>
+          <button class="btn btn-primary" id="newNoteCreate">创建笔记</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal hide" id="modalNewFolder" role="dialog" aria-modal="true" aria-labelledby="newFolderTitle">
+      <div class="modal-box">
+        <div class="modal-head">
+          <span class="ico"><svg class="i"><use href="#i-folder-plus"/></svg></span>
+          <div>
+            <h2 id="newFolderTitle">新建文件夹</h2>
+            <p>在 vault 中创建文件夹，用来组织和管理笔记。创建后可继续在其中新建笔记。</p>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label for="newFolderParent">父目录</label>
+            <select class="select" id="newFolderParent"></select>
+          </div>
+          <div class="field">
+            <label for="newFolderName">文件夹名称</label>
+            <input class="input" id="newFolderName" placeholder="例如：07_Archive 或 前端工程化">
+            <span class="hint" id="newFolderHint">建议使用与现有目录一致的命名风格（数字前缀便于排序）。</span>
+          </div>
+          <div class="path-preview">
+            <span>将创建于</span>
+            <code id="newFolderPath">content/vault/</code>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <span class="left">watcher 会自动同步到笔记数据库</span>
+          <button class="btn btn-ghost" id="newFolderCancel">取消</button>
+          <button class="btn btn-primary" id="newFolderCreate">
+            <svg class="i"><use href="#i-folder-plus"/></svg>创建文件夹
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal hide" id="modalDeleteKey" role="dialog" aria-modal="true" aria-labelledby="delKeyTitle">
+      <div class="modal-box">
+        <div class="modal-head">
+          <span class="ico danger"><svg class="i"><use href="#i-trash"/></svg></span>
+          <div>
+            <h2 id="delKeyTitle">删除这个密钥？</h2>
+            <p>删除后该密钥立即失效，持有者将无法再进入花园。此操作不可恢复。</p>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="danger-note">
+            <svg class="i"><use href="#i-key"/></svg>
+            <div>
+              <b id="delKeyName">朋友小明</b>
+              <span class="mono" id="delKeyMeta">普通用户 · grdn_8K2…</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" id="delKeyCancel">取消</button>
+          <button class="btn btn-danger" id="delKeyConfirm"><svg class="i"><use href="#i-trash"/></svg>确认删除密钥</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 结构树节点的通用删除确认（文件 / 文件夹，含子项计数） -->
+    <div class="modal hide" id="modalNodeDel" role="dialog" aria-modal="true" aria-labelledby="nodeDelTitle">
+      <div class="modal-box">
+        <div class="modal-head">
+          <span class="ico danger"><svg class="i"><use href="#i-trash"/></svg></span>
+          <div>
+            <h2 id="nodeDelTitle">删除这个节点？</h2>
+            <p id="nodeDelSub">将从 vault 中移除，并在数据库中同步删除。</p>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="danger-note">
+            <svg class="i"><use href="#i-alert"/></svg>
+            <div>
+              <b id="nodeDelName">—</b>
+              <span class="mono" id="nodeDelPath">content/vault/…</span>
+            </div>
+          </div>
+          <div class="imp-rule hide" id="nodeDelWarn">
+            <span class="ir-ic"><svg class="i"><use href="#i-info"/></svg></span>
+            <div><b id="nodeDelWarnT">—</b><span id="nodeDelWarnS"></span></div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <span class="left">此操作不可恢复</span>
+          <button class="btn btn-ghost" id="nodeDelCancel">取消</button>
+          <button class="btn btn-danger" id="nodeDelConfirm"><svg class="i"><use href="#i-trash"/></svg>确认删除</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal hide" id="modalDelete" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+      <div class="modal-box">
+        <div class="modal-head">
+          <span class="ico danger"><svg class="i"><use href="#i-alert"/></svg></span>
+          <div>
+            <h2 id="delTitle">删除这篇笔记？</h2>
+            <p>将从 vault 中移除文件并同步删除数据库记录，此操作不可恢复。</p>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="danger-note">
+            <svg class="i"><use href="#i-file"/></svg>
+            <div>
+              <b id="delName">环境配置与项目初始化</b>
+              <span class="mono" id="delPath">KnowledgeBase/03_Knowledge/…</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" id="delCancel">取消</button>
+          <button class="btn btn-danger" id="delConfirm"><svg class="i"><use href="#i-trash"/></svg>确认删除</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast 与预览工具条放在应用外壳之外：它们使用 position:fixed，
+     若置于带 backdrop-filter / overflow 的容器内，固定定位的参照系会被改变。 -->
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- 结构树右键菜单：挂在应用外壳之外，position:fixed 才不会被父级裁剪 -->
+<div class="ctx-menu hide" id="ctxMenu" role="menu" aria-label="文件与文件夹操作"></div>
+
+<!-- 预览工具条：仅用于评审切换状态，不属于产品界面 -->
+<div class="preview-bar is-min" id="previewBar">
+  <button id="barToggle" title="收起 / 展开预览工具条">预览工具条</button>
+  <button data-screen-jump="login">登录</button>
+  <button data-screen-jump="home" aria-pressed="true">首页</button>
+  <button data-screen-jump="notes">列表</button>
+  <button data-screen-jump="note">详情</button>
+  <button data-screen-jump="graph">图谱</button>
+  <button data-screen-jump="keys">我的密钥</button>
+  <button data-screen-jump="admin">后台</button>
+  <span class="sep"></span>
+  <button data-state="palette">命令面板</button>
+  <button data-state="new">新建笔记</button>
+  <button data-state="folder">新建文件夹</button>
+  <button data-state="import">批量导入</button>
+  <button data-state="import-over">导入超限</button>
+  <button data-state="delete">删除确认</button>
+  <button data-state="editor">编辑态</button>
+  <button data-state="empty">空状态</button>
+  <span class="sep"></span>
+  <button data-toggle="theme">亮 / 暗</button>
+  <button data-toggle="device">移动端</button>
+  <span class="sep"></span>
+  <span class="tag-label">身份</span>
+  <button data-role-jump="root" aria-pressed="true">初始管理员</button>
+  <button data-role-jump="admin">普通管理员</button>
+  <button data-role-jump="user">普通用户</button>
+</div>
+
+<script type="application/json" id="data-notes"><!--DATA_NOTES--></script>
+<script type="application/json" id="data-tags"><!--DATA_TAGS--></script>
+<script type="application/json" id="data-tree"><!--DATA_TREE--></script>
+<script type="application/json" id="data-graph"><!--DATA_GRAPH--></script>
+<template id="tplNoteBody"><!--NOTE_BODY--></template>
+<script type="application/json" id="data-note"><!--DATA_NOTE--></script>

@@ -87,6 +87,7 @@ description: "知识库统一入口：自动识别文件类型(.md/.cpp/.pdf)→
 ```markdown
 ---
 aliases: []
+maturity: SEEDLING
 tags:
   - status/进行中
   - type/笔记
@@ -169,6 +170,7 @@ source: ""
 ```markdown
 ---
 aliases: []
+maturity: SEEDLING
 tags:
   - status/进行中
   - type/教程
@@ -267,6 +269,7 @@ source: "{{官方文档 URL 或参考文章 URL}}"
 ```markdown
 ---
 aliases: []
+maturity: SEEDLING
 tags:
   - status/待处理
   - type/代码
@@ -372,6 +375,7 @@ source: ""
 ```markdown
 ---
 aliases: []
+maturity: SEEDLING
 tags:
   - status/待处理
   - type/素材

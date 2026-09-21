@@ -4,9 +4,9 @@ services:
     container_name: garden-db
     restart: always
     environment:
-      POSTGRES_USER: garden_user
-      POSTGRES_PASSWORD: SecureProdPassword987! # 生产环境请改用 .env 变量注入，勿硬编码
-      POSTGRES_DB: garden_db
+      POSTGRES_USER: ${POSTGRES_USER:-garden_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 或 shell 中设置 POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-garden_db}
     ports:
       - "5432:5432"
     volumes:

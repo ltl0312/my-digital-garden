@@ -1,5 +1,6 @@
 ---
 aliases: [Java OOP 规约, POJO 规约, Java 格式规约, 阿里巴巴 OOP 规范]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 后端/Java]
 created: "2026-06-16 20:07"
 updated: "2026-06-16 20:07"

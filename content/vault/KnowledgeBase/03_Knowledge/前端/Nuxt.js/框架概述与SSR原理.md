@@ -1,5 +1,6 @@
 ---
 aliases: [Nuxt.js 介绍, Nuxt.js SSR, Nuxt.js 核心特性, Nuxt.js vs Vue SPA]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

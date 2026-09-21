@@ -1,5 +1,6 @@
 ---
 aliases: [对象序列化, Serializable, serialVersionUID, Properties, File类, 配置文件]
+maturity: GROWING
 tags:
   - status/已完成
   - type/笔记

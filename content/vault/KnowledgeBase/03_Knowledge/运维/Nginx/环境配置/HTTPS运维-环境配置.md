@@ -1,5 +1,6 @@
 ---
 aliases: [Nginx HTTPS 配置, Nginx SSL 配置, Certbot 配置, Nginx 性能配置]
+maturity: SEEDLING
 tags:
   - status/进行中
   - type/教程

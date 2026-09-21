@@ -1,5 +1,6 @@
 ---
 aliases: [SDLC, 软件生命周期, 项目落地流程, 项目管理八阶段]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

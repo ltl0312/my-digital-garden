@@ -1,5 +1,6 @@
 ---
 aliases: [Thymeleaf 配置, Thymeleaf Spring Boot 集成]
+maturity: SEEDLING
 tags: [status/进行中, type/教程, 后端/Java, 后端/SpringBoot]
 created: "2026-06-16 21:58"
 updated: "2026-06-16 21:58"

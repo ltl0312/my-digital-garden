@@ -1,5 +1,6 @@
 ---
 aliases: [Thymeleaf, 模板引擎, 服务端渲染, HTMX, th:fragment, th:each]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 后端/Java, 后端/SpringBoot]
 created: "2026-06-16 21:58"
 updated: "2026-06-16 21:58"

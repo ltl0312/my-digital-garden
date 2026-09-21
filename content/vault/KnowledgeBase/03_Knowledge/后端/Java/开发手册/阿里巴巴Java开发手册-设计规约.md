@@ -1,5 +1,6 @@
 ---
 aliases: [Java 设计规约, 阿里巴巴设计规范, 设计模式规范]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 后端/Java]
 created: "2026-06-16 20:17"
 updated: "2026-06-16 20:17"

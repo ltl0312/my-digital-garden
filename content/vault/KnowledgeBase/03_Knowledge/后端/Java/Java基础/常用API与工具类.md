@@ -1,5 +1,6 @@
 ---
 aliases: [常用API, System, Arrays, String方法, Integer, Date, DecimalFormat, BigDecimal, Random, Enum]
+maturity: GROWING
 tags:
   - status/已完成
   - type/笔记

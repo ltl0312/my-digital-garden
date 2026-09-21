@@ -1,5 +1,6 @@
 ---
 aliases: [Vue3 样式配置, scoped 调试, CSS Modules 配置]
+maturity: SEEDLING
 tags: [status/进行中, type/教程, 前端/Vue]
 created: "2026-06-16 19:41"
 updated: "2026-06-16 19:41"

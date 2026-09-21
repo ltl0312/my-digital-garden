@@ -64,8 +64,10 @@ model AccessKey {
   id         String    @id @default(uuid())
   key        String    @unique
   label      String?
-  role       String    @default("user") // "admin" | "user"
+  role       String    @default("user") // "root" | "admin" | "user"（应用层白名单校验，spec D5）
   isActive   Boolean   @default(true) // 禁用后立即失效
+  isBuiltin  Boolean   @default(false) // 内置唯一身份（root 保护位），任何接口禁止禁用/删除
+  createdBy  String?   // 创建者密钥 id（自引用，应用层解析 label）
   lastUsedAt DateTime?
   createdAt  DateTime  @default(now())
 

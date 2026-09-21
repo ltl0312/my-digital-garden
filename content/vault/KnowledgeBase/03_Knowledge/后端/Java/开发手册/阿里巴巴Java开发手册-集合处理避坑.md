@@ -1,5 +1,6 @@
 ---
 aliases: [Java集合避坑, subList陷阱, toArray, equals与hashCode规则, 集合遍历安全]
+maturity: GROWING
 tags:
   - status/待处理
   - type/笔记

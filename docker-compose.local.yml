@@ -2,6 +2,7 @@
 # 本地 Docker 演示编排（应用容器化，数据库复用本机 PostgreSQL）
 # 使用：docker compose -f docker-compose.local.yml up -d --build
 # 访问：http://localhost:3000  |  停止：docker compose -f docker-compose.local.yml down
+# 注意：DB_PASSWORD 从 .env 读取（或 shell 导出），禁止硬编码
 # ============================================================
 
 services:
@@ -10,7 +11,7 @@ services:
     container_name: garden-app
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://postgres:a82711045@host.docker.internal:5432/digital_garden?schema=public
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}@host.docker.internal:5432/digital_garden?schema=public
       PORT: "3000"
       AUTH_SECRET: ${AUTH_SECRET:-dev-secret-change-me}
     ports:

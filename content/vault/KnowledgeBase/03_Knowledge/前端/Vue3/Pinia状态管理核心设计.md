@@ -1,5 +1,6 @@
 ---
 aliases: [Pinia状态管理, Vuex对比, setup store, storeToRefs]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

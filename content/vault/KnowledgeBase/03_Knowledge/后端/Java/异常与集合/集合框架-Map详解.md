@@ -1,5 +1,6 @@
 ---
 aliases: [HashMap, TreeMap, HashTable, Properties, 哈希表, 红黑树转换]
+maturity: GROWING
 tags:
   - status/已完成
   - type/笔记

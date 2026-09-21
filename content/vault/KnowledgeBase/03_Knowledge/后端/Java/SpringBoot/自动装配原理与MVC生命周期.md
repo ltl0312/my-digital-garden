@@ -1,5 +1,6 @@
 ---
 aliases: [SpringBoot自动装配, "@SpringBootApplication", DispatcherServlet, Spring MVC请求流程]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

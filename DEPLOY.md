@@ -48,11 +48,17 @@ pnpm build          # 产物 .output/，本地验证无 error
 # Docker Desktop 可用时，将 .output 复制进容器并重建依赖后运行
 docker run -d --name garden-preview -p 3100:3000 -w /app node:20-alpine sleep infinity
 docker cp .output garden-preview:/app/.output
+docker cp scripts garden-preview:/app/scripts
 docker cp content garden-preview:/app/content
 docker exec garden-preview sh -c "cd /app/.output/server && npm install --omit=dev --no-audit --no-fund"
-docker exec -d garden-preview env NODE_ENV=production DATABASE_URL="postgresql://postgres:密码@host.docker.internal:5432/digital_garden?schema=public" node .output/server/index.mjs
+docker exec -d garden-preview env NODE_ENV=production DATABASE_URL="postgresql://postgres:密码@host.docker.internal:5432/digital_garden?schema=public" node scripts/start-prod.mjs
 curl http://localhost:3100/   # 应返回 200
 ```
+
+> **为什么经 `scripts/start-prod.mjs` 启动：** nitro 产物内部的 `_importMeta_` 占位路径
+> （`file:///_entry.js`）在 Windows 上会让内联的 Prisma 客户端抛
+> `ERR_INVALID_FILE_URL_PATH`；包装器会先写入入口的真实绝对 URL 再加载产物。
+> Linux 上虽不触发，但统一从包装器进入（`pnpm start` / PM2 / entrypoint.sh 均已切换）。
 
 准备部署包（**源码而非产物**，服务器上重新构建）：
 
@@ -61,7 +67,7 @@ mkdir -p dist-deploy && cd dist-deploy
 git clone <你的仓库地址> .   # 或 rsync 项目源码（排除 node_modules/.output/.nuxt/.env）
 # 确认包含：package.json、pnpm-lock.yaml、nuxt.config.ts、app/、server/、
 #            prisma/（schema + migrations）、prisma.config.ts、content/、
-#            docker-compose.yml、ecosystem.config.js、nginx.conf
+#            docker-compose.yml、ecosystem.config.cjs、nginx.conf
 tar czf digital-garden-src.tar.gz .
 ```
 
@@ -89,7 +95,8 @@ pnpm install
 
 ```bash
 cat > .env <<'EOF'
-DATABASE_URL="postgresql://garden_user:SecureProdPassword987!@localhost:5432/garden_db?schema=public"
+DATABASE_URL="postgresql://garden_user:换成强密码@localhost:5432/garden_db?schema=public"
+AUTH_SECRET="换成随机长字符串"   # 生产必需：缺失时应用启动即失败（见 server/utils/auth.ts）
 PORT=3000
 EOF
 ```
@@ -105,7 +112,7 @@ docker ps                      # garden-db 与 garden-syncthing 均 Up
 docker compose logs postgres   # 确认 "database system is ready to accept connections"
 ```
 
-> 生产前请将 `docker-compose.yml` 中的 `POSTGRES_PASSWORD` 与 `ecosystem.config.js` 的 `DATABASE_URL` 改为强密码（两处保持一致），建议通过 `.env` 文件注入。
+> 密码通过 `.env` 注入：`docker-compose.yml` 的 `POSTGRES_PASSWORD` 与 `ecosystem.config.cjs` 的 `DATABASE_URL` 均从环境变量读取，**禁止硬编码**（历史硬编码版本已从仓库清除）。
 
 ---
 
@@ -124,7 +131,7 @@ npx prisma migrate status      # 应输出 Database schema is up to date!
 ```bash
 cd /opt/digital-garden
 pnpm build                     # 在 Linux 上构建（关键：勿跨平台搬运 .output）
-pm2 start ecosystem.config.js  # Cluster 模式，instances: max
+pm2 start ecosystem.config.cjs  # Cluster 模式，instances: max（凭据从 .env 读取）
 pm2 save && pm2 startup        # 开机自启（按提示执行 sudo 命令）
 pm2 status                     # digital-garden 应为 online
 pm2 logs digital-garden        # 确认 [garden] watcher 监听日志无 error

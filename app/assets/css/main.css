@@ -2,142 +2,262 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ========== Lumina 设计语言（ui.md 迁移） ========== */
+/* ============================================================
+   DAWN 设计语言 · 令牌层（spec 第 3 章）
+   - 全部以 CSS 自定义属性表达，亮暗只换取值、不换结构
+   - 旧变量名（--bg-primary 等）保留为 DAWN 令牌的别名，
+     让页面在 E2/E3 增量迁移期间不出现断代
+   ============================================================ */
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+@layer base {
+  /* ---------- 亮色 · 暖纸 ---------- */
+  :root {
+    /* 面 */
+    --canvas: #F5F4EF;      /* 画布 */
+    --surface: #FFFFFF;     /* 表面 */
+    --surface-2: #FAF9F5;   /* 次表面 */
+    --surface-3: #F1EFE8;   /* 三级面 */
+    --line: #E6E3D9;        /* 描边 */
+
+    /* 墨 */
+    --ink: #191C22;         /* 主文字 */
+    --ink-2: #4C545F;       /* 正文 */
+    --ink-3: #7B838F;       /* 辅助 */
+
+    /* 交互色 */
+    --accent: #0E7C5A;
+    --accent-ink: #FFFFFF;
+    --accent-soft: rgba(14, 124, 90, 0.10);
+
+    /* 语义色 */
+    --seedling: #A85B0B;
+    --growing: #0B6E99;
+    --evergreen: #0E7C5A;
+    --danger: #B42318;
+
+    /* 领域色族（同一色相在亮暗下取不同明度） */
+    --hue-frontend: 160;
+    --hue-backend: 232;
+    --hue-database: 275;
+    --hue-devops: 32;
+    --hue-cs: 195;
+    --hue-se: 344;
+    --hue-cross: 88;
+    --hue-misc: 220;
+    --hue-s: 58%;
+    --hue-l: 44%;
+
+    /* 字号阶梯（正文基线 15px） */
+    --fs-11: 11px; --fs-12: 12px; --fs-13: 13px; --fs-14: 14px;
+    --fs-body: 15px; --fs-17: 17px; --fs-20: 20px; --fs-24: 24px;
+    --fs-30: 30px; --fs-38: 38px; --fs-46: 46px;
+
+    /* 行高 */
+    --lh-ui: 1.6; --lh-summary: 1.75; --lh-prose: 1.85; --lh-title: 1.28;
+
+    /* 间距（4 基准） */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+    --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px; --sp-16: 64px;
+
+    /* 圆角 */
+    --r-6: 6px; --r-8: 8px; --r-12: 12px; --r-16: 16px; --r-20: 20px;
+
+    /* 阴影三级 */
+    --shadow-1: 0 1px 2px rgba(25, 28, 34, 0.06);
+    --shadow-2: 0 6px 18px -6px rgba(25, 28, 34, 0.16);
+    --shadow-3: 0 24px 60px -20px rgba(25, 28, 34, 0.28);
+
+    /* 动效 */
+    --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms;
+    --ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+    /* 布局 */
+    --rail-w: 60px;
+    --header-h: 60px;
+    --sidebar-min: 240px;
+    --sidebar-max: 440px;
+    --measure: 720px;      /* 正文栏 */
+    --toc-w: 236px;
+
+    /* ---------- 旧变量别名（迁移期兼容，勿在新代码中使用） ---------- */
+    --bg-primary: var(--canvas);
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-2);
+    --accent-color: var(--accent);
+    --border-color: var(--line);
+    --card-bg: var(--surface-2);
+  }
+
+  /* ---------- 暗色 · 深墨 ---------- */
+  .dark {
+    --canvas: #0A0D13;
+    --surface: #11151E;
+    --surface-2: #151A24;
+    --surface-3: #1C222E;
+    --line: #222A37;
+
+    --ink: #E9ECF2;
+    --ink-2: #A8B1C1;
+    --ink-3: #78829A;
+
+    --accent: #3FD98B;
+    --accent-ink: #08110C;
+    --accent-soft: rgba(63, 217, 139, 0.14);
+
+    --seedling: #F0B254;
+    --growing: #5CC4EC;
+    --evergreen: #3FD98B;
+    --danger: #F87171;
+
+    --hue-s: 52%;
+    --hue-l: 58%;
+
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 8px 22px -8px rgba(0, 0, 0, 0.6);
+    --shadow-3: 0 28px 64px -24px rgba(0, 0, 0, 0.75);
+  }
+
+  html {
+    font-family: "Plus Jakarta Sans", Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+    /* 根字号保持 16px：Tailwind 的 rem 尺寸阶梯（text-xs=12px、spacing 4px 基准）依赖它，
+       若把根字号改成 15px，会连带把字号与间距整体缩小 6%（text-xs 会变成 11.25px，低于 12px 下限）。 */
+    font-size: 16px;
+    line-height: var(--lh-ui);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--ink);
+    /* 正文基线 15px（spec 3.2），只影响正文，不改动 rem 阶梯 */
+    font-size: var(--fs-body);
+    line-height: var(--lh-ui);
+    transition: background-color var(--dur-2) ease, color var(--dur-2) ease;
+  }
+
+  /* 统一焦点描边：2px 交互色 + 2px 偏移（不依赖浏览器默认） */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--r-6);
+  }
+
+  code, pre, kbd, samp,
+  .font-mono {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .font-serif {
+    font-family: "Newsreader", Georgia, serif;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  /* 动效降级（spec 3.3：现网缺失） */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+
+/* ========== 基础层：滚动条 / 可选中的排版 ========== */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.3);
+  background: var(--line);
   border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.5);
-}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
 
-/* Glassmorphism Cards - Dual Theme Adaptability */
+/* ========== 兼容层：既有类名改由 DAWN 令牌驱动 ==========
+   （E2/E3 会逐步把这些写法换成语义化的 surface/ink/border 工具类） */
+
 .glass-card {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
 }
 
-.dark .glass-card {
-  background: rgba(17, 24, 39, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
-}
-
-/* Glassmorphism Header */
 .glass-header {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
 }
 
-.dark .glass-header {
-  background: rgba(11, 15, 23, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-/* Luminous Ambient Background Mesh */
 .bg-mesh {
-  background-color: #f8fafc;
-  background-image:
-    radial-gradient(at 0% 0%, rgba(34, 197, 94, 0.09) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
+  background-color: var(--canvas);
+  background-image: none;
 }
 
-.dark .bg-mesh {
-  background-color: #0B0F17;
-  background-image:
-    radial-gradient(at 0% 0%, rgba(34, 197, 94, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.06) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
-}
-
-/* Wiki-Links Styling - Luminous Green in both themes（正文内链接） */
+/* 正文内的 WikiLink：浅底胶囊（spec 5.4） */
 .prose .wiki-link,
 .prose a {
-  color: #15803d;
+  color: var(--accent);
   text-decoration: none;
-  border-bottom: 1.5px solid rgba(22, 163, 74, 0.4);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  transition: background-color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
   font-weight: 600;
 }
 
-.dark .prose .wiki-link,
-.dark .prose a {
-  color: #4ade80;
-  border-bottom-color: rgba(74, 222, 128, 0.4);
-}
-
 .prose a:hover {
-  color: #166534;
-  border-bottom-color: #16a34a;
+  background: var(--accent-soft);
+  border-bottom-color: var(--accent);
 }
 
-.dark .prose a:hover {
-  color: #86efac;
-  border-bottom-color: #4ade80;
+/* 领域色族：元素上只需声明 --h（色相），明度/饱和度随主题自动切换（spec 3.1） */
+.hue-chip {
+  background: hsl(var(--h, 220) var(--hue-s) var(--hue-l));
+}
+.hue-bar {
+  background: hsl(var(--h, 220) var(--hue-s) var(--hue-l));
+}
+.hue-text {
+  color: hsl(var(--h, 220) var(--hue-s) var(--hue-l));
+}
+.hue-soft {
+  background: hsl(var(--h, 220) var(--hue-s) var(--hue-l) / 0.14);
+  color: hsl(var(--h, 220) 55% 32%);
+}
+.dark .hue-soft {
+  color: hsl(var(--h, 220) var(--hue-s) 72%);
 }
 
-/* 主题切换同步：切换瞬间所有元素过渡统一 0.2s（背景/文字/边框），避免割裂 */
+/* 对话框关闭键（spec 5.8 ②）：绝对定位钉在右上角，位置不随标题长度/行数浮动 */
+.modal-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-8);
+  color: var(--ink-3);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: color var(--dur-1) var(--ease), background-color var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease);
+}
+
+.modal-x:hover {
+  color: var(--ink);
+  background: var(--surface-3);
+  border-color: var(--line);
+}
+
+/* 主题切换同步：切换瞬间所有元素过渡统一 0.2s，避免割裂（配合 FOUC 内联脚本） */
 html.theme-switching *,
 html.theme-switching *::before,
 html.theme-switching *::after {
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease !important;
-}
-
-/* Selection highlight */
-::selection {
-  background: rgba(34, 197, 94, 0.25);
-  color: #15803d;
-}
-
-.dark ::selection {
-  background: rgba(34, 197, 94, 0.35);
-  color: #86efac;
-}
-
-/* ========== 护眼 CSS 变量（保留，兼容 var(--...) 引用） ========== */
-
-@layer base {
-  :root {
-    --bg-primary: #FBFBFA;
-    --text-primary: #121212;
-    --text-secondary: #5A5A58;
-    --accent-color: #8C6D46;
-    --border-color: #E8E8E3;
-    --card-bg: #F4F4F0;
-  }
-
-  .dark {
-    --bg-primary: #121212;
-    --text-primary: #E6E6E1;
-    --text-secondary: #A0A09C;
-    --accent-color: #D4A359;
-    --border-color: #2A2A28;
-    --card-bg: #1A1A18;
-  }
-
-  body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
 }

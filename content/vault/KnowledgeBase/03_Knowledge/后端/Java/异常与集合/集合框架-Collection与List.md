@@ -1,5 +1,6 @@
 ---
 aliases: [Java集合, Collection, List, ArrayList, LinkedList, Vector]
+maturity: GROWING
 tags:
   - status/已完成
   - type/笔记

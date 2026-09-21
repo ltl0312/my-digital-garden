@@ -1,0 +1,1120 @@
+<div class="wrap">
+
+<!-- ============================ 封面 ============================ -->
+<header class="cover">
+  <span class="eyebrow">UI Redesign Proposal · 只改界面，不动逻辑</span>
+  <h1>拾光 · 数字花园<br>界面改版设计方案 <em>DAWN v2</em></h1>
+  <p class="lede">
+    基于对 <code>my-digital-garden</code> 现有代码逻辑与线上界面的完整梳理，在不改动任何现有功能与业务流程的前提下，
+    重新设计一套信息层级更清晰、交互更规范、移动端可用的界面方案，并给出可直接点击操作的高保真原型。
+  </p>
+  <div class="meta-row">
+    <span class="pill good">未修改任何项目代码</span>
+    <span class="pill">数据快照：287 篇笔记 / 55 标签 / 278 链接</span>
+    <span class="pill">7 个页面 · 30+ 个界面状态</span>
+    <span class="pill good">三级角色：初始管理员 / 普通管理员 / 普通用户</span>
+    <span class="pill good">新增：新建文件夹</span>
+    <span class="pill good">新增：笔记批量导入（单文件 5 MB / 文件夹 100 MB 上限）</span>
+    <span class="pill good">新增：结构树右键文件操作（重命名 / 新建 / 删除 / 复制 / 粘贴）</span>
+    <span class="pill good">新增：文件操作的权限矩阵</span>
+    <span class="pill">亮 / 暗双主题 · 桌面 / 移动双端</span>
+    <span class="pill warn">原型为静态预览稿，不连接真实接口</span>
+  </div>
+</header>
+
+<div class="toc">
+  <h3>目录</h3>
+  <ol>
+    <li><a href="#s1">现状诊断</a></li>
+    <li><a href="#s2">改版目标与设计方向</a></li>
+    <li><a href="#s3">设计语言 DAWN · 令牌</a></li>
+    <li><a href="#s4">信息架构与页面骨架</a></li>
+    <li><a href="#s5">页面级方案（前后对照）</a></li>
+    <li><a href="#s6">组件清单</a></li>
+    <li><a href="#s7">交互与可访问性规范</a></li>
+    <li><a href="#s8">分级权限体系与文件夹管理</a></li>
+    <li><a href="#s9">批量导入（单文件 / 整个文件夹）</a></li>
+    <li><a href="#s10">成熟度标签的定义与治理</a></li>
+    <li><a href="#s11">落地实施建议</a></li>
+    <li><a href="#s12">附录：快照与复核方式</a></li>
+  </ol>
+</div>
+
+<!-- ============================ 01 现状诊断 ============================ -->
+<section id="s1">
+  <h2><span class="n">01</span>现状诊断</h2>
+  <p class="sub">先看清楚现在是什么，再谈改什么。以下结论全部来自代码通读与线上真实页面测量，不是主观印象。</p>
+
+  <h3>1.1 代码逻辑梳理</h3>
+  <p>前端共 19 个文件、约 1750 行，是一套相当克制、职责清晰的实现。理解它之后可以确认：<strong>本次改版完全可以在表现层完成，不需要触碰任何数据流与接口。</strong></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>层</th><th>文件</th><th>职责</th><th>改版影响</th></tr></thead>
+      <tbody>
+        <tr><td>布局</td><td><code>app/layouts/default.vue</code></td><td>顶栏 + 可拖拽侧栏 + 内容区；⌘K 快捷键；树/标签数据获取</td><td>结构性重写（纯模板 + 样式）</td></tr>
+        <tr><td>页面</td><td><code>pages/index.vue</code> · <code>notes/index.vue</code> · <code>notes/[...slug].vue</code> · <code>graph.vue</code> · <code>admin.vue</code> · <code>login.vue</code></td><td>6 个页面，各自 <code>useAsyncData</code> / 手动 fetch 取数</td><td>模板与样式重排，取数逻辑原样保留</td></tr>
+        <tr><td>组件</td><td><code>ArticleReader</code> · <code>FileTree</code> · <code>GraphView</code> · <code>CommandPalette</code></td><td>阅读器 / 文件树 / d3 力导向 / ⌘K 面板</td><td>视觉与交互层重做，内部行为（滚动进度、拖拽固定、防抖与竞态）保留</td></tr>
+        <tr><td>样式</td><td><code>assets/css/main.css</code> + <code>tailwind.config.js</code></td><td>Lumina 玻璃拟态 + garden/obsidian 色阶 + 护眼变量</td><td>替换为 DAWN 令牌，保留 <code>theme-switching</code> 过渡等既有约定</td></tr>
+        <tr><td>接口</td><td><code>server/api/**</code>（notes / tags / vault / graph / auth / admin）</td><td>SSR 与客户端取数</td><td><strong>零改动</strong>；新增交互均为纯前端表现层</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <b>结论：</b>数据契约（<code>/api/notes</code> 分页与筛选、<code>/api/tags</code>、<code>/api/vault/tree</code>、<code>/api/notes/graph</code>、<code>/api/vault/notes</code> 增删改、<code>/api/admin/keys</code>）足够支撑本方案的全部界面，不需要新增字段或新接口。
+  </div>
+
+  <h3>1.2 问题清单</h3>
+  <p>按影响程度分三级。P0 = 阻断性、P1 = 显著影响效率或观感、P2 = 打磨项。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:60px">级别</th><th style="width:150px">问题</th><th>证据</th><th style="width:230px">改版对策</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="pill bad">P0</span></td>
+          <td><b>移动端完全不可用</b></td>
+          <td>390px 视口下测得侧栏固定占宽 <b>320px</b>，主内容区只剩 <b>66px</b>（标题栏内可用宽度 34px），正文呈逐字换行；顶栏品牌区的 "Non-linear Knowledge Sanctuary" 竖排成 4 行。</td>
+          <td>新增单列外壳：图标栏隐藏 → 侧栏改为抽屉式（overlay + 遮罩），顶栏精简为「汉堡 + 标题 + 搜索 + 用户」</td>
+        </tr>
+        <tr>
+          <td><span class="pill bad">P0</span></td>
+          <td><b>字号系统性偏小</b></td>
+          <td>线上文本节点字号分布：9px <b>×40</b>、10px <b>×26</b>、11px <b>×76</b>、12px ×47 —— <b>142 / 221 = 64% 的文本小于 12px</b>。中文在小字号 + 无衬线细体下可读性很差。</td>
+          <td>建立 11–46px 的字号阶梯，正文提到 15px / 行高 1.75，界面最小字号锁定 12px；正文与摘要改用 1.75–1.85 行高</td>
+        </tr>
+        <tr>
+          <td><span class="pill bad">P0</span></td>
+          <td><b>标签体系失效</b></td>
+          <td>55 个标签，而侧栏只渲染 <code>tags.slice(0, 20)</code> —— <b>35 个标签在界面上永远不可见</b>；同时「按标签筛选」只有一个纯文本输入框，用户必须精确记住标签名才能命中。</td>
+          <td>标签按命名空间前缀分组（<code>status/</code> <code>type/</code> 及领域前缀），组内可完整展开；列表页活动筛选以可移除芯片呈现</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">P1</span></td>
+          <td><b>导航价值缺失：一棵"退化"的文件树</b></td>
+          <td>真实 vault 是单根结构：<code>KnowledgeBase</code> 下 11 个一级目录、最深 6 段 slug。侧栏把唯一根目录当作根渲染，白占一级缩进，中文目录名被截断成 <code>03_K…</code>。</td>
+          <td>单根目录自动提升为根；新增「领域」面板（前端/后端/数据库/运维/计算机基础/软件工程/跨学科 7 个族，带占比条）作为主迷航入口</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">P1</span></td>
+          <td><b>列表缺少可辨识信息</b></td>
+          <td>最近 48 篇里 <b>47 篇 summary 为 null</b>、47 篇 <code>readingTime</code> 为 0 → 列表大面积出现「暂无摘要」，且没有路径信息。而存在标题重名（如多篇「环境配置与项目初始化」），用户无法区分。</td>
+          <td>卡片改为「行」结构：补上 <b>完整路径</b>（已有数据）、领域徽章、阅读时长；无摘要时以路径替代占位文案，不再输出「暂无摘要」</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">P1</span></td>
+          <td><b>知识图谱大面积留白、标签不可读</b></td>
+          <td>287 节点 / 278 边，其中 <b>9 篇孤立笔记</b>（度为 0）。原生力导向把孤立节点甩到画布边缘，同时全局只有一个颜色（287 篇 maturity 全为 <code>SEEDLING</code>），整图呈单色紫。</td>
+          <td>孤立节点改到外围轨道等距排布（虚线描边，自成一类）；默认按「领域」着色（7 色族）；标签加描边底衬避免互相压叠；搜索定位、图例、统计、设置全部改为浮层控件</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">P1</span></td>
+          <td><b>原生弹窗打断体验</b></td>
+          <td>新建笔记用 <code>prompt()</code>、错误用 <code>alert()</code>、删除用 <code>confirm()</code>（<code>[...slug].vue</code>、<code>default.vue</code>、<code>FileTree.vue</code>、<code>admin.vue</code> 共 7 处）。浏览器原生对话框会中断任务、无法承载结构（目录选择、字段校验、危险说明）。</td>
+          <td>统一为应用内对话框 + Toast：新建笔记（标题 + 目录 + 校验）、删除确认（含文件路径与不可恢复说明）、操作结果提示</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">P1</span></td>
+          <td><b>关键操作缺少确认成本与反馈</b></td>
+          <td>管理后台密钥直接明文铺在表格里；「禁用 / 删除」是两个 11px 文字链，且禁用/启用状态只有文字差异，没有开关控件；生成后的密钥只以一行普通文字展示，无法复制。</td>
+          <td>密钥默认打码 + 显示/复制按钮；状态改为 switch 控件；生成结果用强调面板展示并支持一键复制；删除走确认对话框</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">P1</span></td>
+          <td><b>顶栏信息重复、动作语义含混</b></td>
+          <td>「Notes / Graph / Admin」胶囊与侧栏、首页入口三处重复；退出登录是一个 11px 灰字；主题按钮在暗色下显示太阳图标（语义指向不明确）。</td>
+          <td>主导航收敛为左侧图标栏（唯一入口，带当前态指示）；顶栏只保留「搜索 / 新建 / 主题 / 侧栏 / 用户」；用户菜单承载身份、主题、密钥管理、退出</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">P2</span></td>
+          <td><b>登录页信息量不足</b></td>
+          <td>只有一个输入框和一个按钮，右侧大面积空白；没有说明这是什么、密钥从哪来、有效期多久（这些信息其实全都存在）。</td>
+          <td>左右分栏：左侧品牌与能力说明（数据取自真实功能），右侧表单含密码可见性切换、错误态、免责说明</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">P2</span></td>
+          <td><b>长路径导航断裂</b></td>
+          <td>阅读器面包屑只取 slug 的第一段（<code>Garden Vault / KnowledgeBase</code>），而实际层级最深 6 段，用户丢失位置感。</td>
+          <td>面包屑渲染完整路径（可换行、末尾高亮），右侧目录栏附带属性面板（成熟度/领域/时长/反链/最近更新）</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">P2</span></td>
+          <td><b>命令面板只能"回车进第一个"</b></td>
+          <td><code>CommandPalette.vue</code> 支持防抖与请求竞态控制（做得很好），但结果列表没有键盘上下移动，也没有可点击的父级分组，<code>Enter</code> 只能打开第一条。</td>
+          <td>保留防抖与竞态逻辑，补齐 ↑↓ 选择、Enter 打开、结果按「笔记 / 标签 / 页面」分组、关键词高亮、底部快捷键提示</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">P2</span></td>
+          <td><b>无障碍与状态反馈缺口</b></td>
+          <td>大量扁平 <code>&lt;div&gt;</code> 承担按钮职责（文件树行、标签云、TOC 项）；无 <code>:focus-visible</code> 规范；主题切换后无过渡统一策略之外的状态提示；无 <code>prefers-reduced-motion</code> 处理。</td>
+          <td>全部交互元素改为语义化 <code>&lt;button&gt;/&lt;a&gt;</code> 并补 <code>aria-*</code>；统一 focus ring；补 reduced-motion 分支</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note warn">
+    <b>内容层面的两点发现（建议在数据管道侧另行处理，界面层已做兜底）：</b><br>
+    ① 摘要字段几乎为空，且唯一有值的那条摘要夹带了原始 Markdown（<code>## 信息来源 - **官方文档**…</code>），不适合直接展示 —— 界面层改为优先展示真实存在的路径信息。<br>
+    ② 287 篇笔记的 <code>maturity</code> 全为 <code>SEEDLING</code>，导致「按成熟度着色」「幼苗/成长/常青」三色徽章在真实数据下退化为单色；新方案因此将默认着色方式改为「按领域」，同时保留成熟度视图。
+  </div>
+</section>
+
+<!-- ============================ 02 方向 ============================ -->
+<section id="s2">
+  <h2><span class="n">02</span>改版目标与设计方向</h2>
+  <p class="sub">三条目标，决定了下面所有取舍。</p>
+
+  <div class="grid3">
+    <div class="card">
+      <h4>① 先能读，再好看</h4>
+      <p style="margin:0;font-size:13.5px">这是一个<strong>阅读型</strong>产品。字号、行高、对比度、阅读宽度优先于装饰。玻璃拟态从「随处可见」降级为「只用于浮层与顶栏」，内容卡片改用实色 + 细描边，减少视觉噪声。</p>
+    </div>
+    <div class="card">
+      <h4>② 让 287 篇笔记可被导航</h4>
+      <p style="margin:0;font-size:13.5px">单靠文件树无法管理近 300 篇笔记。用<strong>领域 / 类型 / 状态</strong>三个维度提供结构性入口，标签按命名空间分组展开，把"记住标签名"变成"点一下"。</p>
+    </div>
+    <div class="card">
+      <h4>③ 双端都要能用</h4>
+      <p style="margin:0;font-size:13.5px">移动端不是桌面端的缩小版。侧栏抽屉化、顶栏动作收敛、列表信息重排、图谱最小可读缩放 —— 全部单独设计，而非依赖响应式缩放。</p>
+    </div>
+  </div>
+
+  <h3>视觉方向：暖纸 × 深墨 × 玉青</h3>
+  <p>
+    保留「花园」的品牌内核（青绿 = 生长），但把它从<strong>到处都在的装饰色</strong>收敛为<strong>唯一的交互色</strong>：
+    亮色采用暖纸底色（不再是纯白 + 绿色蒙版），暗色采用带蓝相的深墨（不再是纯黑 + 绿光晕）。
+    Latin 展示文字用已引入的 <em>Newsreader</em> 衬线体做点缀，中文全部走清晰无衬线并加大字号 —— 避免中文衬线在 Windows 上回退到宋体。
+  </p>
+  <div class="compare">
+    <figure class="shot">
+      <img src="{{IMG:before-home}}" alt="改版前：首页（暗色）">
+      <figcaption><span><b>改版前 · 首页</b>　玻璃卡片 + 10/11px 小字 + 标签墙占据整个侧栏</span><span class="tag before">BEFORE</span></figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="{{IMG:after-home}}" alt="改版后：首页（暗色）">
+      <figcaption><span><b>改版后 · 首页</b>　层级化外壳 + 数据概览 + 可视化导航 + 15px 正文基线</span><span class="tag after">AFTER</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============================ 03 令牌 ============================ -->
+<section id="s3">
+  <h2><span class="n">03</span>设计语言 DAWN · 令牌</h2>
+  <p class="sub">全部以 CSS 自定义属性表达，亮暗两套只换取值、不换结构，可直接映射成 Tailwind 主题或 CSS 变量。</p>
+
+  <h3>3.1 色彩</h3>
+  <h4>主色与中性色（亮色 · 暖纸）</h4>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#F5F4EF"></div><div class="info"><b>canvas 画布</b><span>#F5F4EF</span></div></div>
+    <div class="sw"><div class="chip" style="background:#FFFFFF"></div><div class="info"><b>surface 表面</b><span>#FFFFFF</span></div></div>
+    <div class="sw"><div class="chip" style="background:#FAF9F5"></div><div class="info"><b>surface-2 次表面</b><span>#FAF9F5</span></div></div>
+    <div class="sw"><div class="chip" style="background:#F1EFE8"></div><div class="info"><b>surface-3 三级面</b><span>#F1EFE8</span></div></div>
+    <div class="sw"><div class="chip" style="background:#E6E3D9"></div><div class="info"><b>border 描边</b><span>#E6E3D9</span></div></div>
+    <div class="sw"><div class="chip" style="background:#191C22"></div><div class="info"><b>ink 主文字</b><span>#191C22</span></div></div>
+    <div class="sw"><div class="chip" style="background:#4C545F"></div><div class="info"><b>ink-2 正文</b><span>#4C545F</span></div></div>
+    <div class="sw"><div class="chip" style="background:#7B838F"></div><div class="info"><b>ink-3 辅助</b><span>#7B838F</span></div></div>
+    <div class="sw"><div class="chip" style="background:#0E7C5A"></div><div class="info"><b>accent 交互色</b><span>#0E7C5A</span></div></div>
+  </div>
+  <h4 style="margin-top:22px">主色与中性色（暗色 · 深墨）</h4>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#0A0D13"></div><div class="info"><b>canvas 画布</b><span>#0A0D13</span></div></div>
+    <div class="sw"><div class="chip" style="background:#11151E"></div><div class="info"><b>surface 表面</b><span>#11151E</span></div></div>
+    <div class="sw"><div class="chip" style="background:#151A24"></div><div class="info"><b>surface-2 次表面</b><span>#151A24</span></div></div>
+    <div class="sw"><div class="chip" style="background:#1C222E"></div><div class="info"><b>surface-3 三级面</b><span>#1C222E</span></div></div>
+    <div class="sw"><div class="chip" style="background:#222A37"></div><div class="info"><b>border 描边</b><span>#222A37</span></div></div>
+    <div class="sw"><div class="chip" style="background:#E9ECF2"></div><div class="info"><b>ink 主文字</b><span>#E9ECF2</span></div></div>
+    <div class="sw"><div class="chip" style="background:#A8B1C1"></div><div class="info"><b>ink-2 正文</b><span>#A8B1C1</span></div></div>
+    <div class="sw"><div class="chip" style="background:#78829A"></div><div class="info"><b>ink-3 辅助</b><span>#78829A</span></div></div>
+    <div class="sw"><div class="chip" style="background:#3FD98B"></div><div class="info"><b>accent 交互色</b><span>#3FD98B</span></div></div>
+  </div>
+
+  <h4 style="margin-top:22px">语义色</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>语义</th><th>亮色</th><th>暗色</th><th>用在哪</th></tr></thead>
+      <tbody>
+        <tr><td><b>幼苗 seedling</b></td><td><code>#A85B0B</code></td><td><code>#F0B254</code></td><td>成熟度徽章 · 编辑态提示条</td></tr>
+        <tr><td><b>成长 growing</b></td><td><code>#0B6E99</code></td><td><code>#5CC4EC</code></td><td>成熟度徽章</td></tr>
+        <tr><td><b>常青 evergreen</b></td><td><code>#0E7C5A</code></td><td><code>#3FD98B</code></td><td>成熟度徽章 · 成功态</td></tr>
+        <tr><td><b>危险 danger</b></td><td><code>#B42318</code></td><td><code>#F87171</code></td><td>删除 · 禁用 · 校验失败</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 style="margin-top:22px">领域色族（Hue Token，亮暗同色相不同明度）</h4>
+  <p style="font-size:13.5px">用于列表左侧色条、领域徽章、侧栏领域面板、图谱着色。<strong>同一色相在亮暗下自动取不同明度，不需要维护两套色值</strong>（原型里用 <code>--h</code> 变量 + <code>hsl()</code> 实现）。</p>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:hsl(160 58% 44%)"></div><div class="info"><b>前端</b><span>--hue-frontend: 160</span></div></div>
+    <div class="sw"><div class="chip" style="background:hsl(232 58% 44%)"></div><div class="info"><b>后端</b><span>--hue-backend: 232</span></div></div>
+    <div class="sw"><div class="chip" style="background:hsl(275 58% 44%)"></div><div class="info"><b>数据库</b><span>--hue-database: 275</span></div></div>
+    <div class="sw"><div class="chip" style="background:hsl(32 58% 44%)"></div><div class="info"><b>运维</b><span>--hue-devops: 32</span></div></div>
+    <div class="sw"><div class="chip" style="background:hsl(195 58% 44%)"></div><div class="info"><b>计算机基础</b><span>--hue-cs: 195</span></div></div>
+    <div class="sw"><div class="chip" style="background:hsl(344 58% 44%)"></div><div class="info"><b>软件工程</b><span>--hue-se: 344</span></div></div>
+    <div class="sw"><div class="chip" style="background:hsl(88 58% 44%)"></div><div class="info"><b>跨学科纵深</b><span>--hue-cross: 88</span></div></div>
+    <div class="sw"><div class="chip" style="background:hsl(220 20% 52%)"></div><div class="info"><b>其他 / 阅读摘录</b><span>--hue-misc: 220</span></div></div>
+  </div>
+
+  <h3>3.2 字体与字号</h3>
+  <div class="card">
+    <div class="spec-row"><span class="k">界面无衬线</span><span class="v">Plus Jakarta Sans → PingFang SC → Microsoft YaHei（沿用项目已引入字体，中文回退到系统黑体）</span></div>
+    <div class="spec-row"><span class="k">展示衬线</span><span class="v">Newsreader italic —— 只用于 Latin 眉标 / 强调词，中文不使用衬线</span></div>
+    <div class="spec-row"><span class="k">等宽</span><span class="v">JetBrains Mono —— slug、路径、密钥、计数</span></div>
+    <div class="spec-row"><span class="k">字号阶梯</span><span class="v">11 / 12 / 13 / 14 / <b>15（正文基线）</b> / 17 / 20 / 24 / 30 / 38 / 46</span></div>
+    <div class="spec-row"><span class="k">行高</span><span class="v">界面 1.6 · 列表摘要 1.75 · 正文 1.85 · 标题 1.2–1.3</span></div>
+    <div class="spec-row"><span class="k">字重</span><span class="v">400 正文 / 500 次要 / 600 强调 / 700 标题 / 800 页面主标题</span></div>
+    <div class="spec-row"><span class="k">硬性下限</span><span class="v"><b>任何界面文字不小于 12px</b>（现网最小 9px）</span></div>
+  </div>
+
+  <h3>3.3 间距 · 圆角 · 阴影 · 动效</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4>间距（4 基准）</h4>
+      <div class="spec-row"><span class="k">阶梯</span><span class="v">4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 48 / 64</span></div>
+      <div class="spec-row"><span class="k">布局节奏</span><span class="v">区块间 24–32 · 卡片内 20 · 行内 8–12</span></div>
+      <div class="spec-row"><span class="k">阅读宽度</span><span class="v">正栏 720px（现网 768px，中性）· 目录栏 236px</span></div>
+      <h4 style="margin-top:18px">圆角</h4>
+      <div class="spec-row"><span class="k">阶梯</span><span class="v">6 / 8 / 12 / 16 / 20 / pill</span></div>
+      <div class="spec-row"><span class="k">规则</span><span class="v">控件 8–12 · 卡片 16 · 浮层 20 · 徽章与标签 pill</span></div>
+    </div>
+    <div class="card">
+      <h4>阴影（三级）</h4>
+      <div class="spec-row"><span class="k">shadow-1</span><span class="v">卡片静置 · 1px 贴地投影</span></div>
+      <div class="spec-row"><span class="k">shadow-2</span><span class="v">悬停抬升 · 图形浮层</span></div>
+      <div class="spec-row"><span class="k">shadow-3</span><span class="v">对话框 / 命令面板 / 抽屉</span></div>
+      <h4 style="margin-top:18px">动效</h4>
+      <div class="spec-row"><span class="k">时长</span><span class="v">120ms 微反馈 · 200ms 常规 · 320ms 抽屉与折叠</span></div>
+      <div class="spec-row"><span class="k">缓动</span><span class="v">cubic-bezier(0.32, 0.72, 0, 1)</span></div>
+      <div class="spec-row"><span class="k">主题切换</span><span class="v">沿用项目现有 <code>theme-switching</code> 类 · 统一 0.2s</span></div>
+      <div class="spec-row"><span class="k">降级</span><span class="v">尊重 <code>prefers-reduced-motion</code>（现网缺失）</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 04 骨架 ============================ -->
+<section id="s4">
+  <h2><span class="n">04</span>信息架构与页面骨架</h2>
+  <p class="sub">把「一个顶栏 + 一个塞满所有东西的侧栏」拆成职责分明的四层。</p>
+
+  <div class="card">
+    <pre class="mono" style="font-size:12.5px;line-height:1.85;margin:0;color:var(--ink-2);white-space:pre;overflow-x:auto">┌──────┬───────────────────────────────────────────────────────────────┐
+│      │  顶栏 60px  面包屑 · 搜索(⌘K)      [新建笔记] [主题] [侧栏] [用户]│
+│ 图标 ├───────────────┬───────────────────────────────────────────────┤
+│ 栏   │  上下文侧栏    │  内容区                                        │
+│ 60px │  240–440px    │   · 首页 / 列表 / 后台：单栏，最大 880–1120px   │
+│      │  可拖拽可收起  │   · 笔记详情：正文 720px + 目录栏 236px（≥1280）│
+│      │  结构/领域/标签│   · 知识图谱：通栏画布 + 四角浮层控件           │
+└──────┴───────────────┴───────────────────────────────────────────────┘</pre>
+  </div>
+
+  <h3>侧栏的三个面板（同一数据，三种导航方式）</h3>
+  <div class="grid3">
+    <div class="card"><h4>结构</h4><p style="margin:0;font-size:13.5px">文件树。单根目录自动提升；目录行显示递归笔记数；<b>展开/收起有双重信号</b>（箭头旋转 90° 并转为强调色 + 文件夹图标变为强调色实底），折叠状态完全跟随用户点击并带 <code>aria-expanded</code>；带过滤输入框，过滤时保留命中子树的父级路径。</p></div>
+    <div class="card"><h4>领域</h4><p style="margin:0;font-size:13.5px">7 个领域 + 其他，每行含色块、名称、占比条、篇数（真实统计：前端 99 / 后端 69 / 计算机基础 56 / 运维 23 / 软件工程 16 / 数据库 13 / 其他 11）。</p></div>
+    <div class="card"><h4>标签</h4><p style="margin:0;font-size:13.5px">55 个标签按命名空间前缀分组展开：状态（275）、类型（276）、前端（93）、后端（26）…… 组头带组内计数，不再截断。</p></div>
+  </div>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:after-facet-domain}}" alt="领域面板"><figcaption><span>领域面板：把"目录"翻译成"知识面"</span><span class="tag after">NEW</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-facet-tag}}" alt="标签面板"><figcaption><span>标签面板：55 个标签全部可达（现网只显示 20 个）</span><span class="tag after">FIX</span></figcaption></figure>
+  </div>
+
+  <h3>响应式断点</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>断点</th><th>图标栏</th><th>上下文侧栏</th><th>内容区</th><th>详情目录栏</th></tr></thead>
+      <tbody>
+        <tr><td><b>≥1280</b> 宽屏</td><td>显示</td><td>常驻，可拖拽 240–440</td><td>单栏居中</td><td>常驻（sticky）</td></tr>
+        <tr><td><b>1024–1279</b></td><td>显示</td><td>常驻</td><td>单栏</td><td>隐藏（并入正文顶部）</td></tr>
+        <tr><td><b>768–1023</b></td><td>隐藏</td><td>抽屉（overlay）</td><td>全宽</td><td>隐藏</td></tr>
+        <tr><td><b>&lt;768</b> 手机</td><td>隐藏</td><td>抽屉 286px + 遮罩</td><td>全宽，顶栏动作收敛</td><td>隐藏</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4 style="margin-top:26px">移动端前后对照（390 × 844）</h4>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:before-mobile}}" alt="改版前：移动端首页"><figcaption><span><b>改版前</b>　侧栏固定 320px，主内容区仅剩 66px，正文逐字换行</span><span class="tag before">BROKEN</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-mobile}}" alt="改版后：移动端首页"><figcaption><span><b>改版后</b>　侧栏抽屉化，内容全宽，统计两列、工具栏纵向排列</span><span class="tag after">FIXED</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-mobile-drawer}}" alt="改版后：移动端侧栏抽屉"><figcaption><span><b>改版后</b>　侧栏以抽屉呈现，遮罩裁剪在手机框内，点击遮罩或 ESC 关闭</span><span class="tag after">NEW</span></figcaption></figure>
+  </div>
+</section>
+
+<!-- ============================ 05 页面级方案 ============================ -->
+<section id="s5">
+  <h2><span class="n">05</span>页面级方案</h2>
+  <p class="sub">每个页面给出：现状问题 → 改版要点 → 组件结构。所有改动都在模板与样式层。</p>
+
+  <h3>5.1 登录页</h3>
+  <p><strong>改版要点：</strong>左右分栏。左侧承载品牌与产品能力（双向链接 / 知识图谱 / 沉浸阅读 / 密钥访问，全部取自真实功能，不是营销文案），配一个纯 SVG 的花园连线插画（与知识图谱同构）；右侧是表单，含密码可见性切换、行内错误态、有效期说明。窄屏下左侧自动隐藏、只留表单。</p>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:before-login}}" alt="改版前：登录"><figcaption><span><b>改版前</b>　单卡片居中，无产品说明；错误只体现在一行小字</span><span class="tag before">BEFORE</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-login}}" alt="改版后：登录"><figcaption><span><b>改版后</b>　分栏叙事 + 完整表单状态（亮色）</span><span class="tag after">AFTER</span></figcaption></figure>
+  </div>
+
+  <h3>5.2 首页</h3>
+  <p><strong>现状问题：</strong>只有「✨ 拾光」标题 + 8 条列表；两条跳转链接被塞在区块标题右侧；未利用任何已有统计信息。</p>
+  <p><strong>改版要点：</strong></p>
+  <ul class="dot">
+    <li><b>Hero</b>：眉标（Newsreader italic）+ 主标题 + 一句话说明 + 三个动作（开始浏览 / 打开图谱 / 搜索 ⌘K），把「下一步做什么」前置。</li>
+    <li><b>统计条</b>：笔记总数 287 / 标签 55 / 双向链接 278 / 知识领域 7 —— 全部来自现有接口（<code>/api/vault/tree</code>、<code>/api/tags</code>、<code>/api/notes/graph</code>）。</li>
+    <li><b>最近更新</b>：从 8 条卡片改为 6 条信息密度更高的行，右侧「全部笔记 →」。</li>
+    <li><b>右栏</b>：快速入口（全部笔记 / 知识图谱 / 访问密钥）、常用标签（Top 12，点击即筛选）、Vault 同步状态。</li>
+  </ul>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:after-home-light}}" alt="改版后：首页亮色"><figcaption><span>改版后 · 首页（暖纸亮色）</span><span class="tag after">AFTER</span></figcaption></figure>
+  </div>
+
+  <h3>5.3 全部笔记</h3>
+  <p><strong>现状问题：</strong>卡片把 4 行信息压进 11px 小字；没有路径，重名笔记无法区分；筛选只有两个裸输入框；标签行是 20 个平铺小胶囊；分页只有「上一页 / 下一页」。</p>
+  <p><strong>改版要点：</strong></p>
+  <ul class="dot">
+    <li><b>行式列表</b>：左缘 3px 领域色条（悬停显现）→ 徽章行（成熟度 · 领域 · 阅读时长 · 日期）→ 标题 17px → 路径（等宽 12px，真实数据）→ 摘要 2 行 → 标签（最多 3 个 + N）。无摘要时用路径替代「暂无摘要」。</li>
+    <li><b>工具栏</b>：搜索（带清除按钮）+ 排序（最近更新 / 标题 / 阅读时长）+ 密度切换（标准 / 紧凑，前端本地状态）。</li>
+    <li><b>活动筛选</b>：以可逐项移除的芯片呈现，并提供「全部清除」；空结果给出原因与下一步建议。</li>
+    <li><b>分页</b>：窗口化页码（1 … 3 4 5 … 48）替代仅有前后两键。</li>
+  </ul>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:before-notes}}" alt="改版前：全部笔记"><figcaption><span><b>改版前</b>　卡片 + 小字 + 无路径；标签行 20 个胶囊</span><span class="tag before">BEFORE</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-notes}}" alt="改版后：全部笔记"><figcaption><span><b>改版后</b>　行式列表 + 路径/领域/时长 + 筛选芯片</span><span class="tag after">AFTER</span></figcaption></figure>
+  </div>
+
+  <h3>5.4 笔记详情</h3>
+  <p><strong>现状问题：</strong>目录（TOC）以一个大卡片横在正文之前，长文时正文被推得很低；面包屑只显示第一层；反链区块缺乏来源上下文。</p>
+  <p><strong>改版要点：</strong></p>
+  <ul class="dot">
+    <li><b>右侧目录栏</b>（≥1280px，sticky）：目录（含 h2/h3 层级与当前项高亮，基于 IntersectionObserver）、阅读进度环（百分比）、属性面板（成熟度 / 领域 / 时长 / 反链数 / 最近更新）。</li>
+    <li><b>正文排版</b>：正文 16px / 行高 1.85；h2 带 3px 强调竖条；引用块、行内代码、表格、代码块全部按令牌重排；WikiLink 改为浅底胶囊样式。</li>
+    <li><b>完整路径面包屑</b>：<code>Garden Vault / KnowledgeBase / 03_Knowledge / 前端 / TypeScript / MOC - TypeScript</code>，末尾高亮，窄屏允许换行。</li>
+    <li><b>反链卡片</b>：补上来源笔记所属领域徽章与摘要，形成"从哪来"的上下文。</li>
+    <li><b>更多操作菜单</b>：标题右侧不再放"点了没反应"的图标按钮，而是一个真正的下拉菜单 —— 复制笔记链接 / 复制文件路径 / 在结构树中定位 / 删除。其中「在结构树中定位」会自动展开侧栏树里的全部祖先目录、切到「结构」面板并高亮当前笔记，解决深路径笔记"翻不到自己在哪"的问题。</li>
+    <li><b>编辑态</b>：顶部警示条说明「保存后写入 vault，watcher 自动同步入库」，底部工具栏 + 字数与预估阅读时长；删除走确认对话框（含文件路径）。</li>
+  </ul>
+  <div class="compare">
+    <figure class="shot small"><img src="{{IMG:before-detail}}" alt="改版前：笔记详情"><figcaption><span><b>改版前</b>　TOC 卡片占据正文顶部；面包屑只有一层；反链无上下文</span><span class="tag before">BEFORE</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-detail}}" alt="改版后：笔记详情"><figcaption><span><b>改版后</b>　正文 + 右侧目录/进度/属性三件套</span><span class="tag after">AFTER</span></figcaption></figure>
+  </div>
+
+  <h3>5.5 知识图谱</h3>
+  <p><strong>现状问题：</strong>287 节点挤成单色团块，9 篇孤立笔记被甩到画布外造成大片空白；设置面板展开成一行横条挤占画布；图例缺失（只有设置里的小色块）；没有定位能力。</p>
+  <p><strong>改版要点：</strong></p>
+  <ul class="dot">
+    <li><b>通栏画布 + 四角浮层</b>：左上「定位笔记」搜索框；右上工具条（放大 / 缩小 / 适配 / 物理引擎开关 / 设置）；左下分组图例（色块 + 名称 + 数量）；右下统计（287 节点 / 278 连接 / 9 孤立）。设置面板改为浮层，不再挤占画布。</li>
+    <li><b>孤立笔记轨道化</b>：度为 0 的 9 篇改为在外围轨道等距排布、虚线描边、降透明度 —— 让"尚未连接的知识"成为可被发现的入口，而不是散落在画布外的噪声。</li>
+    <li><b>默认按领域着色</b>（7 色族，真实分布可见），保留「按成熟度」切换（并在数据全为 SEEDLING 时自然呈单色，如实反映数据现状）。</li>
+    <li><b>标签可读性</b>：节点文字加 3px 描边底衬（<code>paint-order: stroke</code>），避免标签互相压叠；仅对度数较高的节点常显标签，其余悬停显示。</li>
+    <li><b>布局必须收敛</b>：力导向只在"点火"后运行并逐帧降温，<b>收敛到静止就停机</b>；物理引擎开关 = 重新点火一次，而不是持续抖动。高度数节点（MOC）的弹簧力按端点度数归一化，避免被几十条边反复拉扯。</li>
+    <li><b>交互保留</b>：拖拽固定节点（双击解除，拖完让邻居轻微回弹后静止）、滚轮缩放、空白拖拽平移。</li>
+  </ul>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:before-graph}}" alt="改版前：知识图谱"><figcaption><span><b>改版前</b>　单色团块 + 大量空白 + 设置横条挤占画布</span><span class="tag before">BEFORE</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-graph}}" alt="改版后：知识图谱"><figcaption><span><b>改版后</b>　领域着色 + 四角浮层 + 孤立笔记轨道</span><span class="tag after">AFTER</span></figcaption></figure>
+  </div>
+
+  <h3>5.6 管理后台</h3>
+  <p><strong>现状问题：</strong>密钥明文展示；状态只有文字；操作是 11px 文字链；生成结果不可复制；表格无斑马纹/悬停反馈。</p>
+  <p><strong>改版要点：</strong></p>
+  <ul class="dot">
+    <li><b>生成密钥</b>：备注名 + 角色分段控件（普通用户 / 管理员）+ 主按钮；结果以强调面板呈现，含等宽密钥与一键复制，并说明该密钥可随时禁用。</li>
+    <li><b>密钥列表</b>：密钥默认打码（<code>PEUD••••••6L4</code>），提供显示 / 复制按钮；角色用徽章；状态改为 switch 控件；最近使用显示为相对时间；行操作默认半透明、悬停显形。</li>
+    <li><b>危险操作</b>：删除走应用内确认对话框，明确「该用户将立即失去访问权限」。</li>
+  </ul>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:before-admin}}" alt="改版前：管理后台"><figcaption><span><b>改版前</b>　明文密钥 + 文字链操作</span><span class="tag before">BEFORE</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-admin}}" alt="改版后：管理后台"><figcaption><span><b>改版后</b>　打码 + 复制 + 状态开关 + 徽章</span><span class="tag after">AFTER</span></figcaption></figure>
+  </div>
+
+  <h3>5.7 全局浮层：命令面板 · 对话框 · Toast</h3>
+  <div class="grid2">
+    <figure class="shot"><img src="{{IMG:after-palette}}" alt="命令面板"><figcaption><span>命令面板：分组 + 高亮 + ↑↓/Enter/ESC 键盘操作</span><span class="tag after">NEW</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-modal}}" alt="新建笔记对话框"><figcaption><span>新建笔记：应用内对话框（标题 + 目录 + 校验），替换 <code>prompt()</code></span><span class="tag after">NEW</span></figcaption></figure>
+  </div>
+  <h3>5.8 细节修正：三处「看着别扭」的地方</h3>
+  <p>这三处都是评审时一眼看出来的问题 —— 不影响功能，但影响手感。单独记下来，实现时按条目改即可。</p>
+
+  <h4>① 登录页左右两栏的视觉重心错位</h4>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:after-login}}" alt="修正前：两栏重心错位"><figcaption><span><b>修正前</b>　左栏用 <code>justify-content: space-between</code> 把文案块推到底部，右栏表单居中 —— 两栏的视觉重心差了约 30px</span><span class="tag before">BEFORE</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:ctx-login-light}}" alt="修正后：两栏同轴"><figcaption><span><b>修正后</b>　左栏改三行网格，品牌置顶、文案落在中间行 → 文案中心与表单中心严格同轴</span><span class="tag after">AFTER</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:ctx-login-dark}}" alt="修正后：暗色主题"><figcaption><span>同一处对齐在暗色主题下的表现（两套主题共用同一套布局规则，只有令牌不同）</span><span class="tag after">DARK</span></figcaption></figure>
+  </div>
+  <p>实测数据：文案块中心 <code>450</code> / 表单中心 <code>450</code> / 视口中线 <code>450</code>（两者差 ≤ 6px 即视为同轴）。</p>
+
+  <h4>② 批量导入弹窗的关闭按钮</h4>
+  <p>关闭键原先跟在标题后面排版，位置会随标题长度与行数上下浮动。改为绝对定位钉在对话框右上角（距右 / 距顶各 12px），与标题内容无关。<b>已抽出通用类 <code>.modal-x</code></b>，后续对话框可以直接复用。</p>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:imp-rule}}" alt="关闭键钉在右上角"><figcaption><span>关闭键固定在右上角；同屏可见的还有本轮新增的「文件名不可重复」规则说明</span><span class="tag after">AFTER</span></figcaption></figure>
+  </div>
+
+  <h4>③ 侧栏折叠入口「右边控制左边」</h4>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:ctx-sidebar-open}}" alt="展开态：收起键在侧栏头部右上角"><figcaption><span><b>展开态</b>　收起键在侧栏头部右上角（与「Garden Vault」同一行）—— 触发点与作用对象都在左边</span><span class="tag after">OPEN</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:ctx-sidebar-collapsed}}" alt="收起态：图标栏顶部突出展开键"><figcaption><span><b>收起态</b>　图标栏顶部（品牌之下）出现一枚强调色展开键，带一次呼吸提示动效，点击即展开</span><span class="tag after">COLLAPSED</span></figcaption></figure>
+  </div>
+  <ul class="dot">
+    <li><b>病根：</b>收起按钮在顶栏右侧，而侧栏在左侧 —— 触发点在一边、作用对象在另一边，视觉上很割裂。顶栏那枚按钮已<b>直接移除</b>。</li>
+    <li><b>状态用属性表达，不用结构耦合：</b>折叠状态写在 <code>&lt;div class="app" data-sidebar="collapsed"&gt;</code> 上，展开键的显隐由 <code>.app[data-sidebar="collapsed"] #railExpand</code> 驱动（图标栏在 DOM 里排在侧栏之前，兄弟选择器够不到）。</li>
+    <li><b>移动端不受影响：</b><code>&lt;1024px</code> 与手机模拟框内侧栏是抽屉，展开入口仍是顶栏左侧的汉堡按钮，展开键被显式隐藏。</li>
+  </ul>
+</section>
+
+<!-- ============================ 06 组件 ============================ -->
+<section id="s6">
+  <h2><span class="n">06</span>组件清单</h2>
+  <p class="sub">与 Nuxt 目录的对应关系：<code>AppShell / RailNav / ContextSidebar</code> 落在 <code>layouts/default.vue</code>，其余为可独立抽取的组件。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:190px">组件</th><th>结构要点</th><th style="width:170px">对应现状</th></tr></thead>
+      <tbody>
+        <tr><td><b>AppShell</b></td><td>图标栏 + 顶栏 + 主体三段；高度锁 100%，各区域内部滚动</td><td>改造 <code>layouts/default.vue</code></td></tr>
+        <tr><td><b>RailNav</b></td><td>60px 图标栏：品牌 / 首页 / 笔记 / 图谱 / 后台 / 主题 / 用户；当前项左侧 3px 指示条 + 强调底色</td><td>新增（替代顶栏胶囊导航）</td></tr>
+        <tr><td><b>ContextSidebar</b></td><td>头部（Vault 名 + 计数 + 过滤）· 分段面板（结构 / 领域 / 标签）· 底部同步状态；支持拖拽调宽与折叠</td><td>改造 <code>aside</code> 区块</td></tr>
+        <tr><td><b>FileTree</b></td><td>单根提升 · 递归计数徽章 · <b>折叠状态用"箭头旋转 90° + 文件夹图标着色"双重信号</b>（原来只换同形图标，几乎看不出差别）· 过滤保留父级 · 当前笔记高亮</td><td>重做 <code>components/FileTree.vue</code> 视图层</td></tr>
+        <tr><td><b>FacetList</b></td><td>领域行：色块 + 名称 + 占比条 + 数量；点击即筛选</td><td>新增（复用 <code>/api/tags</code> 与 graph 统计）</td></tr>
+        <tr><td><b>TagGroups</b></td><td>按命名空间前缀分组的标签云，组头含组内计数</td><td>替换侧栏 <code>slice(0,20)</code> 标签墙</td></tr>
+        <tr><td><b>NoteRow</b></td><td>领域色条 · 徽章行 · 标题 · 路径 · 摘要 · 标签 · 悬停箭头；紧凑模式隐藏摘要与路径</td><td>替换列表卡片</td></tr>
+        <tr><td><b>StatusBadge / DomainChip / TagPill</b></td><td>三件套原子组件，统一高度与圆角</td><td>新增</td></tr>
+        <tr><td><b>SearchTrigger + CommandPalette</b></td><td>⌘K 触发；分组结果、高亮命中、键盘导航、底部快捷键提示</td><td>增强 <code>components/CommandPalette.vue</code></td></tr>
+        <tr><td><b>Dialog + Toast</b></td><td>遮罩 + 卡片 + 头/体/尾三段；焦点进入、ESC 关闭、点击遮罩关闭</td><td>替换 7 处 <code>prompt/alert/confirm</code></td></tr>
+        <tr><td><b>TocRail</b></td><td>目录（h2/h3 层级 + 当前项高亮）+ 进度环 + 属性面板；sticky</td><td>升级 <code>ArticleReader</code> 的 TOC 区块</td></tr>
+        <tr><td><b>GraphCanvas</b></td><td>SVG 画布 + 变换（缩放/平移）+ 节点拖拽固定；孤立节点轨道；标签描边</td><td>重做 <code>components/GraphView.vue</code> 表现层</td></tr>
+        <tr><td><b>GraphControls</b></td><td>四角浮层：搜索 / 工具条 / 图例 / 统计 + 设置浮层（着色、大小、尺寸、配色、重置）</td><td>替换 info 条 + 设置横条</td></tr>
+        <tr><td><b>KeyTable / KeyResult</b></td><td>打码 + 显示/复制；switch 状态；生成结果强调面板</td><td>重做 <code>pages/admin.vue</code></td></tr>
+        <tr><td><b>Menu（下拉菜单）</b></td><td>右对齐浮层 + 图标项 + 危险项分隔；点击空白 / ESC / 打开其他菜单时自动收起；键盘可达</td><td>新增（承载详情页「更多操作」）</td></tr>
+        <tr><td><b>RoleBadge / PermissionList</b></td><td>三种角色的徽章（王冠 / 盾牌 / 用户）与权限清单（✓ 可做 / ✗ 不可做，含子说明）</td><td>新增 · 承载「我的密钥」页</td></tr>
+        <tr><td><b>DeniedState</b></td><td>越权兜底页：锁形图标 + 说明 + 两个出口 + 「服务端同样 403」提示</td><td>新增 · 管理后台的 user 形态</td></tr>
+        <tr><td><b>NewFolderDialog</b></td><td>父目录（含 vault 根）+ 名称 + 实时路径预览 + 行内校验</td><td>新增 · 结构面板的上下文动作</td></tr>
+        <tr><td><b>CtxMenu（右键菜单）</b></td><td>按触发对象与角色动态生成菜单项；禁用项把原因写在右侧并进 <code>title</code>；越界自动向左上收敛；ESC / 点击空白 / 滚动收起</td><td>新增 · 承载结构树的文件操作</td></tr>
+        <tr><td><b>InlineRename（内联重命名）</b></td><td>输入框就地替换文件名，Enter 提交 / Esc 取消 / 失焦提交；校验失败转红并在树下方给完整原因</td><td>新增 · 结构树</td></tr>
+        <tr><td><b>ClipBar（剪贴板提示条）</b></td><td>侧栏底部一行，写明"已复制谁"并可直接取消；剪贴板只在前端内存</td><td>新增 · 复制 / 粘贴的可见状态</td></tr>
+        <tr><td><b>Pagination / EmptyState / Switch / SegmentedControl</b></td><td>通用控件，统一尺寸与状态</td><td>新增</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================ 07 交互规范 ============================ -->
+<section id="s7">
+  <h2><span class="n">07</span>交互与可访问性规范</h2>
+  <div class="grid2">
+    <div class="card">
+      <h4>右键与长按</h4>
+      <ul class="dot" style="margin:0">
+        <li>结构树右键 = 该节点的操作菜单；触屏长按 500ms 等价于右键（<code>pointerType === 'mouse'</code> 时忽略长按，避免与拖拽冲突）。</li>
+        <li>菜单按视口坐标定位并做四边收敛，不会溢出屏幕；<code>ESC</code> / 点击空白 / 任意方向滚动都会收起。</li>
+        <li>重命名进入编辑态后，<code>Enter</code> 提交、<code>Esc</code> 取消；编辑中的行不会被点击误触（不会打开笔记、不会折叠目录）。</li>
+      </ul>
+      <h4>键盘</h4>
+      <ul class="dot" style="margin-bottom:0">
+        <li><code>⌘K</code> / <code>Ctrl K</code> 打开命令面板；<code>ESC</code> 关闭任意浮层</li>
+        <li>命令面板内 <code>↑</code> <code>↓</code> 移动、<code>Enter</code> 打开</li>
+        <li><code>⌘\</code> 收起 / 展开侧栏</li>
+        <li>所有交互元素可达、可聚焦，顺序符合视觉顺序</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>焦点与可访问性</h4>
+      <ul class="dot" style="margin-bottom:0">
+        <li>统一 <code>:focus-visible</code> 描边（2px 交互色 + 2px 偏移），不依赖浏览器默认</li>
+        <li>侧栏行、标签、目录项改用 <code>&lt;button&gt;/&lt;a&gt;</code>，补 <code>aria-current</code> / <code>aria-pressed</code> / <code>role="switch"</code></li>
+        <li>对话框 <code>role="dialog" aria-modal="true"</code>，标题用 <code>aria-labelledby</code> 关联</li>
+        <li>Toast 容器 <code>aria-live="polite"</code></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>反馈与状态</h4>
+      <ul class="dot" style="margin-bottom:0">
+        <li>危险操作必须二次确认，并在对话框内写明影响范围（文件名 / 用户）</li>
+        <li>操作结果统一 Toast（成功 / 警告 / 失败三态）</li>
+        <li>空状态给出原因 + 下一步动作，不只是"没有数据"</li>
+        <li>表单错误就近展示，不用全局弹窗</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>移动端</h4>
+      <ul class="dot" style="margin-bottom:0">
+        <li>触控目标 ≥ 38px（图标按钮）／≥ 28px（紧凑图标）</li>
+        <li>侧栏抽屉带遮罩，点击遮罩或 <code>ESC</code> 关闭</li>
+        <li>顶栏动作收敛为：汉堡 / 标题 / 搜索 / 新建 / 用户</li>
+        <li>图谱在窄屏使用最小可读缩放（0.34），以平移探索替代整图缩放</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 08 落地 ============================ -->
+<section id="s8">
+  <h2><span class="n">08</span>分级权限体系与文件夹管理</h2>
+  <p class="sub">在原有「管理员 / 普通用户」两级之上引入<b>初始管理员</b>，并把权限边界拆成「可见 / 可创建 / 可禁用 / 可删除」四类动作分别定义。</p>
+
+  <h3>8.1 角色模型</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>角色</th><th>定位</th><th>可见密钥范围</th><th>可创建的角色</th><th>可否被移除</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="pill warn">初始管理员</span><br><span class="mono" style="font-size:11px">role = root</span></td>
+          <td>内置唯一身份，系统最高权限</td>
+          <td>全部（含普通管理员与普通用户）</td>
+          <td>普通管理员、普通用户</td>
+          <td><b>不可禁用、不可删除</b></td>
+        </tr>
+        <tr>
+          <td><span class="pill good">普通管理员</span><br><span class="mono" style="font-size:11px">role = admin</span></td>
+          <td>被初始管理员授权，可管理普通用户</td>
+          <td>自己 + 全部普通用户</td>
+          <td>仅普通用户</td>
+          <td>可被初始管理员删除</td>
+        </tr>
+        <tr>
+          <td><span class="pill">普通用户</span><br><span class="mono" style="font-size:11px">role = user</span></td>
+          <td>只读访问者</td>
+          <td>仅自己</td>
+          <td>无（管理界面不可见）</td>
+          <td>可被初始管理员 / 普通管理员删除</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>8.2 权限矩阵</h3>
+  <p>行 = 执行动作的身份，列 = 被操作的对象。✅ 允许　⛔ 明确禁止（界面禁用 + 提示原因 + 服务端拒绝）。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>动作</th><th>执行身份</th><th>→ 初始管理员</th><th>→ 普通管理员</th><th>→ 普通用户</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3"><b>查看密钥</b></td><td>初始管理员</td><td>✅</td><td>✅</td><td>✅</td></tr>
+        <tr><td>普通管理员</td><td>⛔ 不可见</td><td>⛔ 不可见（其他管理员）</td><td>✅</td></tr>
+        <tr><td>普通用户</td><td>⛔</td><td>⛔</td><td>✅ 仅自己</td></tr>
+        <tr><td rowspan="3"><b>创建密钥</b></td><td>初始管理员</td><td>⛔ 内置唯一身份</td><td>✅</td><td>✅</td></tr>
+        <tr><td>普通管理员</td><td>⛔</td><td>⛔</td><td>✅</td></tr>
+        <tr><td>普通用户</td><td colspan="3">管理界面不可见，直接访问返回 403</td></tr>
+        <tr><td rowspan="3"><b>禁用 / 启用</b></td><td>初始管理员</td><td>⛔ 不可禁用</td><td>✅</td><td>✅</td></tr>
+        <tr><td>普通管理员</td><td>⛔</td><td>⛔ 含自己</td><td>✅</td></tr>
+        <tr><td>普通用户</td><td colspan="3">管理界面不可见</td></tr>
+        <tr><td rowspan="3"><b>删除</b></td><td>初始管理员</td><td>⛔ 不可删除</td><td>✅</td><td>✅</td></tr>
+        <tr><td>普通管理员</td><td>⛔</td><td>⛔</td><td>✅ 二次确认</td></tr>
+        <tr><td>普通用户</td><td colspan="3">管理界面不可见</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>8.8 结构树的右键文件操作</h3>
+  <p>在结构树上右键文件、文件夹或空白处，弹出该位置可用的操作。触屏长按 500ms 等价于右键（桌面 <code>pointerType === 'mouse'</code> 时忽略长按），避免移动端完全没有入口。</p>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:ctx-folder}}" alt="右键文件夹"><figcaption><span>右键文件夹：重命名 / 在本目录下新建文件夹 / 新建文件 / 复制 / 粘贴 / 删除。菜单头写明目标是谁、是文件还是文件夹</span><span class="tag after">FOLDER</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:ctx-file}}" alt="右键笔记文件"><figcaption><span>右键笔记：同样的动作组作用在单个文件上；「粘贴到此处」的落点是它所在的目录</span><span class="tag after">FILE</span></figcaption></figure>
+  </div>
+  <div class="grid2">
+    <figure class="shot"><img src="{{IMG:ctx-blank}}" alt="右键空白处"><figcaption><span>右键空白处 = 在 vault 顶层操作：只保留新建与粘贴</span><span class="tag after">BLANK</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:ctx-paste}}" alt="复制后粘贴"><figcaption><span>复制后菜单项带上剪贴板内容（「粘贴到此处（xxx）」），侧栏底部同时出现可取消的剪贴板提示条</span><span class="tag after">CLIPBOARD</span></figcaption></figure>
+  </div>
+
+  <table class="table">
+    <thead><tr><th>操作</th><th>行为</th><th>关键细节</th></tr></thead>
+    <tbody>
+      <tr><td><b>重命名</b></td><td>树内联编辑：输入框就地替换文件名，Enter 提交 / Esc 取消 / 失焦自动提交</td><td>校验空名、非法字符（<code>\ / : * ? &quot; &lt; &gt; |</code>）、同目录重名；目录改名会连带搬迁折叠状态 key 与全部子孙 slug</td></tr>
+      <tr><td><b>在本目录下新建文件夹</b></td><td>复用上一轮的「新建文件夹」对话框，<b>父目录已按右键位置预选</b></td><td>不用再手动找目录</td></tr>
+      <tr><td><b>在本目录下新建文件</b></td><td>复用「新建笔记」对话框，父目录同样预选</td><td>创建后立即落进目录树与「全部笔记」列表</td></tr>
+      <tr><td><b>复制 / 粘贴</b></td><td>复制取<b>深拷贝快照</b>存入前端剪贴板；粘贴到目标目录（文件夹则递归复制整棵子树）</td><td>快照而非引用：源随后被改动不影响粘出来的内容；同名一律拒绝；不允许粘到自身或其子目录</td></tr>
+      <tr><td><b>删除</b></td><td>通用二次确认对话框，动态写明文件名、落盘路径、以及（文件夹）将连带删除的<b>笔记篇数</b></td><td>删掉的正是当前打开的笔记时，自动退回「全部笔记」</td></tr>
+    </tbody>
+  </table>
+  <div class="grid2">
+    <figure class="shot"><img src="{{IMG:ctx-rename}}" alt="内联重命名"><figcaption><span>内联重命名：就地编辑，不弹新窗口；正在编辑的行不会因为点击而打开笔记</span><span class="tag after">RENAME</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:ctx-rename-err}}" alt="重名被拒"><figcaption><span>同目录重名被拒：输入框转红 + 树下方给出完整原因（含所在目录）</span><span class="tag after">DUP</span></figcaption></figure>
+  </div>
+  <div class="note">
+    <b>剪贴板刻意做得很轻</b>：只存在于前端内存，不做任何写盘；侧栏底部有一条提示条写明"已复制谁"，并提供取消。<b>不用真实的系统剪贴板</b> —— 浏览器里读写剪贴板需要用户授权，为了"复制一个文件"弹权限框不值当。
+  </div>
+
+  <h3>8.9 文件操作的权限矩阵</h3>
+  <p>这里没有"笔记归属人"的概念（整个 vault 是共享的），所以权限只能按<b>角色 × 操作对象类型</b>划分。判定同样写成返回 <code>{ok, why}</code> 的纯函数。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>操作</th><th>初始管理员</th><th>普通管理员</th><th>普通用户</th></tr></thead>
+      <tbody>
+        <tr><td>重命名 · 笔记文件</td><td>✅</td><td>✅</td><td>⛔ 只读身份</td></tr>
+        <tr><td>重命名 · 文件夹</td><td>✅（结构目录除外）</td><td>✅（结构目录除外）</td><td>⛔ 只读身份</td></tr>
+        <tr><td>在本目录下新建文件夹 / 新建文件</td><td>✅</td><td>✅</td><td>⛔ 只读身份</td></tr>
+        <tr><td>复制（文件 / 文件夹）</td><td>✅ 存入前端剪贴板</td><td>✅</td><td>✅ 但改为「复制链接 / 复制路径」</td></tr>
+        <tr><td>粘贴</td><td>✅</td><td>✅</td><td>⛔ 只读身份</td></tr>
+        <tr><td>删除 · 笔记文件</td><td>✅</td><td>✅</td><td>⛔ 只读身份</td></tr>
+        <tr><td>删除 · 空文件夹</td><td>✅</td><td>✅</td><td>⛔ 只读身份</td></tr>
+        <tr><td>删除 · <b>非空文件夹</b></td><td>✅ 二次确认写明篇数</td><td>⛔ <code>需初始管理员</code></td><td>⛔ 只读身份</td></tr>
+        <tr><td>结构目录（vault 一级目录）的重命名 / 删除</td><td>⛔ <code>结构目录受保护</code></td><td>⛔ 同上</td><td>⛔ 同上</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:ctx-readonly}}" alt="普通用户：写操作置灰"><figcaption><span>普通用户：六项写操作<b>全部渲染但置灰</b>，每项右侧写明「只读身份」，底部再给出两个真正可用的只读动作</span><span class="tag after">READ-ONLY</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:ctx-node-del}}" alt="非空文件夹删除确认"><figcaption><span>删除非空文件夹：确认框写明将连带删除的篇数与不可恢复性</span><span class="tag after">CONFIRM</span></figcaption></figure>
+  </div>
+  <h4>四条设计决定</h4>
+  <ul class="dot">
+    <li><b>只读身份下，写操作"全部可见 + 逐项置灰"，而不是整项消失。</b>第一版实现里「重命名 / 删除」整项不渲染、而「新建」却置灰 —— 同一个菜单两套处理方式，看着像坏了。统一之后，权限边界是自解释的：能点的都能点，不能点的都写明了为什么。</li>
+    <li><b>「不能点」的原因写在菜单项右侧</b>（并同时进 <code>title</code>），不需要 hover 才知道，也不用点一下等报错。</li>
+    <li><b>结构保护是所有人的红线：</b>vault 一级目录（<code>00_Inbox</code> / <code>03_Knowledge</code> …）任何角色都不能重命名或删除 —— 它们是知识库骨架，误删代价远大于收益。要调整结构，就在其中增删内容。</li>
+    <li><b>「非空文件夹」是介于两者之间的一档：</b>普通管理员能管理日常内容（删单篇、删空目录），但整目录端掉需要初始管理员——批量删除的破坏面比单篇大一到两个数量级。</li>
+  </ul>
+  <div class="note warn">
+    <b>两处需要你确认的推断（需求未明说）：</b><br>
+    ① <b>「非空文件夹仅初始管理员可删」</b>：需求只说了禁用/删除的<b>用户</b>层级，没提文件树。这里按"破坏面"分档：普通管理员管内容，初始管理员管结构。<br>
+    ② <b>结构目录全员不可改</b>：包括初始管理员。若你希望初始管理员可以重命名一级目录，把 <code>permRename</code> / <code>permDelete</code> 里的结构保护判断加上 <code>&amp;&amp; state.role !== 'root'</code> 即可。
+  </div>
+
+  <h4>落地到现有代码库需要补的接口</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>接口</th><th>改动</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>POST /api/vault/nodes/rename</code><br><span class="pill good">新增</span></td><td><code>{ path, name }</code> → 复用 <code>resolveVaultPath()</code> + 服务端同目录重名校验，返回新 slug</td><td><b>重命名目录会让所有子孙笔记的 slug 变化</b>，需在同一事务里更新 <code>Note.slug</code>；只靠 watcher 的 unlink+add 会在两次事件之间出现"笔记短暂消失"</td></tr>
+        <tr><td><code>POST /api/vault/nodes/copy</code><br><span class="pill good">新增</span></td><td><code>{ path, targetDir }</code> → 递归复制；同名返回 <code>409</code></td><td>目录递归时注意符号链接与深度限制</td></tr>
+        <tr><td><code>DELETE /api/vault/nodes</code><br><span class="pill good">新增</span></td><td><code>{ path }</code> → 文件直接删，目录 <code>fs.rm(recursive)</code>；<b>非空目录要求 root</b></td><td>权限校验必须校验"目标对象是不是非空目录"，只看路由权限不够</td></tr>
+        <tr><td><code>server/api/vault/notes/index.post.ts</code></td><td>新建笔记时补一次同目录重名校验（当前只校验文件名非法字符）</td><td>与导入、重命名共用同一条「文件名不可重复」规则</td></tr>
+        <tr><td>三条新路由 + 既有 vault 路由</td><td>统一 <code>requireAdmin(event)</code></td><td>普通用户请求返回 403；界面的置灰只是第一道门</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note warn">
+    <b>三处需要你拍板的推断（需求里未明说，按最小权限原则补齐）：</b><br>
+    ① <b>删除权限与禁用权限保持一致</b> —— 需求明确写了普通管理员「可禁用普通用户」，但没写删除；我按同权限处理（普通管理员可删除普通用户），并全部走二次确认。<br>
+    ② <b>初始管理员是唯一内置身份</b>，不能再创建第二个初始管理员（否则保护位没有意义）。<br>
+    ③ <b>任何人都不能禁用 / 删除自己正在使用的密钥</b>，避免把自己锁在门外。
+  </div>
+
+  <h3>8.3 同一页面的三种形态</h3>
+  <p>管理后台不是「按角色隐藏几个按钮」，而是同一路由的三种不同呈现：初始管理员看到全部、普通管理员看到收窄后的子集、普通用户看到的是一张无权限页。</p>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:after-admin-root}}" alt="初始管理员视角"><figcaption><span><b>初始管理员</b>　可见 6 个密钥（含 2 名管理员）· 可选创建「普通管理员 / 普通用户」· 自己的行标注「我」· 初始管理员行显示为受保护</span><span class="tag after">ROOT</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-admin-admin}}" alt="普通管理员视角"><figcaption><span><b>普通管理员</b>　可见 4 个（自己 + 3 名普通用户）· 只能创建「普通用户」· 自己的行操作被禁用 · 顶部说明"看不到什么"</span><span class="tag after">ADMIN</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-admin-denied}}" alt="普通用户越权页"><figcaption><span><b>普通用户</b>　图标栏不再出现管理入口，直接访问该路由得到无权限页，并给出两个出口（查看我的密钥 / 返回首页）</span><span class="tag after">DENIED</span></figcaption></figure>
+  </div>
+
+  <h4 style="margin-top:26px">两处刻意的设计决定</h4>
+  <ul class="dot">
+    <li><b>把"看不到什么"讲出来，而不是静默隐藏。</b>普通管理员的列表上方有一段说明：只能看到自己与普通用户，初始管理员与其他管理员的密钥不在可见范围内（服务端同样会拒绝返回）。否则用户会以为密钥被误删了。</li>
+    <li><b>不可操作的行把原因写在 hover 里。</b>初始管理员行的开关被替换为 <code>🔒 内置身份</code>；普通管理员看自己那行时，禁用 / 删除按钮置灰并提示「不能变更自己的密钥状态」。比"点了没反应"清晰得多。</li>
+  </ul>
+
+  <h3>8.4 每个角色都能看到自己的权限边界</h3>
+  <p>新增「我的密钥」页（<b>所有角色可见</b>），用一张身份卡 + 一份权限清单把当前角色能做什么、不能做什么讲清楚。普通用户因此有地方查看自己的密钥，而不是必须去找管理员。</p>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:after-keys-user}}" alt="我的密钥 · 普通用户"><figcaption><span>普通用户：身份卡含密钥（打码 + 复制）、状态、创建者；清单列出 4 条边界</span><span class="tag after">NEW</span></figcaption></figure>
+  </div>
+
+  <h3>8.5 越权兜底：界面隐藏 ≠ 权限生效</h3>
+  <p>原型里做了两层：界面层按角色渲染，运行时再拦一道。测试脚本刻意绕过 <code>disabled</code> 直接触发点击，验证运行时判断仍然生效：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>越权尝试</th><th>界面层</th><th>运行时拦截</th></tr></thead>
+      <tbody>
+        <tr><td>普通管理员禁用自己</td><td>开关置灰</td><td><code>越权操作：不能变更自己的密钥状态</code></td></tr>
+        <tr><td>删除初始管理员</td><td>按钮置灰</td><td><code>越权操作：初始管理员不可被删除</code></td></tr>
+        <tr><td>普通用户进入管理后台</td><td>入口不渲染</td><td>渲染为无权限页（真实实现返回 403）</td></tr>
+        <tr><td>普通用户编辑笔记</td><td>不出现编辑 / 删除按钮</td><td><code>当前身份为普通用户，没有编辑权限</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <b>必须落到服务端的部分：</b>界面层的可见性只是第一道门。真实实现里
+    ① 管理类接口要同时校验<b>发起者角色</b>与<b>目标对象角色</b>（只看路径权限是不够的）；
+    ② 可见范围应下沉到查询层（<code>where</code> 条件），而不是取全量再在前端过滤；
+    ③ 初始管理员的保护位要在服务端生效，任何 disable / delete 请求针对它都返回 403。
+  </div>
+
+  <h3>8.6 新建文件夹</h3>
+  <p>入口放在「结构」面板的段控行右侧（仅在结构面板 + 管理员身份时出现），与笔记的创建动作分开，避免在标签 / 领域面板里出现语义不符的按钮。</p>
+  <div class="grid2">
+    <figure class="shot"><img src="{{IMG:after-new-folder}}" alt="新建文件夹对话框"><figcaption><span>新建文件夹：父目录（含 vault 根）+ 名称 + 实时路径预览 + 行内校验</span><span class="tag after">NEW</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:after-folder-created}}" alt="创建后的目录树"><figcaption><span>创建后立即出现在目录树中并自动展开，watcher 会把它同步入库</span><span class="tag after">RESULT</span></figcaption></figure>
+  </div>
+  <ul class="dot">
+    <li><b>父目录首项是 vault 根目录</b>：否则新建一级目录（如 <code>07_Archive</code>）时会被迫塞进第一个已有文件夹。</li>
+    <li><b>行内校验</b>：空名称、非法字符（<code>\ / : * ? " &lt; &gt; |</code>）、同层重名、超长名称，都在对话框内就地提示，不用弹窗。</li>
+    <li><b>创建后在树中定位</b>：自动切回「结构」面板、展开父目录与新文件夹。</li>
+    <li><b>权限</b>：普通用户既不出现入口，直接触发也会被运行时拦截。</li>
+  </ul>
+
+  <h3>8.7 落地到现有代码库需要改什么（本轮未实现）</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>层</th><th>改动</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>数据模型</td><td><code>Key.role</code> 从 <code>admin|user</code> 扩展为 <code>root|admin|user</code>；新增 <code>Key.createdBy</code>、<code>Key.isBuiltin</code></td><td>初始管理员密钥标记 <code>isBuiltin</code>，作为不可移除的保护位</td></tr>
+        <tr><td>服务端中间件</td><td><code>server/middleware/auth.ts</code> 增加「发起者角色 × 目标对象角色」的二维校验</td><td>仅按路由鉴权不够，必须校验目标对象</td></tr>
+        <tr><td>密钥接口</td><td><code>GET /api/admin/keys</code> 按角色下推 <code>where</code> 条件；<code>POST</code> 校验目标角色是否在允许创建列表内；<code>PATCH</code> / <code>DELETE</code> 拒绝 root 与自身</td><td>可见范围在查询层收窄，前端拿不到不该看的数据</td></tr>
+        <tr><td>文件夹接口</td><td>新增 <code>POST /api/vault/folders</code>（<code>{ path, name }</code> → <code>mkdir</code>）</td><td>复用现有 <code>vault.ts</code> 的路径校验与软删除策略；watcher 会自动入库，无需额外写库</td></tr>
+        <tr><td>前端</td><td><code>layouts/default.vue</code> 增加角色化可见性；<code>pages/admin.vue</code> 拆为「我的密钥」+「密钥管理」两屏</td><td>原型里的 <code>ROLES</code> / <code>canToggleKey</code> / <code>canDeleteKey</code> 可以直接搬成 composable</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="s9">
+  <h2><span class="n">09</span>批量导入（单个文件 / 整个文件夹）</h2>
+  <p class="sub">入口收进顶栏「<b>新建</b>」下拉（新建笔记 / 新建文件夹 / <b>导入笔记</b>），不新占一级导航。整条链路只有一件事：<b>在用户动手之前，就把「能不能导」说清楚</b>。</p>
+
+  <h3>9.1 四步流程</h3>
+  <p>对话框按「来源 → 目标 → 校验 → 结果」四段推进，前三段同屏可见（不是分页向导），用户可以来回改任意一项并立刻看到重新校验的结果。</p>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:imp-menu}}" alt="新建下拉"><figcaption><span>入口：顶栏「新建」下拉第三项；侧栏「结构」面板也有一枚导入按钮。两者都只在管理员身份下出现</span><span class="tag after">ENTRY</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:imp-empty}}" alt="导入对话框初始态"><figcaption><span>初始态：拖拽区 + 目标位置 + 校验区空态，主按钮禁用并说明「请先选择要导入的文件或文件夹」</span><span class="tag after">EMPTY</span></figcaption></figure>
+  </div>
+
+  <table class="table">
+    <thead><tr><th>步骤</th><th>内容</th><th>关键点</th></tr></thead>
+    <tbody>
+      <tr><td><b>① 选择来源</b></td><td>拖拽区 + 「选择文件」/「选择文件夹」两个按钮；支持 <code>.md</code> / <code>.markdown</code> / <code>.txt</code></td><td>文件夹走 <code>webkitdirectory</code>，用 <code>webkitRelativePath</code> 还原来源层级；拖拽目录用 <code>FileSystemEntry</code> 递归读取</td></tr>
+      <tr><td><b>② 目标位置</b></td><td>父目录下拉（含 <code>/（vault 顶层）</code>）+ 可选新建子文件夹 + 是否保留来源层级</td><td>路径预览实时显示 <code>content/vault/…</code> 的完整落点，不用脑补</td></tr>
+      <tr><td><b>③ 大小校验</b></td><td>阻断横幅 → 两条上限计量条 → 逐文件清单（体积 / 落点 / 判定）</td><td>结论徽章放在步骤标题上（校验通过 / 已阻止），不滚动就能看到判定</td></tr>
+      <tr><td><b>④ 导入结果</b></td><td>成功篇数 / 跳过个数 / 写入体积 / 目标目录 + 跳过原因清单</td><td>清单<b>冻结在导入那一刻</b>的判定，不会因为文件已落盘而全翻成「已存在」</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.2 两条硬限制与校验时机</h3>
+  <table class="table">
+    <thead><tr><th>规则</th><th>阈值</th><th>前端（选择后立即）</th><th>服务端（真实字节数复核）</th></tr></thead>
+    <tbody>
+      <tr><td><b>单个文件大小</b></td><td><code>≤ 5 MB</code></td><td>读 <code>File.size</code> 直接判定，超限即置为阻断</td><td>读完整流后再判一次（<code>Content-Length</code> 与 <code>file.size</code> 都不可信）</td></tr>
+      <tr><td><b>单个文件夹总大小</b></td><td><code>≤ 100 MB</code></td><td>对「待导入文件」求和，超限即置为阻断</td><td>按导入会话（jobId）累计已写字节，越线立即中止并回滚</td></tr>
+      <tr><td>单次文件数</td><td><code>≤ 500</code></td><td>同样的预检与提示</td><td>预检接口限额</td></tr>
+      <tr><td>文件类型</td><td><code>.md / .markdown / .txt</code></td><td>不支持的类型标为「跳过」，<b>不阻断整体</b></td><td>白名单校验，非白名单拒绝写入</td></tr>
+      <tr><td><b>文件名唯一性</b></td><td>同一目录内不可重名</td><td>与目标目录已有文件重名、或本批选择内部重名 → <b>阻断整体</b></td><td>写入前 <code>fs.access</code> 复查；重命名 / 新建 / 粘贴共用同一条规则</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <b>三条已确认的口径（本轮定稿）：</b><br>
+    ① <b>1 MB = 1024 × 1024 字节</b> —— 与系统「文件属性」一致，不是 10<sup>6</sup>。按 10<sup>6</sup> 算的话 5 MB 会放宽到 5.24 MB，边界行为会与验收标准对不上。<br>
+    ② <b>100 MB 只统计「待导入文件」</b> —— 被类型过滤掉的文件（如 <code>.png</code>）根本不会写入 vault，因此不计入总量；界面上明确标注「已跳过 N 个不计入」，不做静默扣减。<br>
+    ③ <b>文件名不可重复</b> —— 同一目录下不允许存在同名笔记。<b>没有"跳过 / 自动重命名 / 覆盖"三选一</b>：重名一律阻断整批导入，并给出解法（在结构树里右键重命名旧笔记，或换一个子文件夹）。这条规则同时是<b>新建笔记、重命名、粘贴</b>的规则，全项目只有一处实现（<code>nameProblem()</code>）。
+  </div>
+
+  <h3>9.3 阻断提示：把「为什么挡住」说完整</h3>
+  <p>被挡住时最糟的处理是「按钮变灰、不给原因」。这里的提示包含四件事：<b>哪条规则</b>、<b>超了多少</b>、<b>卡在哪个文件上</b>、<b>怎么解决</b>。</p>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:imp-block-single}}" alt="单文件超限"><figcaption><span>单文件超限：标题点名阈值（5 MB），明细给出文件名、实际体积与<b>超出量</b>，末行给出解法</span><span class="tag after">FILE &gt; 5 MB</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:imp-block-total}}" alt="文件夹超限"><figcaption><span>文件夹超限：合计 104.0 MB / 上限 100 MB、超出 4.00 MB，并建议「按子目录分批导入」</span><span class="tag after">FOLDER &gt; 100 MB</span></figcaption></figure>
+  </div>
+  <table class="table">
+    <thead><tr><th>触发条件</th><th>提示文案（实际渲染）</th></tr></thead>
+    <tbody>
+      <tr><td>单个文件超限</td><td><code>已阻止导入：单个文件不得超过 5 MB</code>　→　<code>single-6.2mb.md　6.20 MB · 超出 1.20 MB</code></td></tr>
+      <tr><td>文件夹总量超限</td><td><code>已阻止导入：单个文件夹总大小不得超过 100 MB</code>　→　<code>待导入合计 104.0 MB　超出 4.00 MB</code></td></tr>
+      <tr><td>文件数超限</td><td><code>已阻止导入：单次导入文件数不得超过 500 个</code>　→　<code>待导入 620 个文件　超出 120 个</code></td></tr>
+      <tr><td>文件名非法</td><td><code>已阻止导入：文件名包含非法字符，无法写入 vault</code>　→　<code>含 \ / : * ? &quot; &lt; &gt; | 等字符</code></td></tr>
+    </tbody>
+  </table>
+  <ul class="dot">
+    <li><b>三种状态用三套语义色，不靠文字辨别。</b>计量条：正常（青）/ 预警 &gt;80%（琥珀）/ 超限（红并整块底色变红）。文件行：可导入 / 跳过（灰）/ 超限（红底红字）。</li>
+    <li><b>超限的文件单独列出来，不合并在总数里。</b>「可导入 0 · 跳过 0 · 超限 1」比「1 个文件有问题」可行动得多。</li>
+    <li><b>能救的与不能救的分开说。</b>单文件超限只能先在本地拆分（「无法通过分批绕过」）；总量超限可以分批导入 —— 提示必须区分，否则用户会白试。</li>
+  </ul>
+
+  <h3>9.4 通过态与结果态</h3>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:imp-pass}}" alt="合规集合通过"><figcaption><span>通过态：两条计量条给出「实测 / 上限」，清单逐条列出体积与判定</span><span class="tag after">PASS</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:imp-result}}" alt="导入结果"><figcaption><span>结果态：成功 9 篇 / 跳过 1 个 / 写入 12.8 MB / 目标目录，并复述本次限制口径</span><span class="tag after">DONE</span></figcaption></figure>
+  </div>
+  <p>结果面板里保留一句「服务端会以真实字节数复核一次」—— 既是给用户的说明，也是给实现的提醒。</p>
+
+  <h3>9.5 目标路径、目录结构与文件名唯一性</h3>
+  <div class="grid2">
+    <figure class="shot"><img src="{{IMG:imp-dup}}" alt="重名阻断"><figcaption><span>重名一律阻断：清单标「重名」、横幅点名规则、末行给出解法（右键重命名 / 换子文件夹）</span><span class="tag after">DUP</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:imp-folder}}" alt="文件夹导入保留层级"><figcaption><span>整个文件夹导入：父目录 <code>/03_Knowledge</code> + 子文件夹，来源层级被保留（<code>我的笔记库/Nuxt/</code>…）</span><span class="tag after">FOLDER</span></figcaption></figure>
+  </div>
+  <ul class="dot">
+    <li><b>删掉「保留来源层级」就全部拍平到同一目录</b>，列表里每一行的落点会实时跟着变 —— 用户在按下导入之前就能确认文件会落在哪里。</li>
+    <li><b>父目录下拉首项是 vault 顶层</b>，而不是第一个已有文件夹（否则新建一级目录时会被迫塞进别人家里）。</li>
+    <li><b>重名不是"策略"，是规则。</b>早先版本提供了「跳过 / 自动重命名 / 覆盖」三种策略，看着灵活，实际让规则变含糊：同一个操作在不同设置下结果完全不同，用户没法预期。本轮收敛为<b>唯一规则「同一目录不可重名」</b>——重名就阻断整批，并把解法写清楚。这条规则同时约束新建笔记、树内重命名与粘贴，四处共用同一个校验函数。</li>
+  </ul>
+  <div class="note">
+    <b>其它类型过滤与响应式：</b>混选时 <code>.png</code> 被标为「类型不支持（.png）」而整体照常通过（可导入 2 · 跳过 1）；390px 视口下对话框转为单列、动作按钮拉通、清单省略体积列保留名称与判定。
+  </div>
+
+  <h3>9.6 落地到现有代码库需要改什么（本轮未实现）</h3>
+  <p>原型是纯前端静态稿：它用浏览器 <code>File.size</code> 做了真实预检，但没有写盘。下面是落到这套 Nuxt 4 工程的具体改动，分为<b>前端 / 服务端 / 基础设施</b>三块。</p>
+
+  <h4>前端</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>文件</th><th>改动</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>app/composables/useImport.ts</code><br><span class="pill good">新增</span></td><td>限制常量（<code>MAX_FILE_BYTES</code> / <code>MAX_TOTAL_BYTES</code>）、<code>fmtBytes</code> / <code>fmtLimit</code>、纯函数 <code>preflight(items)</code>、分片上传调度（并发 3）</td><td>预检必须做成<b>纯函数</b>：原型里的 <code>impValidate()</code> 可以原样搬过来，界面与判定同源，不会出现「界面说通过、服务端说超限」</td></tr>
+        <tr><td><code>app/components/ImportDialog.vue</code><br><span class="pill good">新增</span></td><td>四步对话框：拖拽区、目标选择、校验清单、结果面板</td><td>直接对照原型还原；<code>#impXxx</code> 的结构可 1:1 映射成组件模板</td></tr>
+        <tr><td><code>app/composables/useNameRule.ts</code><br><span class="pill good">新增</span></td><td><code>nameProblem(name, parentDir, selfName)</code> —— 空名 / 非法字符 / 超长 / 同目录重名的统一校验</td><td><b>导入、新建笔记、树内重命名、粘贴四处共用同一个函数</b>，避免"某条路径漏了重名校验"这种典型漏洞</td></tr>
+        <tr><td><code>app/layouts/default.vue</code></td><td>顶栏「新建笔记」按钮改为「新建」下拉（笔记 / 文件夹 / <b>导入</b>）</td><td>三个创建动作语义同类，收到一个动作组里；可见性仍由角色控制</td></tr>
+        <tr><td><code>app/components/FileTree.vue</code></td><td>结构面板段控行右侧加导入按钮；导入完成后自动展开目标目录</td><td>与「新建文件夹」同一位置，保持动作一致性</td></tr>
+        <tr><td><code>app/pages/admin.vue</code></td><td>无需改（导入只对管理员开放）</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>服务端</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>文件</th><th>改动</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>server/utils/import-limits.ts</code><br><span class="pill good">新增</span></td><td><code>MAX_FILE_BYTES = 5 * 1024 ** 2</code>、<code>MAX_TOTAL_BYTES = 100 * 1024 ** 2</code>、<code>MAX_FILES = 500</code>、<code>ALLOWED_EXT</code></td><td>前后端共用同一份常量，避免两边阈值漂移</td></tr>
+        <tr><td><code>server/api/vault/import/preflight.post.ts</code><br><span class="pill good">新增</span></td><td>收 <code>{ targetDir, subDir, files: [{ relPath, size }] }</code> → 逐条校验单文件/合计/数量/类型/目标目录存在性/同名冲突，返回 <code>{ jobId, accepted, skipped[] }</code></td><td><b>先校验再上传</b>：否则用户要传完 100 MB 才被告知超限。jobId 存内存或 Redis，TTL 10 分钟</td></tr>
+        <tr><td><code>server/api/vault/import/file.post.ts</code><br><span class="pill good">新增</span></td><td>单文件上传（<code>multipart/form-data</code> 带 <code>jobId</code> / <code>relPath</code>）；读完真实字节数后复核；累计写入量按 jobId 记账；<code>resolveVaultPath()</code> 防穿越；原子写（临时文件 + rename）</td><td><b>逐文件上传</b>而非整包：单个请求体积小、失败可重试、进度天然可按文件推进。越限返回 <code>413</code> 并回滚本 job 已写文件</td></tr>
+        <tr><td><code>server/api/vault/import/finish.post.ts</code><br><span class="pill good">新增</span></td><td>收尾：返回成功 / 失败清单，并触发一次批量入库</td><td>见下方 watcher 那一行</td></tr>
+        <tr><td><code>server/utils/vault.ts</code></td><td>复用 <code>resolveVaultPath()</code>；新增 <code>ensureDir()</code> 与 <code>writeMarkdownAtomic()</code></td><td>把 <code>api/vault/notes/index.post.ts</code> 里「先写 .tmp 再 rename」的逻辑抽出来共用，避免两份实现</td></tr>
+        <tr><td><code>server/middleware/auth.ts</code>　+　各 import 路由</td><td>三个新路由统一 <code>requireAdmin(event)</code></td><td>与现有 <code>api/vault/notes/*</code> 一致；普通用户请求返回 403（不只是界面隐藏）</td></tr>
+        <tr><td><code>server/plugins/watcher.ts</code><br><span class="pill warn">需配合调整</span></td><td>批量导入完成后，对本次写入的文件列表<b>主动</b>调用 <code>processMarkdownFile()</code>（建议并发 4~8），而不是全靠 chokidar 事件</td><td><b>这是批量导入最容易踩的坑：</b>现有 watcher 是串行队列 + <code>awaitWriteFinish.stabilityThreshold: 1000</code>，500 个文件意味着至少 500 秒才全部入库；生产环境还开了 <code>usePolling</code>，延迟更高。若不改，用户会看到「文件已经在树里、列表里却搜不到」</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>基础设施</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>文件</th><th>改动</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>nginx.conf</code><br><span class="pill bad">必须改</span></td><td>在 <code>server</code> 或 <code>location /</code> 下增加 <code>client_max_body_size 8m;</code></td><td>当前配置里<b>没有这条指令</b> → nginx 默认上限是 <b>1 MB</b>，5 MB 的单文件上传会被 nginx 直接以 413 挡回，请求根本到不了 Nuxt。留出 multipart 开销，按「单文件 5 MB」设 <code>8m</code> 足够；若改成整包上传则需 <code>≥ 110m</code></td></tr>
+        <tr><td><code>docker-compose.yml</code> / <code>Dockerfile</code></td><td>无需改</td><td>若换用 Traefik / Caddy 等其他反代，同样要检查各自的请求体积上限</td></tr>
+        <tr><td><code>nuxt.config.ts</code></td><td>无需改（可选）</td><td>Nitro 侧默认不拦截请求体；如需显式声明可加 <code>routeRules</code></td></tr>
+        <tr><td><code>prisma/schema.prisma</code></td><td>无需迁移</td><td>导入只落盘文件，<code>Note</code> 由 watcher 写入。若要做「导入历史 / 批量回滚」可另建 <code>ImportJob</code> 表，本轮不必</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>验收清单（落地后逐条验）</h4>
+  <ol>
+    <li><b>单文件超限：</b>选 6.2 MB 文件 → 前端在<b>选择后立刻</b>置为阻断、主按钮不可用；绕过界面直接向接口发文件 → 服务端 <code>413</code>。</li>
+    <li><b>文件夹超限：</b>选 104 MB 文件夹 → 预检返回 <code>400</code>，<b>不产生任何上传流量</b>；分批（每批 &lt; 100 MB）后正常导入。</li>
+    <li><b>合规导入：</b>8.6 MB / 4 文件 → 全部落盘到指定目录，目录树与「全部笔记」可见，正文可打开。</li>
+    <li><b>路径安全：</b>构造 <code>relPath: "../../etc/passwd"</code> → <code>400</code>，拒绝写入。</li>
+    <li><b>权限：</b>普通用户调用三个 import 接口 → <code>403</code>。</li>
+    <li><b>文件名唯一性：</b>导入一批与目标目录重名的文件 → 整批阻断、按钮不可用、清单标「重名」；把目标目录里的旧笔记<b>右键重命名</b>后再导 → 通过。同目录新建同名笔记、把已存在的文件粘回来，同样被拒绝。</li>
+    <li><b>入库时效：</b>导入 300 个文件后，笔记列表在可接受时间内（目标 &lt; 30 秒）能搜到全部新笔记 —— 这一条直接决定 watcher 那处改动是否必要。</li>
+  </ol>
+
+  <div class="note">
+    <b>口径已定稿（见 9.2）：</b>1024 进制 · 只统计待导入文件 · 文件名不可重复。原先的三策略冲突处理已移除，导入、新建、重命名、粘贴四处共用同一条「同目录不可重名」规则。
+  </div>
+</section>
+
+<section id="s10">
+  <h2><span class="n">10</span>成熟度标签的定义与治理</h2>
+  <p class="sub">「几乎全部笔记都是幼苗」不是作者打标的问题，而是<b>这个字段从来没有被使用过</b>。本章给出失效诊断、判定标准、边界划分与可执行的批量修正工具。</p>
+
+  <h3>10.1 失效诊断：三个叠加的根因</h3>
+  <p>对 <code>content/vault</code> 全量 289 个 <code>.md</code> 的扫描结论：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>事实</th><th>数据</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>maturity</code> 字段填写数</td><td><b>0 / 289</b></td><td>不是"都标成幼苗"，是"从没人标过"</td></tr>
+        <tr><td><code>status/*</code> 标签维护数</td><td>179 / 289（进行中 144 · 已完成 27 · 待处理 8）</td><td>同一批作者在认真维护<b>另一套</b>状态体系</td></tr>
+        <tr><td>创建时间分布</td><td>2026-06 一批生成 255 篇（占 88%），无 14 天内新建</td><td>整库是一次性批量生成的，从未经历真实"生长"</td></tr>
+        <tr><td>线上呈现</td><td>列表徽章直接渲染英文枚举 <code>SEEDLING</code></td><td>即使有区分，界面也没有可读的成熟度表达</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><b>机制上</b>，两处默认值把整个维度填平了：<code>prisma/schema.prisma</code> 的 <code>@default(SEEDLING)</code>，与 <code>server/utils/markdown.ts</code> 的 <code>frontmatter.maturity || 'SEEDLING'</code>（非法值同样回退 SEEDLING）。笔记模板（<code>05_Templates/原子笔记.md</code>）的 frontmatter 里根本没有 <code>maturity</code> 行——生成工具自然不会写它。</p>
+
+  <h3>10.2 语义定位：三个正交维度，不可互替</h3>
+  <p>失效的深层原因是<b>语义混叠</b>：库里同时存在三套"看起来都像状态"的体系，但它们回答的是三个不同的问题。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>维度</th><th>回答谁的问题</th><th>示例</th><th>谁维护</th></tr></thead>
+      <tbody>
+        <tr><td><b>maturity</b>（成熟度）</td><td>读者：「这篇我能依赖到什么程度？」</td><td>幼苗 / 成长 / 常青</td><td>应可自动判定 + 人工覆盖</td></tr>
+        <tr><td><b>status/*</b>（写作进度）</td><td>作者：「我写到哪了？还有待办吗？」</td><td>待处理 / 进行中 / 已完成</td><td>作者手工（已在维护）</td></tr>
+        <tr><td><b>type/*</b>（形态）</td><td>「这篇是什么形态的内容？」</td><td>笔记 / 教程 / MOC</td><td>作者手工（已在维护）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note warn">
+    <b>交叉验证「不可互替」：</b>27 篇标了 <code>status/已完成</code> 的笔记，按 10.3 的标准重评后<b>没有一篇达到常青</b>（全部为成长）。「我认为写完了」≠「读者可以依赖」。反过来，<code>status/进行中</code> 的 144 篇里有 18 篇已满足常青标准——内容已稳定，只是作者还留着状态标签。两个维度各自有效，合并任何一方都会丢信息。
+  </div>
+
+  <h3>10.3 判定标准：模板契约完成度（可自动化）</h3>
+  <p>这套笔记有严格的模板契约：五区块（<code>知识体系定位 / 概述 / 设计初衷 / 实现 / 关联上下文</code>）+ 关联上下文的 4~5 个维度（横向对比 / 实际应用 / 前置知识 / 进阶方向 / 易混淆概念，缺失维度用 <code>📋 待补充</code> 占位）。<b>契约完成度本身就是成熟度</b>——它是作者自己定义的、逐篇留痕的、可机器读取的标准，不需要任何主观打分。</p>
+  <p><b>适用范围</b>（不参与成熟度评价的 8 篇）：<code>05_Templates/</code>（模板骨架）、<code>06_Assets/</code>、<code>CLAUDE.md</code>、<code>.claude/</code>、<code>skills/</code>、<code>*.excalidraw.md</code>（绘图）。<b>索引页单列</b>：36 篇 <code>MOC - *</code> 是导航入口而非知识内容，不参与成熟度，按收录条数单独评价（≥15 条为完整索引）——否则 MOC 的目录表格会被误当成"内容充实"，其天然高引用也会污染"被引用"条件（重评前 Top 15 反链全部是 MOC，这正是要避开的陷阱）。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>档位</th><th>判定条件（全部满足才可升档）</th><th>读到的信号</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>🌱 幼苗</b><br><code>SEEDLING</code></td>
+          <td>其余所有（并给出具体缺口：缺哪个区块 / 关联几缺几 / 正文多少字）</td>
+          <td>碎片阶段，读者不应引用</td>
+        </tr>
+        <tr>
+          <td><b>🌿 成长</b><br><code>GROWING</code></td>
+          <td>结构已成形（≥3 区块）+ 关联填充率 ≥50% + 正文 ≥400 字；<br>含「距常青只差一个条件」的 58 篇（缺口逐篇注明）</td>
+          <td>结构已成、可读，仍会增补</td>
+        </tr>
+        <tr>
+          <td><b>🌳 常青</b><br><code>EVERGREEN</code></td>
+          <td>五块齐全 + 关联 ≥4 维且无空缺 + 有跨学科溯源 + 内容充实（≥800 字且代码/表格 ≥2）+ 被引用 ≥2 + 存在 ≥14 天</td>
+          <td>可依赖、可引用、经过检验</td>
+        </tr>
+        <tr>
+          <td><b>◻ 索引</b><br><code>INDEXED</code></td>
+          <td>MOC 索引页：按收录条数分三档，不进成熟度色阶</td>
+          <td>导航入口，另一套评价</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="dot">
+    <li><b>每个条件都必须单调、可观测</b>：重评时逐条验证过区分度——三档的字数中位 2046 / 1389 / 602、区块 5 / 4 / 0、溯源率 100% / 45% / 0%，各门槛满足率 70% / 21% / 35% / 33% / 71% 互不冗余。</li>
+    <li><b>「被引用」的口径</b>：不只数 <code>[[wikilink]]</code>——这套库正文关联主要用 <code>obsidian://open?file=</code> 链接，两者都要计入。只数 wikilink 会得出「88% 笔记零引用」的假象（真实是 14.3%）。</li>
+    <li><b>「存在 ≥14 天」是防滥用护栏</b>：防止刚写完就自称常青。当前库最老 44 天、整库满足，它对本次重评不构成区分，但对未来增量生效。</li>
+  </ul>
+
+  <h3>10.4 重评结果：从「一种颜色」到「一座花园」</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>重评结果</th><th>篇数</th><th>占比</th><th>当前界面显示</th></tr></thead>
+      <tbody>
+        <tr><td>🌳 常青</td><td>23</td><td>8.0%</td><td rowspan="5">全部显示「幼苗」<br>（单一琥珀色，零区分度）</td></tr>
+        <tr><td>🌿 成长</td><td>137</td><td>47.4%</td></tr>
+        <tr><td>🌱 幼苗</td><td>85</td><td>29.4%</td></tr>
+        <tr><td>◻ 索引/MOC</td><td>36</td><td>12.5%</td></tr>
+        <tr><td>— 排除</td><td>8</td><td>2.8%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><b>69.4% 的笔记其实不是幼苗</b>。原型已按真实判定结果重新渲染（数据注入，非示意）：</p>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:mat-list}}" alt="列表：成熟度筛选条"><figcaption><span>列表页新增成熟度筛选条，chip 计数为<b>全库真实分布</b>（幼苗 85 / 成长 137 / 常青 23 / 索引 36）；hover 任一 chip 显示该档判定条件</span><span class="tag after">FILTER</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:mat-evergreen}}" alt="筛选常青后"><figcaption><span>点「常青」→ 列表只剩可依赖的笔记，并出现「成熟度：常青」活动筛选 chip——这就是之前缺失的"有效筛选"</span><span class="tag after">FILTERED</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:mat-graph}}" alt="图谱按成熟度着色"><figcaption><span>知识图谱「按成熟度」着色：从单色退化为<b>四色分布</b>（蓝=成长 137 · 琥珀=幼苗 85 · 灰=索引 36 · 绿=常青 23）。索引用中性灰退出生长色阶——MOC 是导航，不是一种成熟度</span><span class="tag after">GRAPH</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:mat-note}}" alt="常青笔记详情页"><figcaption><span>详情页的成熟度徽章同步更新，hover 显示该篇的判定依据与「缺口清单」</span><span class="tag after">DETAIL</span></figcaption></figure>
+  </div>
+
+  <h4>评审后修正：计数必须与筛选范围同口径</h4>
+  <p>评审抓到一个口径断裂：原型列表快照只载了 48 篇（首次抓取只取了第一页），而侧栏标签计数是全库 287 篇 —— <code>type/素材</code> 显示 4 却筛出 0 篇、<code>type/MOC</code> 显示 46 却只筛出 2 篇。已修正为<b>全量快照</b>，并把成熟度筛选条的计数改为<b>动态</b>：chip 显示的是「当前搜索 / 标签 / 领域筛选范围内」的成熟度构成，计数永远与"点下去会看到什么"一致。</p>
+  <div class="compare">
+    <figure class="shot"><img src="{{IMG:mat-sucai}}" alt="type/素材 筛选"><figcaption><span>选 <code>type/素材</code>（4 篇）：成熟度条变为 <code>全部 4 · 幼苗 4</code>——计数跟随筛选范围，而不是恒显全库数字</span><span class="tag after">DYNAMIC</span></figcaption></figure>
+    <figure class="shot"><img src="{{IMG:mat-moc}}" alt="type/MOC 筛选"><figcaption><span>选 <code>type/MOC</code>（46 篇）：索引档涨满 36、幼苗 10——10 篇幼苗正是下方的标签残留，动态计数把数据问题暴露了出来</span><span class="tag after">DYNAMIC</span></figcaption></figure>
+  </div>
+  <div class="note warn">
+    <b>顺带发现的两个数据事实（本轮未改任何数据）：</b><br>
+    ① <code>type/MOC</code> 线上计数 46，而 vault frontmatter 里实际只有 34 篇（全部是 <code>tags: [a, b]</code> 行内数组写法）——差的 12 篇是数据库中的<b>标签残留</b>（frontmatter 已删但 NoteTag 关联未清），提示 watcher 的标签同步可能只增不减；将来在 Obsidian 里删标签却"删不掉"时先查这里。<br>
+    ② 上一章的 frontmatter 扫描器最初只认列表式写法、漏掉了行内数组，已修正；修正不影响成熟度分布（34 篇全是 <code>MOC - *</code> 文件名，本就在 INDEXED 判定内）。
+  </div>
+
+  <h3>10.5 治理机制：让标签保持有效</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>机制</th><th>规则</th></tr></thead>
+      <tbody>
+        <tr><td><b>升档</b></td><td>由重评工具按 10.3 标准自动判定；「仅差一个条件」的笔记在列表/详情中注明缺口（如"仅差「关联≥4维且无空缺」"），把<b>补全动作变成可勾选的清单</b>而不是模糊的"继续完善"</td></tr>
+        <tr><td><b>降档（回落）</b></td><td>常青笔记被大改（正文变化超阈值或 updated 晚于上次复核）→ 自动回落到成长。常青是"当前稳定"的陈述，不是终身成就</td></tr>
+        <tr><td><b>复核周期</b></td><td>常青每季度复核一次（<code>--stale 90</code> 列出候选）；成长不设周期，升档靠事件驱动（补全关联时顺手重评）</td></tr>
+        <tr><td><b>人工覆盖</b></td><td>frontmatter 显式写 <code>maturity:</code> 即视为人工值（工具默认尊重）；要<b>固定</b>某篇不被自动判定改动，加 <code>maturity-locked: true</code>（连 <code>--force</code> 也不覆盖）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>10.6 批量修正工具：<code>maturity-audit.py</code></h3>
+  <p>已交付到 <code>design-preview/tools/</code>，独立于原型可直接使用：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>命令</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td><code>python maturity-audit.py</code></td><td>dry-run：打印分布报表与三档画像，不改任何文件</td></tr>
+        <tr><td><code>... --list EVERGREEN</code></td><td>列出某档全部笔记及判定理由</td></tr>
+        <tr><td><code>... --stale 90</code></td><td>列出距上次更新超过 90 天的复核候选</td></tr>
+        <tr><td><code>... --apply</code></td><td>把判定写入 frontmatter 的 <code>maturity:</code> 行（自动备份到 <code>.maturity-backup/&lt;时间戳&gt;/</code>，文件名 <code>__</code> 对应路径分隔符，复制回去即回滚）</td></tr>
+        <tr><td><code>... --apply --only GROWING</code></td><td>只写某一档</td></tr>
+        <tr><td><code>... --apply --force</code></td><td>覆盖人工值（locked 的除外）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><b>已做的安全验证</b>（在 vault 全量副本上执行）：dry-run 与逐篇分析结果一致；apply 精确写入 245 篇（恰好三档之和，INDEXED 与 EXCLUDED 不写）；二次 apply 零写入（幂等）；带 <code>maturity: EVERGREEN + maturity-locked: true</code> 的测试文件在 <code>--force</code> 下也未被覆盖；备份目录本身不参与扫描（修复了"备份文件被再次判定、嵌套备份"的缺陷）。</p>
+  <div class="note">
+    <b>建议的执行顺序</b>（由你决定是否执行，本轮未动 vault）：① dry-run 核对报表 → ② <code>--list EVERGREEN</code> 人工扫一遍 23 篇常青名单 → ③ <code>--apply</code> 全量写入 → ④ 在 <code>.claude/commands/inbox.md</code> 的模板契约里加入 <code>maturity:</code> 行说明，让后续生成的笔记带着正确起点入库 → ⑤ 把 <code>--stale 90</code> 挂进季度流程。
+  </div>
+
+  <h3>10.7 落地到现有代码库需要改什么（本轮未实现）</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>位置</th><th>改动</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>server/utils/markdown.ts</code></td><td>缺省值从「回退 SEEDLING」改为「调用判定函数」；非法值告警而非静默回退</td><td>这是"全库幼苗"的直接源头；判定函数与 <code>maturity-audit.py</code> 同一套标准（TypeScript 移植）</td></tr>
+        <tr><td><code>05_Templates/原子笔记.md</code> 等</td><td>frontmatter 增加 <code>maturity: SEEDLING</code> 初始行 + 关联维度填写说明</td><td>让新笔记从出生起就带着显式成熟度，而不是依赖数据库默认值</td></tr>
+        <tr><td>列表 / 详情组件</td><td>成熟度徽章中文化 + 判定条件 tooltip + 列表页成熟度筛选条（原型已实现，1:1 迁移）</td><td>线上当前直接渲染 <code>{{ note.maturity }}</code> 英文枚举</td></tr>
+        <tr><td><code>GraphView.vue</code></td><td>按成熟度着色加入 INDEXED 灰档</td><td>避免 287 节点单色退化</td></tr>
+        <tr><td>筛选 API</td><td><code>GET /api/notes</code> 支持 <code>maturity=</code> 参数（字段已有索引 <code>@@index([maturity])</code>）</td><td>服务端筛选而非前端过滤</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="s11">
+  <h2><span class="n">11</span>落地实施建议</h2>
+  <p class="sub">按「先样式、后结构、再交互」的顺序推进，每一步都可独立验收，且不触碰业务逻辑。</p>
+  <ol class="num">
+    <li><b>建立令牌层</b>：把 <code>main.css</code> 的 Lumina/护眼变量替换为 DAWN 令牌（CSS 变量），<code>tailwind.config.js</code> 的 <code>garden/obsidian</code> 色阶映射到新令牌。此步后可全局看到字号与配色变化，零结构风险。</li>
+    <li><b>重建外壳</b>：<code>layouts/default.vue</code> 改为三段式外壳，新增 <code>RailNav</code>；顶栏去掉重复导航；侧栏改为分段面板。取数逻辑（<code>useAsyncData('vault-tree')</code>、<code>sidebar-tags</code>）与拖拽持久化逻辑原样保留。</li>
+    <li><b>列表与详情</b>：抽出 <code>NoteRow</code> 替换首页与列表页卡片；<code>ArticleReader</code> 增加右侧 <code>TocRail</code>（进度与 TOC 逻辑已在组件内，只是换承载容器）。</li>
+    <li><b>对话框与 Toast</b>：新增 <code>Dialog</code>/<code>Toast</code> 组件，逐处替换 7 个原生弹窗调用，函数体内的请求与跳转逻辑保持不变。</li>
+    <li><b>图谱表现层</b>：<code>GraphView</code> 保留 d3 力导向与设置项，替换渲染容器与浮层控件；孤立节点轨道化在现有节点数组上增加一次位置分配即可。</li>
+    <li><b>移动端收口</b>：补齐 &lt;1024px 的断点规则，验收标准是 390px 视口下正文可用宽度 ≥ 350px。</li>
+    <li><b>角色与权限</b>（见 <a href="#s8">第 08 章</a>）：先在数据层与中间件落下角色模型与「发起者 × 目标对象」校验，再替换 <code>pages/admin.vue</code>；原型里的 <code>ROLES</code> / <code>canToggleKey</code> / <code>canDeleteKey</code> 可直接搬成 composable，界面与逻辑同源。</li>
+    <li><b>新建文件夹</b>：新增 <code>POST /api/vault/folders</code>，复用现有路径校验；前端在「结构」面板加一个上下文按钮即可，不需要新页面。</li>
+    <li><b>成熟度治理</b>（见 <a href="#s10">第 10 章</a>）：先跑 <code>tools/maturity-audit.py</code> dry-run 核对报表，确认后 --apply 批量修正（自动备份可回滚）；代码侧把 <code>markdown.ts</code> 的缺省回退改为判定函数。
+    </li>
+    <li><b>批量导入</b>（见 <a href="#s9">第 09 章</a>）：前端新增 <code>useImport.ts</code>（纯函数预检）+ <code>ImportDialog.vue</code>；服务端新增 <code>preflight</code> / <code>file</code> / <code>finish</code> 三个接口（逐文件上传，按 jobId 累计体积）；<b>并在 <code>nginx.conf</code> 补 <code>client_max_body_size 8m</code></b> —— 当前默认 1 MB 会直接挡掉 5 MB 的单文件上传。</li>
+  </ol>
+  <div class="note">
+    <b>验收清单：</b>① <code>pnpm typecheck</code> 通过；② 390 / 768 / 1024 / 1512px 四档视口无横向滚动；③ 亮暗主题切换无闪烁（沿用现有 FOUC 内联脚本与 <code>theme-switching</code> 过渡）；④ 所有既有功能（分页、筛选、编辑、删除、图谱状态持久化、密钥管理）行为与改版前一致；⑤ <b>批量导入的体积边界逐条验</b>（6.2 MB 单文件 / 104 MB 文件夹 / 合规集合，见第 09 章验收清单）；⑤ <b>三种角色的权限边界逐条验证</b>：以普通管理员身份尝试禁用自己、以任何身份尝试删除初始管理员、以普通用户身份直接请求管理类接口，三种情况都必须被服务端拒绝（403），而不是仅靠界面隐藏。
+  </div>
+</section>
+
+<!-- ============================ 09 附录 ============================ -->
+<section id="s12">
+  <h2><span class="n">12</span>附录：快照与复核方式</h2>
+  <h3>9.1 数据快照</h3>
+  <p>原型中的所有内容都是真实数据快照（只读抓取），不是编造占位文本：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>来源接口</th><th>用途</th><th>快照量</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET /api/notes?pageSize=48</code></td><td>首页最近更新、列表页</td><td>48 篇（真实标题 / 路径 / 标签 / 日期 / 摘要）</td></tr>
+        <tr><td><code>GET /api/tags</code></td><td>标签分组面板、常用标签</td><td>55 个标签及计数</td></tr>
+        <tr><td><code>GET /api/vault/tree</code></td><td>结构面板</td><td>11 个一级目录、287 个文件（全层级）</td></tr>
+        <tr><td><code>GET /api/notes/graph</code></td><td>知识图谱</td><td>287 节点 / 278 边（全量）</td></tr>
+        <tr><td><code>GET /api/notes/{slug}</code></td><td>详情页样张</td><td>MOC - TypeScript（5 个 h2、3 张表、20 条反链）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note warn">
+    原型为离线静态稿：所有交互（筛选、分页、命令面板、对话框、图谱拖拽）都在浏览器本地完成，<strong>不会发起任何网络请求，也不会写入任何数据</strong>。演示用的表单提交（新建 / 保存 / 删除 / 生成密钥）只做界面反馈，不产生真实副作用。
+  </div>
+
+  <h3>9.2 如何复核这份方案</h3>
+  <ol class="num">
+    <li>打开同目录下的 <code>preview.html</code>（单文件，双击即可），用底部「预览工具条」在 6 个页面与 5 个状态间切换。</li>
+    <li>右上角切换<b>亮 / 暗</b>，工具条内切换<b>移动端</b>模拟（390×812 真机尺寸，含抽屉与断点表现）。</li>
+    <li>工具条最右侧切换<b>身份</b>（初始管理员 / 普通管理员 / 普通用户），对比同一页在三种角色下的呈现：图标栏入口、密钥可见范围、可创建的角色、操作按钮的可用性。<b>切到普通管理员后打开「后台」</b>是本轮最值得看的一屏。</li>
+    <li><b>右键文件操作：</b>在左侧结构树里右键任意文件夹 / 笔记 / 空白处，对比三档身份下的同一份菜单 —— 初始管理员六项齐全；普通管理员删非空文件夹会被拒；<b>普通用户六项写操作全部置灰并写明「只读身份」</b>。再试一遍完整闭环：右键笔记 → 重命名（故意重名会被拒）→ 复制 → 右键目标文件夹 → 粘贴 → 右键副本 → 删除（走二次确认）。</li>
+    <li><b>批量导入：</b>顶栏「新建 → 导入笔记（批量）」，或点工具条上的 <b>批量导入 / 导入超限</b>。对话框里有三枚「评审用示例」按钮，无需准备真实文件即可看到<b>合规 / 单文件超限 / 文件夹超限</b>三种关键状态；也可以直接用「选择文件 / 选择文件夹」从本地挑真实文件，体积校验是真的。</li>
+    <li>按 <code>⌘K</code> 体验命令面板键盘导航；在侧栏切换「结构 / 领域 / 标签」三个面板。</li>
+    <li>对照本文件中的前后截图，逐条核对 <a href="#s1">1.2 问题清单</a> 是否已被解决。</li>
+  </ol>
+
+  <h3>9.3 本次交付物</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>文件</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>preview.html</code></td><td>可交互高保真原型（单文件自包含，可直接打开或托管）</td></tr>
+        <tr><td><code>design-spec.html</code></td><td>本设计方案文档（现状诊断 + 设计令牌 + 页面方案 + 实施建议）</td></tr>
+        <tr><td><code>src/</code></td><td>原型源码（<code>styles.css</code> / <code>app.js</code> / <code>body.html</code>）、方案文档源码（<code>spec.css</code> / <code>spec-body.html</code>）、数据快照（<code>data/</code>）、插图（<code>shots/</code>）</td></tr>
+        <tr><td><code>build.py</code> · <code>build-spec.py</code></td><td>分别把 <code>src/</code> 内联成 <code>preview.html</code> 与 <code>design-spec.html</code>，便于后续迭代</td></tr>
+        <tr><td><code>src/fetch-snapshot.py</code></td><td>只读抓取线上真实数据快照（GET，不含任何写操作）</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  拾光 · 数字花园界面改版方案（DAWN v2）　|　本方案未修改项目中的任何代码，仅新增 <code>design-preview/</code> 目录用于承载预览稿与文档，可随时整目录删除。
+</footer>
+
+</div>

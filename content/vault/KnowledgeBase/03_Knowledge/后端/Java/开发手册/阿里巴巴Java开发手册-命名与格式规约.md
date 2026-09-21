@@ -1,5 +1,6 @@
 ---
 aliases: [Java命名规范, 代码格式规约, 阿里Java开发手册命名篇]
+maturity: GROWING
 tags:
   - status/待处理
   - type/笔记

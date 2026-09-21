@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { VAULT_DIR } from '../../utils/vault'
 import { prisma } from '../../utils/db'
+import { createCache } from '../../utils/cache'
 
 interface TreeNode {
   name: string
@@ -32,9 +33,17 @@ async function buildTree(dir: string, rel: string, maturityMap: Map<string, stri
   return nodes
 }
 
+// 树缓存：10s TTL + watcher 入库后手动失效（每次路由导航 SSR 都请求本接口，避免重复扫盘）
+const treeCache = createCache<TreeNode[]>(10_000)
+
 export default defineEventHandler(async () => {
+  const cached = treeCache.get()
+  if (cached) return { tree: cached }
+
   // 一次查询全部笔记的 slug → maturity 映射（避免每文件一次查询）
   const notes = await prisma.note.findMany({ select: { slug: true, maturity: true } })
   const maturityMap = new Map(notes.map(n => [n.slug, n.maturity]))
-  return { tree: await buildTree(VAULT_DIR, '', maturityMap) }
+  const tree = await buildTree(VAULT_DIR, '', maturityMap)
+  treeCache.set(tree)
+  return { tree }
 })

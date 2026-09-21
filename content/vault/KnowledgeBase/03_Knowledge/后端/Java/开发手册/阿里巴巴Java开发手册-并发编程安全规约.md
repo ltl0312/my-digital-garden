@@ -1,5 +1,6 @@
 ---
 aliases: [线程池规约, SimpleDateFormat线程安全, ThreadLocal清理, Lock释放, 并发避坑]
+maturity: GROWING
 tags:
   - status/待处理
   - type/笔记

@@ -1,5 +1,6 @@
 ---
 aliases: [NestJS TypeORM, NestJS MySQL, NestJS 数据库 CRUD, @nestjs/typeorm]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

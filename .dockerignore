@@ -18,6 +18,13 @@ prisma/generated
 .github
 *.md
 
+# 本地 AI 助手工作区与配置（含测试密钥，禁止进入构建上下文）
+.workbuddy
+.claude
+
+# 成熟度回写的本地备份
+content/vault/.maturity-backup
+
 # 运维产物
 logs
 *.log

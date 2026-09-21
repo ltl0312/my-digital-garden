@@ -1,5 +1,6 @@
 ---
 aliases: [final关键字, Java常量, static final, 不可变]
+maturity: GROWING
 tags:
   - status/已完成
   - type/笔记

@@ -1,5 +1,6 @@
 ---
 aliases: [JS 面向对象, JS 原型, ES6 Class, 解构赋值, 展开运算符, 模板字符串, Set, Map]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

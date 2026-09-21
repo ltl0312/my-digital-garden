@@ -1,5 +1,6 @@
 ---
 aliases: [RBAC权限模型, 五表设计, 角色权限, 动态路由, 权限标识]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

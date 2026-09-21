@@ -1,5 +1,6 @@
 ---
 aliases: [JS DOM, JS BOM, DOM 操作, 浏览器对象模型, querySelector, getElementById]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

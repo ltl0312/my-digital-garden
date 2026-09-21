@@ -1,5 +1,6 @@
 ---
 aliases: [总线, IO系统, 中断, DMA, 总线仲裁, 输入输出]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 计算机基础/组成原理]
 created: "2026-06-16 19:47"
 updated: "2026-06-16 19:47"

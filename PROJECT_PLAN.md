@@ -602,7 +602,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: garden_user
-      POSTGRES_PASSWORD: SecureProdPassword987!
+      POSTGRES_PASSWORD: CHANGE_ME_STRONG_PASSWORD
       POSTGRES_DB: garden_db
     ports:
       - "5432:5432"
@@ -643,10 +643,12 @@ module.exports = {
       port: '3000',
       exec_mode: 'cluster',
       instances: 'max',
-      script: './.output/server/index.mjs',
+      // 经包装器启动：nitro 产物的 _importMeta_ 占位路径在 Windows 下会使
+      // 内联 Prisma 客户端抛 ERR_INVALID_FILE_URL_PATH，统一从包装器进入
+      script: './scripts/start-prod.mjs',
       env: {
         NODE_ENV: 'production',
-        DATABASE_URL: 'postgresql://garden_user:SecureProdPassword987!@localhost:5432/garden_db?schema=public'
+        DATABASE_URL: 'postgresql://garden_user:CHANGE_ME_STRONG_PASSWORD@localhost:5432/garden_db?schema=public'
       }
     }
   ]

@@ -1,5 +1,6 @@
 ---
 aliases: [Java IO流, InputStream, OutputStream, Reader, Writer, 流关闭, Flushable]
+maturity: GROWING
 tags:
   - status/已完成
   - type/笔记

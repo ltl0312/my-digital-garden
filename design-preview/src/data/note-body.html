@@ -1,0 +1,157 @@
+<blockquote>
+<p>MOC - 前端 > <strong>TypeScript</strong> | 20 篇笔记。JS 的静态类型超集——L3 工程化。</p>
+</blockquote>
+<h2>目录结构</h2>
+<pre><code>TypeScript/
+├── MOC - TypeScript.md
+├── 基础与特殊类型.md
+├── 接口与函数类型.md
+├── 类与高级类型.md
+├── 泛型.md
+├── 类型断言与类型守卫.md
+├── 类型兼容性与结构化类型.md
+├── 索引签名与索引访问类型.md
+├── 映射类型.md
+├── 工具类型与装饰器.md
+├── 类型声明文件.md
+└── 环境配置/
+    ├── 基础语法-环境配置与项目初始化.md
+    ├── 接口与函数-环境配置与项目初始化.md
+    ├── 类与枚举-环境配置与项目初始化.md
+    ├── 泛型-环境配置与项目初始化.md
+    ├── 类型断言与守卫-环境配置与项目初始化.md
+    ├── 类型兼容性-环境配置与项目初始化.md
+    ├── 索引签名与索引访问类型-环境配置与项目初始化.md
+    ├── 映射类型-环境配置与项目初始化.md
+    ├── 类型声明文件-环境配置与项目初始化.md
+    └── 工具类型与装饰器-环境配置与项目初始化.md
+</code></pre>
+<h2>笔记列表</h2>
+<table>
+<thead>
+<tr>
+<th>笔记</th>
+<th>简介</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TypeScript-基础与特殊类型</td>
+<td>any/unknown/void/never 四种特殊类型 + 隐式 any 场景</td>
+</tr>
+<tr>
+<td>TypeScript-接口与函数类型</td>
+<td>Interface 对象形状、函数重载、interface vs type</td>
+</tr>
+<tr>
+<td>TypeScript-类与高级类型</td>
+<td>访问修饰符、枚举细节、readonly 推断、联合/交叉类型</td>
+</tr>
+<tr>
+<td>TypeScript-泛型</td>
+<td><code>&#x3C;T></code> 泛型函数/约束、keyof 运算符、多类型变量约束</td>
+</tr>
+<tr>
+<td>TypeScript-类型断言与类型守卫</td>
+<td>as 断言、typeof/instanceof/in、is 谓词、typeof 类型查询</td>
+</tr>
+<tr>
+<td>TypeScript-类型兼容性与结构化类型</td>
+<td>结构化类型系统、class/接口/函数兼容规则、逆变与协变</td>
+</tr>
+<tr>
+<td>TypeScript-索引签名与索引访问类型</td>
+<td><code>[key: string]: T</code> 任意属性约束、<code>T[P]</code> 查询属性类型</td>
+</tr>
+<tr>
+<td>TypeScript-映射类型</td>
+<td><code>[K in Keys]</code> 逐键变换、工具类型的实现机制、键重映射</td>
+</tr>
+<tr>
+<td>TypeScript-工具类型与装饰器</td>
+<td>Partial/Pick/Omit/Record/ReturnType + @decorator</td>
+</tr>
+<tr>
+<td>TypeScript-类型声明文件</td>
+<td>.ts vs .d.ts、@types/DefinitelyTyped、declare 关键字</td>
+</tr>
+</tbody>
+</table>
+<h2>学习路径</h2>
+<p>基础类型 → 接口与函数 → 类与高级类型 → 泛型 → 类型断言守卫 → <strong>类型兼容性与结构化类型</strong> → <strong>索引签名与索引访问类型</strong> → <strong>映射类型</strong> → 工具类型与装饰器 → <strong>类型声明文件</strong></p>
+<blockquote>
+<p>其中索引签名 → 映射类型 → 工具类型是一条强依赖链：映射类型借用索引签名语法，内置工具类型全部基于映射类型实现。</p>
+</blockquote>
+<h2>跨领域关联</h2>
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>关联</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TS 类型检查</td>
+<td>XD-4 编程语言与编译 — Hindley-Milner 类型推导</td>
+</tr>
+<tr>
+<td>结构化类型系统</td>
+<td>XD-4 编程语言与编译 — 结构类型 vs 名义类型、逆变/协变理论</td>
+</tr>
+<tr>
+<td><code>never</code> 穷尽检查</td>
+<td>XD-5 数据结构与算法 — 空集是其他类型的子类型</td>
+</tr>
+<tr>
+<td>类型兼容"成员多赋给成员少"</td>
+<td>XD-5 数据结构与算法 — 集合论：类型 = 值集合，子类型 = 子集</td>
+</tr>
+<tr>
+<td>泛型约束 <code>extends</code></td>
+<td>XD-5 数据结构与算法 — 集合论子类型关系</td>
+</tr>
+<tr>
+<td>工具类型 Pick/Omit</td>
+<td>XD-5 数据结构与算法 — 集合论操作</td>
+</tr>
+<tr>
+<td>映射类型遍历</td>
+<td>XD-5 数据结构与算法 — 对键集合的一一代换</td>
+</tr>
+<tr>
+<td>类型声明文件</td>
+<td>XD-4 编程语言与编译 — C/C++ 头文件声明与实现分离思想的现代化</td>
+</tr>
+<tr>
+<td>装饰器</td>
+<td>XD-6 软件工程与架构 — AOP 面向切面编程</td>
+</tr>
+</tbody>
+</table>
+<h2>标签统计</h2>
+<table>
+<thead>
+<tr>
+<th>标签</th>
+<th>频次</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>前端/TypeScript</code></td>
+<td>20</td>
+</tr>
+<tr>
+<td><code>type/笔记</code></td>
+<td>10</td>
+</tr>
+<tr>
+<td><code>type/教程</code></td>
+<td>10</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>📂 所属：[MOC - 前端](/notes/KnowledgeBase/03_Knowledge/前端/MOC - 前端)</p>
+</blockquote>

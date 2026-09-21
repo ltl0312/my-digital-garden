@@ -1,5 +1,6 @@
 ---
 aliases: [CPU, 中央处理器, 数据通路, 控制器, 流水线, 指令周期, 微程序]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 计算机基础/组成原理]
 created: "2026-06-16 19:47"
 updated: "2026-06-16 19:47"

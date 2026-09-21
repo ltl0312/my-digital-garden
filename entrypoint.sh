@@ -15,4 +15,4 @@ until npx prisma migrate deploy; do
 done
 
 echo "[garden] 迁移完成，启动应用..."
-exec node .output/server/index.mjs
+exec node scripts/start-prod.mjs

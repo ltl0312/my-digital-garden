@@ -18,6 +18,11 @@ logs
 .fleet
 .idea
 
+# 部署包与临时文件
+garden-deploy.tar.gz
+*.tar.gz
+*.tmp
+
 # Local env files
 .env
 .env.*
@@ -25,3 +30,12 @@ logs
 
 # Prisma generated client
 prisma/generated
+
+# 本地 AI 助手工作区（含测试密钥明文、验证脚本与日志，禁止入库）
+.workbuddy/
+
+# 项目根的 Claude 本地配置（含服务器地址与 root SSH 授权，禁止入库）
+/.claude/
+
+# 成熟度自动回写前生成的本地备份（运行时产物）
+content/vault/.maturity-backup/

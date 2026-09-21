@@ -1,5 +1,6 @@
 ---
 aliases: [LR分析, SLR, LR(1), LALR, 移进归约, 句柄, Yacc, Bison]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 计算机基础/编译原理]
 created: "2026-06-16 20:01"
 updated: "2026-06-16 20:01"

@@ -1,5 +1,6 @@
 ---
 aliases: [JS ES6 环境, Babel 配置, ES6 转译]
+maturity: SEEDLING
 tags: [status/进行中, type/教程, 前端/JavaScript]
 created: "2026-06-16 19:19"
 updated: "2026-06-16 19:19"

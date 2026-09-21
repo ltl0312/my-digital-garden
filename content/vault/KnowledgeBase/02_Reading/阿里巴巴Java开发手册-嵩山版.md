@@ -1,5 +1,6 @@
 ---
 aliases: [阿里巴巴Java开发手册, 嵩山版, Java编码规范, Java开发规约]
+maturity: SEEDLING
 tags:
   - status/待处理
   - type/素材

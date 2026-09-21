@@ -1,5 +1,6 @@
 ---
 aliases: [IO管理, IO控制方式, 磁盘调度, SPOOLing, 缓冲区]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

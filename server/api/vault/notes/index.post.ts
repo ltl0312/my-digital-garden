@@ -1,24 +1,27 @@
 import { createError, defineEventHandler, readBody } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
-import { resolveVaultPath, noteTemplate, stripNul } from '../../../utils/vault'
+import { resolveVaultPath, noteTemplate, stripNul, writeMarkdownAtomic } from '../../../utils/vault'
 import { requireAdmin } from '../../../utils/auth'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
-  const body = await readBody<{ path?: string; title?: string }>(event)
+  const body = (await readBody<{ path?: string; title?: string }>(event)) || {}
   const dir = stripNul((body.path || '').replace(/^\/+/, '').replace(/\\/g, '/')).replace(/\.md$/i, '')
   const title = stripNul((body.title || '未命名笔记').trim())
 
-  if (!title || title.includes('/') || title.includes('\\') || title.includes(':')) {
+  // 文件名字符校验：路径分隔符（/ \）+ Windows 非法字符（? * < > " |）+ 控制字符
+  const INVALID_TITLE_CHARS = /[\/\\:?*<>"|\x00-\x1f]/
+  if (!title || INVALID_TITLE_CHARS.test(title)) {
     throw createError({ statusCode: 400, message: 'Invalid title' })
   }
 
   let dirFull: string
   let full: string
+  let slug: string
   try {
     dirFull = resolveVaultPath(dir) // 目录路径（可能是 vault 根）
-    const slug = dir ? `${dir}/${title}` : title
+    slug = dir ? `${dir}/${title}` : title
     full = resolveVaultPath(slug + '.md')
   } catch {
     throw createError({ statusCode: 400, message: 'Invalid path' })
@@ -40,6 +43,7 @@ export default defineEventHandler(async (event) => {
     if (e?.statusCode) throw e
   }
 
-  await fs.writeFile(full, noteTemplate(title), 'utf-8')
+  // 原子写入：先写临时文件再 rename，避免 watcher 读到半截内容（与批量导入共用同一实现）
+  await writeMarkdownAtomic(full, noteTemplate(title))
   return { slug }
 })

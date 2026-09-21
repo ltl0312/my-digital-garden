@@ -1,5 +1,6 @@
 ---
 aliases: [MySQL 规约, 数据库命名规范, 索引规约, SQL 编写规范, ORM 映射规约]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 后端/Java, 数据库/MySQL]
 created: "2026-06-16 20:07"
 updated: "2026-06-16 20:07"

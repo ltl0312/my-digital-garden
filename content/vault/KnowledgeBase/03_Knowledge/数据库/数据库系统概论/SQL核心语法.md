@@ -1,5 +1,6 @@
 ---
 aliases: [SQL语法, DDL, DML, DQL, JOIN, 子查询, 聚合函数, 窗口函数]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

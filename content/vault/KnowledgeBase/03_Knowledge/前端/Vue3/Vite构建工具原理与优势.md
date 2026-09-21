@@ -1,5 +1,6 @@
 ---
 aliases: [Vite构建工具, ESM, No-Bundle, Webpack对比, HMR热更新]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

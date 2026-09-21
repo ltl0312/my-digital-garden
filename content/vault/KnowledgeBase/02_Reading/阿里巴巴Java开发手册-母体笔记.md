@@ -1,5 +1,6 @@
 ---
 aliases: [阿里巴巴Java开发手册, Alibaba Java Coding Guidelines]
+maturity: SEEDLING
 tags: [status/待处理, type/素材]
 author: "阿里巴巴集团"
 publication_year: "2017 (1.4.0 PDF)"

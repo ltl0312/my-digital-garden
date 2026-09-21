@@ -1,5 +1,6 @@
 ---
 aliases: [MyBatis-Plus, BaseMapper, LambdaQueryWrapper, 分页插件, 防全表更新]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

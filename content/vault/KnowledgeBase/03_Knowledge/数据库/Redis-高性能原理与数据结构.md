@@ -1,5 +1,6 @@
 ---
 aliases: [Redis高性能, Reactor模型, epoll, ZSet, 跳表, Redis数据结构]
+maturity: GROWING
 tags:
   - status/进行中
   - type/笔记

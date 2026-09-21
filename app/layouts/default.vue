@@ -1,30 +1,74 @@
 <script setup lang="ts">
-import { Sprout, Search, BookOpen, Share2, Settings, Sun, Moon, PanelLeft, Filter } from 'lucide-vue-next'
+import { Search, Plus, FilePlus, FolderPlus, Upload, ChevronDown, Menu as MenuIcon, Sun, Moon, X, Settings, KeyRound, LogOut, UserRound } from 'lucide-vue-next'
 
+// AppShell（spec ch.4/6）：图标栏 60px + 顶栏 60px + 主体（上下文侧栏 + 内容区）
+// 高度锁 100%，各区域内部滚动；<1024px 侧栏转为抽屉 + 遮罩，<768px 图标栏收进顶栏。
+// 取数逻辑与持久化行为均沿用原实现（同一接口、同一 localStorage 键）。
 const { isDark, toggleTheme } = useTheme()
-const { isAdmin } = useAuth()
-const sidebarOpen = ref(true)
-const commandOpen = ref(false)
-const treeQuery = ref('')
+const { me } = useAuth()
+const { openDialog: openImportDialog } = useImportDialog()
+const { canManage, actorRole } = useRoles()
 
+const commandOpen = useState<boolean>('shell-command-open', () => false)
+const createMenuOpen = ref(false)
+// E4：<1024 图标栏隐藏后，管理后台 / 我的密钥 / 主题 / 退出统一收敛到顶栏「用户」菜单
+const userMenuOpen = ref(false)
+const roleLabel = computed(() => ROLES[actorRole.value]?.label || '普通用户')
+const userMenuItems = computed(() => {
+  const items: { key: string; label: string; icon?: any; danger?: boolean }[] = [
+    canManage.value
+      ? { key: 'account', label: '管理后台', icon: Settings }
+      : { key: 'account', label: '我的密钥', icon: KeyRound },
+    { key: '__sep', label: '' },
+    { key: 'theme', label: isDark.value ? '切换到亮色' : '切换到暗色', icon: isDark.value ? Sun : Moon },
+    { key: 'logout', label: '退出登录', icon: LogOut, danger: true }
+  ]
+  return items
+})
+const onUserMenuSelect = (key: string) => {
+  if (key === 'account') navigateTo('/admin')
+  else if (key === 'theme') toggleTheme()
+  else if (key === 'logout') logout()
+}
+// E3：原生 prompt/alert 全部下线，改走应用内对话框与 Toast
+const folderOpen = ref(false)
+const folderParent = ref('')
+const newNoteOpen = ref(false)
+const newNoteTitle = ref('')
+const newNoteParent = ref('')
+const newNoteSubmitting = ref(false)
+const toast = useToast()
+
+// 侧栏开关与宽度（跨页面保留）
 const SIDEBAR_KEY = 'garden-sidebar-width'
-const sidebarWidth = ref(320)
+const sidebarOpen = useState<boolean>('shell-sidebar-open', () => true)
+const sidebarWidth = useState<number>('shell-sidebar-width', () => 320)
 const resizing = ref(false)
-let dragOffset = 0
+let dragLeft = 0
 
 const startResize = (e: PointerEvent) => {
   resizing.value = true
   document.body.style.cursor = 'col-resize'
-  // 记录鼠标点击位置与当前宽度的差值（消除 aside 左侧布局偏移，如 mx-auto 容器居中留白）
-  dragOffset = e.clientX - sidebarWidth.value
+  // 以侧栏左边缘为基准换算宽度（左侧还有 60px 图标栏，不能直接用视口坐标）
+  const host = (e.currentTarget as HTMLElement)?.parentElement
+  dragLeft = host?.getBoundingClientRect().left ?? 0
 }
+
+const isNarrow = ref(false)
 
 onMounted(() => {
   const saved = localStorage.getItem(SIDEBAR_KEY)
-  if (saved) sidebarWidth.value = Math.min(480, Math.max(240, Number(saved)))
+  if (saved) sidebarWidth.value = Math.min(440, Math.max(240, Number(saved)))
+  const sync = () => {
+    isNarrow.value = window.innerWidth < 1024
+    if (isNarrow.value) sidebarOpen.value = false
+  }
+  sync()
+  window.addEventListener('resize', sync)
+
   window.addEventListener('pointermove', (e) => {
     if (!resizing.value) return
-    sidebarWidth.value = Math.min(480, Math.max(240, e.clientX - dragOffset))
+    sidebarWidth.value = Math.min(440, Math.max(240, e.clientX - dragLeft))
   })
   window.addEventListener('pointerup', () => {
     if (resizing.value) {
@@ -33,59 +77,86 @@ onMounted(() => {
       localStorage.setItem(SIDEBAR_KEY, String(sidebarWidth.value))
     }
   })
-  // 全局 ⌘K / ⌃K 快捷键
+
+  // 全局快捷键：⌘K 命令面板 · ⌘\ 收起/展开侧栏 · ESC 关闭浮层
   window.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault()
       commandOpen.value = !commandOpen.value
     }
-    if (e.key === 'Escape' && commandOpen.value) {
-      commandOpen.value = false
+    if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+      e.preventDefault()
+      sidebarOpen.value = !sidebarOpen.value
+    }
+    if (e.key === 'Escape') {
+      if (commandOpen.value) commandOpen.value = false
+      if (createMenuOpen.value) createMenuOpen.value = false
+      if (isNarrow.value && sidebarOpen.value) sidebarOpen.value = false
     }
   })
+  window.addEventListener('click', closeCreateMenu)
 })
 
-const requestFetch = useRequestFetch()
-const { data: tree } = await useAsyncData('vault-tree', () => requestFetch('/api/vault/tree'))
-const { data: tags } = await useAsyncData('sidebar-tags', () => requestFetch('/api/tags'))
+const { tree, tags, graph, totalNotes, domains, tagGroups, stats } = useFacets()
+// tags / graph 由 useFacets 统一取数（sidebar-tags / sidebar-graph 缓存键），此处不再单独请求
+void tags
+void graph
 
-// 文件树过滤：按搜索词过滤，目录递归保留（仅当子节点有匹配时）
-const filteredTree = computed(() => {
-  const q = treeQuery.value.trim().toLowerCase()
-  const walk = (nodes: any[]): any[] => {
-    const out: any[] = []
-    for (const n of nodes) {
-      if (n.type === 'dir') {
-        const children = walk(n.children || [])
-        if (children.length) out.push({ ...n, children })
-      } else if (!q || n.name.toLowerCase().includes(q) || (n.slug || '').toLowerCase().includes(q)) {
-        out.push(n)
-      }
-    }
-    return out
-  }
-  return walk(tree.value?.tree || [])
+const route = useRoute()
+const currentSlug = computed(() => decodeURIComponent(route.path.replace(/^\/notes\//, '')))
+
+// 面包屑：Garden Vault / …路径段（末段高亮）
+const crumbs = computed(() => {
+  const segs = route.path.split('/').filter(Boolean).map(s => decodeURIComponent(s))
+  return ['Garden Vault', ...segs]
 })
 
-// 笔记总数（树递归计数）
-const noteCount = computed(() => {
-  let count = 0
-  const walk = (nodes: any[]) => {
-    for (const n of nodes) {
-      if (n.type === 'file') count++
-      else walk(n.children || [])
-    }
-  }
-  walk(tree.value?.tree || [])
-  return count
-})
+const activeTag = computed(() => (typeof route.query.tag === 'string' ? route.query.tag : ''))
+const activeDir = computed(() => (typeof route.query.dir === 'string' ? route.query.dir : ''))
 
 const startCreateRoot = () => {
-  const title = prompt('新建笔记标题：')
-  if (!title?.trim()) return
-  $fetch('/api/vault/notes', { method: 'POST', body: { path: '', title: title.trim() } })
-    .then(({ slug }: any) => navigateTo(`/notes/${slug.split('/').map(encodeURIComponent).join('/')}`))
-    .catch((e: any) => alert(e?.data?.message || '创建失败'))
+  createMenuOpen.value = false
+  newNoteTitle.value = ''
+  newNoteOpen.value = true
+}
+
+const submitCreateRoot = async () => {
+  const title = newNoteTitle.value.trim()
+  if (!title) return
+  newNoteSubmitting.value = true
+  try {
+    const { slug } = await $fetch<{ slug: string }>('/api/vault/notes', { method: 'POST', body: { path: newNoteParent.value, title } })
+    await refreshNuxtData('vault-tree')
+    newNoteOpen.value = false
+    toast.success(`已创建「${title}」`)
+    await navigateTo(`/notes/${slug.split('/').map(encodeURIComponent).join('/')}`)
+  } catch (e: any) {
+    toast.error(e?.data?.message || '创建失败')
+  } finally {
+    newNoteSubmitting.value = false
+  }
+}
+
+const startCreateFolder = (parent = '') => {
+  createMenuOpen.value = false
+  folderParent.value = parent
+  folderOpen.value = true
+}
+
+const startCreateNoteIn = (parent = '') => {
+  newNoteTitle.value = ''
+  newNoteParent.value = parent
+  newNoteOpen.value = true
+}
+
+const startImport = () => {
+  createMenuOpen.value = false
+  openImportDialog('')
+}
+
+const closeCreateMenu = (e: MouseEvent) => {
+  const el = e.target as HTMLElement
+  if (!el.closest?.('[data-create-menu]')) createMenuOpen.value = false
 }
 
 const logout = async () => {
@@ -95,136 +166,208 @@ const logout = async () => {
 </script>
 
 <template>
-  <div class="bg-mesh min-h-screen font-sans antialiased text-slate-800 dark:text-slate-200 transition-colors duration-300">
-    <!-- 顶栏 -->
-    <header class="glass-header h-16 px-5 flex items-center justify-between z-30 shrink-0 select-none sticky top-0">
-      <NuxtLink to="/" class="flex items-center space-x-3 group">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-garden-400 to-emerald-600 dark:from-garden-400 dark:to-emerald-700 flex items-center justify-center text-slate-950 shadow-lg shadow-garden-500/20 group-hover:scale-105 transition-transform duration-300">
-          <Sprout class="w-5 h-5" :stroke-width="2.5" />
-        </div>
-        <div>
-          <div class="flex items-center space-x-2">
-            <span class="font-bold text-lg tracking-tight text-slate-900 dark:text-white group-hover:text-garden-600 dark:group-hover:text-garden-400 transition-colors">拾光</span>
-            <span class="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-garden-500/10 text-garden-700 dark:text-garden-400 border border-garden-500/20 font-semibold">Garden</span>
-          </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400 -mt-0.5 font-light">Non-linear Knowledge Sanctuary</p>
-        </div>
-      </NuxtLink>
+  <div
+    class="h-screen w-screen overflow-hidden bg-canvas text-ink flex"
+    :style="{ '--sidebar-w': sidebarWidth + 'px' }"
+  >
+    <!-- 图标栏（spec 断点表：≥1024 显示；768–1023 与手机隐藏，侧栏转抽屉） -->
+    <div class="hidden lg:block h-full">
+      <RailNav :sidebar-open="sidebarOpen" @toggle-sidebar="sidebarOpen = !sidebarOpen" @logout="logout" />
+    </div>
 
-      <!-- 搜索栏（⌘K） -->
-      <button
-        class="hidden md:flex items-center cursor-pointer bg-slate-100/80 hover:bg-slate-200/80 dark:bg-obsidian-800/80 dark:hover:bg-obsidian-700/80 border border-slate-200 dark:border-white/10 hover:border-garden-500/40 px-4 py-2 rounded-full w-80 text-slate-500 dark:text-slate-400 text-sm transition-all duration-200 shadow-inner group"
-        @click="commandOpen = true"
+    <!-- 主列：顶栏 + 主体 -->
+    <div class="flex-1 min-w-0 h-full flex flex-col">
+      <!-- 顶栏 60px -->
+      <header
+        class="shrink-0 flex items-center gap-3 px-4 border-b border-line bg-surface/90 backdrop-blur z-30 select-none"
+        :style="{ height: 'var(--header-h)' }"
       >
-        <Search class="w-4 h-4 mr-2.5 text-slate-400 group-hover:text-garden-600 dark:group-hover:text-garden-400 transition-colors" />
-        <span class="flex-1 font-light text-left">Search notes, tags, ideas...</span>
-        <kbd class="text-[11px] font-mono bg-white dark:bg-obsidian-900/80 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded border border-slate-200 dark:border-white/10 shadow-sm">⌘K</kbd>
-      </button>
-
-      <!-- 右侧操作区 -->
-      <div class="flex items-center space-x-2">
-        <div class="bg-slate-200/70 dark:bg-obsidian-800/90 border border-slate-300/60 dark:border-white/10 p-1 rounded-xl flex items-center space-x-1 shadow-sm">
-          <NuxtLink to="/notes" class="px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 transition-all duration-200 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5">
-            <BookOpen class="w-3.5 h-3.5" /><span class="hidden sm:inline">Notes</span>
-          </NuxtLink>
-          <NuxtLink to="/graph" class="px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 transition-all duration-200 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5">
-            <Share2 class="w-3.5 h-3.5" /><span class="hidden sm:inline">Graph</span>
-          </NuxtLink>
-          <NuxtLink v-if="isAdmin" to="/admin" class="px-3 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 transition-all duration-200 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5">
-            <Settings class="w-3.5 h-3.5" /><span class="hidden sm:inline">Admin</span>
-          </NuxtLink>
-        </div>
-        <div class="h-5 w-[1px] bg-slate-300 dark:bg-white/10 mx-1"></div>
+        <!-- 抽屉开关（<1024：图标栏隐藏，侧栏转为抽屉 + 遮罩） -->
         <button
-          class="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-garden-500/50 transition-all duration-200 active:scale-95"
-          title="Toggle Garden Theme"
-          @click="toggleTheme"
-        >
-          <Sun v-if="isDark" class="w-4 h-4 text-garden-600 dark:text-garden-400" />
-          <Moon v-else class="w-4 h-4 text-garden-600 dark:text-garden-400" />
-        </button>
-        <button
-          class="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-garden-500/50 transition-all duration-200 active:scale-95"
-          title="Toggle Sidebar"
+          class="lg:hidden w-[38px] h-[38px] rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro shrink-0"
+          title="打开侧栏"
+          aria-label="打开侧栏"
+          :aria-expanded="sidebarOpen"
           @click="sidebarOpen = !sidebarOpen"
         >
-          <PanelLeft class="w-4 h-4" />
+          <MenuIcon class="w-4 h-4" />
         </button>
-        <button class="text-xs text-slate-500 dark:text-slate-400 hover:text-garden-600 dark:hover:text-garden-400 transition-colors" title="退出登录" @click="logout">Logout</button>
-      </div>
-    </header>
 
-    <!-- 主体：全宽 flex，aside 贴视口左缘 -->
-    <div class="flex">
-      <!-- 侧边栏：始终挂载，宽度过渡实现平滑收起/展开 -->
-      <aside
-        :style="{
-          width: sidebarOpen ? sidebarWidth + 'px' : '0px',
-          transition: resizing ? 'none' : 'width 0.3s ease'
-        }"
-        class="glass-card border-y-0 border-l-0 z-20 flex flex-col shrink-0 overflow-hidden max-h-[calc(100vh-4rem)] sticky top-16"
-      >
-        <!-- 搜索过滤 + Stage pills -->
-        <div class="p-4 border-b border-slate-200/80 dark:border-white/10 space-y-3">
-          <div class="relative">
-            <input
-              v-model="treeQuery"
-              type="text"
-              placeholder="Filter notes..."
-              class="w-full bg-slate-100/90 dark:bg-obsidian-900/90 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 pl-9 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-garden-500/60 focus:ring-1 focus:ring-garden-500/30 transition-all"
+        <!-- 面包屑（<640 收敛为末段标题） -->
+        <nav class="flex-1 min-w-0 flex items-center gap-1 text-ds-sm text-ink-3" aria-label="面包屑">
+          <template v-for="(c, i) in crumbs" :key="i">
+            <span v-if="i > 0" class="text-ink-3/60 hidden sm:inline">/</span>
+            <span
+              class="truncate"
+              :class="i === crumbs.length - 1
+                ? 'text-ink font-semibold'
+                : 'hidden sm:inline sm:max-w-[16ch] lg:max-w-none'"
+            >{{ c }}</span>
+          </template>
+        </nav>
+
+        <!-- 搜索触发（⌘K）：≥640 完整输入框，<640 收敛为图标按钮 -->
+        <button
+          class="hidden sm:flex items-center gap-2 bg-surface-2 hover:bg-surface-3 border border-line hover:border-ink-3 px-3 py-1.5 rounded-full text-ink-3 text-ds-sm transition-colors duration-micro w-64 shrink-0"
+          @click="commandOpen = true"
+        >
+          <Search class="w-3.5 h-3.5" />
+          <span class="flex-1 text-left">搜索笔记、标签、想法…</span>
+          <kbd class="text-xs font-mono bg-surface px-1.5 py-0.5 rounded border border-line">⌘K</kbd>
+        </button>
+        <button
+          class="sm:hidden w-[38px] h-[38px] rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro shrink-0"
+          title="搜索（⌘K）"
+          aria-label="搜索"
+          @click="commandOpen = true"
+        >
+          <Search class="w-4 h-4" />
+        </button>
+
+        <!-- 新建下拉：新建笔记 / 新建文件夹 / 导入笔记（spec 9） -->
+        <div v-if="canManage" class="relative shrink-0" data-create-menu>
+          <button
+            class="flex items-center gap-1.5 px-3 h-[38px] rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] shadow-ds1 transition-transform duration-micro active:scale-95"
+            title="新建"
+            @click="createMenuOpen = !createMenuOpen"
+          >
+            <Plus class="w-3.5 h-3.5" /><span class="hidden sm:inline">新建</span>
+            <ChevronDown class="w-3 h-3 transition-transform duration-micro" :class="createMenuOpen ? 'rotate-180' : ''" />
+          </button>
+          <div
+            v-if="createMenuOpen"
+            class="absolute right-0 mt-2 w-44 rounded-card bg-surface border border-line shadow-ds3 p-1 z-50"
+          >
+            <button class="w-full px-3 py-2 rounded-ctl text-ds-sm text-left flex items-center gap-2 text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro" @click="startCreateRoot">
+              <FilePlus class="w-3.5 h-3.5 text-accent" />新建笔记
+            </button>
+            <button class="w-full px-3 py-2 rounded-ctl text-ds-sm text-left flex items-center gap-2 text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro" @click="startCreateFolder">
+              <FolderPlus class="w-3.5 h-3.5 text-accent" />新建文件夹
+            </button>
+            <button class="w-full px-3 py-2 rounded-ctl text-ds-sm text-left flex items-center gap-2 text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro" @click="startImport">
+              <Upload class="w-3.5 h-3.5 text-accent" />导入笔记
+            </button>
+          </div>
+        </div>
+
+        <!-- 用户菜单（<1024）：承载管理后台 / 我的密钥、主题切换与退出登录 -->
+        <Menu
+          v-model:open="userMenuOpen"
+          :items="userMenuItems"
+          class="lg:hidden shrink-0"
+          @select="onUserMenuSelect"
+        >
+          <template #trigger>
+            <button
+              class="w-[38px] h-[38px] rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+              :title="`${roleLabel}${me?.label ? ' · ' + me.label : ''}`"
+              aria-label="账户菜单"
+              :aria-expanded="userMenuOpen"
+            >
+              <UserRound class="w-4 h-4" />
+            </button>
+          </template>
+        </Menu>
+      </header>
+
+      <!-- 主体 -->
+      <div class="flex-1 min-h-0 flex relative">
+        <!-- 侧栏（≥1024 常驻；<1024 抽屉） -->
+        <div
+          class="h-full shrink-0 relative transition-[width] duration-drawer ease-dawn"
+          :class="isNarrow
+            ? 'absolute left-0 top-0 z-40 shadow-ds3'
+            : ''"
+          :style="{ width: isNarrow ? (sidebarOpen ? '286px' : '0px') : (sidebarOpen ? 'var(--sidebar-w)' : '0px') }"
+        >
+          <div v-show="sidebarOpen" class="h-full" :style="{ width: isNarrow ? '286px' : 'var(--sidebar-w)' }">
+            <ContextSidebar
+              :tree="(tree as any)?.tree || []"
+              :domains="domains"
+              :tag-groups="tagGroups"
+              :stats="stats"
+              :total-notes="totalNotes"
+              :can-manage="canManage"
+              :active-tag="activeTag"
+              :active-dir="activeDir"
+              :current-slug="currentSlug"
+              @start-resize="startResize"
+              @import="startImport"
+              @new-folder="startCreateFolder"
             />
-            <Filter class="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400 dark:text-slate-500" />
-            <button v-if="treeQuery" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs" @click="treeQuery = ''">✕</button>
           </div>
         </div>
 
-        <!-- 文件树 + 标签云 -->
-        <div class="flex-1 overflow-y-auto p-3">
-          <div class="flex items-center justify-between px-2 pb-2">
-            <span class="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold">Vault</span>
-            <button v-if="isAdmin" class="text-[10px] text-garden-600 dark:text-garden-400 hover:text-garden-700 dark:hover:text-garden-300" @click="startCreateRoot">＋ New Note</button>
-          </div>
-          <FileTree v-if="tree" :nodes="filteredTree" :can-create="isAdmin" />
-          <div class="pt-4 border-t border-slate-200/80 dark:border-white/10 mt-4">
-            <span class="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold block px-2 mb-2">Garden Tags</span>
-            <div class="flex flex-wrap gap-1.5 px-1">
-              <NuxtLink
-                v-for="t in tags?.slice(0, 20)"
-                :key="t.name"
-                :to="`/notes?tag=${encodeURIComponent(t.name)}`"
-                class="text-[11px] px-2.5 py-1 rounded-md cursor-pointer transition-all flex items-center space-x-1 bg-slate-200/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-slate-200"
-              >
-                <span>#{{ t.name }}</span><span class="text-[9px] opacity-60">({{ t.count }})</span>
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
+        <!-- 抽屉遮罩（<1024） -->
+        <div
+          v-if="isNarrow && sidebarOpen"
+          class="absolute inset-0 z-30 bg-[rgba(10,13,19,0.45)] backdrop-blur-[2px]"
+          @click="sidebarOpen = false"
+        ></div>
 
-        <!-- 状态栏 -->
-        <div class="p-3 border-t border-slate-200 dark:border-white/10 text-xs text-slate-500 flex items-center justify-between bg-slate-100/60 dark:bg-obsidian-900/50">
-          <div class="flex items-center space-x-2">
-            <span class="w-2 h-2 rounded-full bg-garden-500 animate-pulse"></span>
-            <span class="font-medium text-slate-600 dark:text-slate-400">Vault Synced</span>
-          </div>
-          <span class="font-mono text-[10px] text-slate-400">{{ noteCount }} Notes</span>
-        </div>
-      </aside>
-
-      <!-- 拖拽手柄 -->
-      <div
-        v-if="sidebarOpen"
-        class="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-garden-500/40 transition-colors"
-        title="拖动调整宽度"
-        @pointerdown="startResize"
-      ></div>
-
-      <!-- 内容区 -->
-      <main class="flex-1 min-w-0">
-        <NuxtPage />
-      </main>
+        <!-- 拖拽手柄（≥1024） -->
+        <div
+          v-if="sidebarOpen && !isNarrow"
+          data-sidebar-resize
+          class="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-[var(--accent-soft)] transition-colors"
+          title="拖动调整宽度"
+          @pointerdown="startResize"
+        ></div>
+        <!-- 内容区 -->
+        <main data-scroll-root class="flex-1 min-w-0 h-full overflow-y-auto">
+          <NuxtPage />
+        </main>
+      </div>
     </div>
 
     <!-- ⌘K 命令面板 -->
     <CommandPalette v-model:open="commandOpen" />
+
+    <!-- 批量导入对话框 -->
+    <ImportDialog />
+
+    <!-- 新建文件夹（spec 6 NewFolderDialog）：替代原生 prompt -->
+    <NewFolderDialog v-model:open="folderOpen" :tree="(tree as any)?.tree || []" :default-parent="folderParent" />
+
+    <!-- 新建笔记（替代原生 prompt） -->
+    <AppDialog v-model:open="newNoteOpen" title="新建笔记" size="sm">
+      <label class="block">
+        <span class="block text-[12px] text-ink-3 mb-1.5">笔记标题</span>
+        <input
+          v-model="newNoteTitle"
+          placeholder="如：Rust 所有权模型"
+          class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+          @keyup.enter="submitCreateRoot"
+        />
+        <span class="block mt-2 text-[12px] text-ink-3 font-mono break-all">
+          落点：Garden Vault{{ newNoteParent ? ' / ' + newNoteParent.split('/').join(' / ') : '' }} / {{ newNoteTitle.trim() || '（标题）' }}.md
+        </span>
+      </label>
+      <template #footer>
+        <button
+          class="px-3.5 py-2 rounded-ctl text-ds-sm border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+          @click="newNoteOpen = false"
+        >取消</button>
+        <button
+          class="px-3.5 py-2 rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] transition-opacity duration-micro disabled:opacity-45"
+          :disabled="!newNoteTitle.trim() || newNoteSubmitting"
+          @click="submitCreateRoot"
+        >{{ newNoteSubmitting ? '创建中…' : '创建并打开' }}</button>
+      </template>
+    </AppDialog>
+
+    <!-- 全局浮层：Toast（aria-live）与确认对话框 -->
+    <ToastHost />
+    <ConfirmHost />
+
+    <!-- 移动端关闭抽屉的悬浮按钮（≥1024 不显示） -->
+    <button
+      v-if="isNarrow && sidebarOpen"
+      class="fixed bottom-4 right-4 z-50 w-[38px] h-[38px] rounded-full bg-surface border border-line shadow-ds2 flex items-center justify-center text-ink-2 lg:hidden"
+      title="关闭侧栏"
+      @click="sidebarOpen = false"
+    >
+      <X class="w-4 h-4" />
+    </button>
   </div>
 </template>

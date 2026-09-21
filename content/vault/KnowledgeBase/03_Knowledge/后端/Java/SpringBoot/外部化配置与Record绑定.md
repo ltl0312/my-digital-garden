@@ -1,5 +1,6 @@
 ---
 aliases: [SpringBoot 配置, Java Records, ConfigurationProperties, Profile Groups, 多环境配置]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 后端/Java, 后端/SpringBoot]
 created: "2026-06-16 21:56"
 updated: "2026-06-16 21:56"

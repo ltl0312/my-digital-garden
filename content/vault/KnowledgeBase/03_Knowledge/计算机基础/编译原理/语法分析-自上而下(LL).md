@@ -1,5 +1,6 @@
 ---
 aliases: [LL(1), FIRST集, FOLLOW集, 左递归, 预测分析, 自上而下语法分析]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 计算机基础/编译原理]
 created: "2026-06-16 20:01"
 updated: "2026-06-16 20:01"

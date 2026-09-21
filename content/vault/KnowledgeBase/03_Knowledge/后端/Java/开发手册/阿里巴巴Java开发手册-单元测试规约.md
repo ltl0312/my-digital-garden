@@ -1,5 +1,6 @@
 ---
 aliases: [Java 单元测试规约, JUnit 规范, 阿里巴巴测试规范]
+maturity: GROWING
 tags: [status/进行中, type/笔记, 后端/Java]
 created: "2026-06-16 20:17"
 updated: "2026-06-16 20:17"

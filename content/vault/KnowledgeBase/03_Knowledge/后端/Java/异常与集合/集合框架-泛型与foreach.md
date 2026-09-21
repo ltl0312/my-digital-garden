@@ -1,5 +1,6 @@
 ---
 aliases: [泛型, 钻石表达式, foreach循环, 自定义泛型, 自动类型推断]
+maturity: GROWING
 tags:
   - status/已完成
   - type/笔记

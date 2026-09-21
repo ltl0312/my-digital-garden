@@ -1,0 +1,8245 @@
+{
+ "KnowledgeBase/02_Reading/操作系统-王道考研笔记汇总.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/待处理"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "操作系统-王道考研笔记汇总",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 777,
+   "code": 0,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/02_Reading/阿里巴巴Java开发手册-嵩山版.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/待处理"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-嵩山版",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 746,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/02_Reading/阿里巴巴Java开发手册-母体笔记.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/待处理",
+    "type/素材"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-母体笔记",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 765,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/Drawing 2026-06-21 19.41.22.excalidraw.md": {
+  "maturity": "EXCLUDED",
+  "why": "绘图文件",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "excalidraw"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "Drawing 2026-06-21 19.41.22.excalidraw",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 202,
+   "code": 1,
+   "tables": 0,
+   "age_days": null
+  }
+ },
+ "KnowledgeBase/03_Knowledge/MOC - 知识库总览.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 8 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 知识库总览",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1778,
+   "code": 0,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/Flexbox与Grid现代布局.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "Flexbox与Grid现代布局",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1890,
+   "code": 4,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/MOC - CSS3.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 21 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "前端/CSS"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - CSS3",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1307,
+   "code": 1,
+   "tables": 21,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/变形过渡与动画.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "变形过渡与动画",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 2064,
+   "code": 3,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/响应式设计与变量.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "响应式设计与变量",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1692,
+   "code": 3,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/基础语法与选择器.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "基础语法与选择器",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1530,
+   "code": 7,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/字体文本与盒模型.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "字体文本与盒模型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1502,
+   "code": 4,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/环境配置/Flexbox与Grid布局-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "Flexbox与Grid布局-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 922,
+   "code": 2,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/环境配置/变形过渡与动画-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "变形过渡与动画-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 730,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/环境配置/响应式设计与变量-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "响应式设计与变量-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 809,
+   "code": 2,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/环境配置/基础语法与选择器-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "基础语法与选择器-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 689,
+   "code": 4,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/环境配置/字体文本与盒模型-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "字体文本与盒模型-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 698,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/环境配置/背景渐变与边框-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "背景渐变与边框-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 851,
+   "code": 1,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/CSS3/背景渐变与边框.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "背景渐变与边框",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1429,
+   "code": 3,
+   "tables": 7,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/MOC - HTML5.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 21 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "前端/HTML"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - HTML5",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1273,
+   "code": 1,
+   "tables": 21,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/交互组件与全局属性.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "交互组件与全局属性",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1649,
+   "code": 3,
+   "tables": 23,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/列表与表格标签.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "列表与表格标签",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1389,
+   "code": 2,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/基础语法与文档结构.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "基础语法与文档结构",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1533,
+   "code": 1,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/多媒体与嵌入技术.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "多媒体与嵌入技术",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1657,
+   "code": 4,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/文本排版与链接标签.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "文本排版与链接标签",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1992,
+   "code": 1,
+   "tables": 30,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/环境配置/交互组件与全局属性-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "交互组件与全局属性-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 767,
+   "code": 2,
+   "tables": 7,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/环境配置/列表与表格标签-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "列表与表格标签-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 644,
+   "code": 2,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/环境配置/基础语法-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "基础语法-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 985,
+   "code": 3,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/环境配置/多媒体与嵌入技术-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "多媒体与嵌入技术-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 872,
+   "code": 3,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/环境配置/文本排版与链接标签-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "文本排版与链接标签-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 688,
+   "code": 2,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/环境配置/表单元素与输入控件-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "表单元素与输入控件-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 912,
+   "code": 2,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/环境配置/语义化结构标签-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "语义化结构标签-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 988,
+   "code": 2,
+   "tables": 11,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/表单元素与输入控件.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "表单元素与输入控件",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1981,
+   "code": 2,
+   "tables": 18,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/HTML5/语义化结构标签.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "语义化结构标签",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1739,
+   "code": 1,
+   "tables": 11,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/DOM与BOM操作.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "DOM与BOM操作",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1366,
+   "code": 6,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/MOC - JavaScript.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 22 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "前端/JavaScript"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - JavaScript",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 2063,
+   "code": 1,
+   "tables": 22,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/事件处理机制.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "事件处理机制",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1525,
+   "code": 4,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/函数与参数.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "函数与参数",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1441,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/基础语法与数据类型.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "基础语法与数据类型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1560,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/异步编程与网络请求.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "异步编程与网络请求",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1904,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/核心内置对象.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "核心内置对象",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1379,
+   "code": 4,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/环境配置/DOM与BOM-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/JavaScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "DOM与BOM-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 547,
+   "code": 2,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/环境配置/OOP与ES6+-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/JavaScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "OOP与ES6+-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 435,
+   "code": 5,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/环境配置/事件处理-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/JavaScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "事件处理-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 614,
+   "code": 2,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/环境配置/内置对象-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 350 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/JavaScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "内置对象-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 350,
+   "code": 2,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/环境配置/函数与参数-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 374 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/JavaScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "函数与参数-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 374,
+   "code": 4,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/环境配置/基础语法-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "基础语法-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 851,
+   "code": 3,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/环境配置/异步编程-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/JavaScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "异步编程-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 736,
+   "code": 2,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/现代运行与调试环境.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "现代运行与调试环境",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 620,
+   "code": 2,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/运算符与控制流.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "运算符与控制流",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 1359,
+   "code": 2,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/JavaScript/面向对象与ES6+.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "面向对象与ES6+",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1517,
+   "code": 5,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/MOC - 前端.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 112 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 前端",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 13504,
+   "code": 1,
+   "tables": 112,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Next.js/MOC - Next.js.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 28 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "前端/Next.js"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - Next.js",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": true,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 1,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1623,
+   "code": 2,
+   "tables": 28,
+   "age_days": 83
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Next.js/文件路由系统.md": {
+  "maturity": "GROWING",
+  "why": "仅差「有跨学科溯源」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "文件路由系统",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": false,
+   "chars": 1357,
+   "code": 9,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Next.js/框架概述与核心特性.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、内容充实",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "框架概述与核心特性",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 2228,
+   "code": 0,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Next.js/渲染模式.md": {
+  "maturity": "GROWING",
+  "why": "仅差「有跨学科溯源」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "渲染模式",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": false,
+   "chars": 1599,
+   "code": 6,
+   "tables": 6,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Next.js/环境配置/文件路由系统-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "文件路由系统-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 459,
+   "code": 5,
+   "tables": 7,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Next.js/环境配置/渲染模式-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "渲染模式-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 567,
+   "code": 4,
+   "tables": 5,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Next.js/环境配置/环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 957,
+   "code": 5,
+   "tables": 15,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Next.js/环境配置/项目创建与核心配置-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "项目创建与核心配置-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 584,
+   "code": 6,
+   "tables": 9,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Next.js/项目创建与核心配置.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "项目创建与核心配置",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": false,
+   "chars": 1085,
+   "code": 4,
+   "tables": 10,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Nuxt.js/MOC - Nuxt.js.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 28 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "前端/Nuxt.js"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - Nuxt.js",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": true,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 1,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1520,
+   "code": 2,
+   "tables": 28,
+   "age_days": 83
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Nuxt.js/中间件插件与部署.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "中间件插件与部署",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": false,
+   "chars": 1172,
+   "code": 13,
+   "tables": 7,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Nuxt.js/数据获取与状态管理.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "数据获取与状态管理",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 3,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 987,
+   "code": 11,
+   "tables": 8,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Nuxt.js/框架概述与SSR原理.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "框架概述与SSR原理",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 3,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1610,
+   "code": 1,
+   "tables": 14,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Nuxt.js/环境配置/数据获取-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 391 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "数据获取-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 391,
+   "code": 6,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Nuxt.js/环境配置/环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 933,
+   "code": 5,
+   "tables": 20,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Nuxt.js/环境配置/路由系统-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 254 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "路由系统-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 254,
+   "code": 7,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Nuxt.js/环境配置/部署与环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "部署与环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 441,
+   "code": 11,
+   "tables": 4,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Nuxt.js/路由系统与布局.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "路由系统与布局",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 3,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 885,
+   "code": 12,
+   "tables": 6,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/MOC - TypeScript.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 28 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - TypeScript",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 2047,
+   "code": 1,
+   "tables": 28,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/基础与特殊类型.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "基础与特殊类型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 1745,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/工具类型与装饰器.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "工具类型与装饰器",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1379,
+   "code": 2,
+   "tables": 10,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/接口与函数类型.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "接口与函数类型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 1319,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/映射类型.md": {
+  "maturity": "GROWING",
+  "why": "仅差「内容充实」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "映射类型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2073,
+   "code": 1,
+   "tables": 0,
+   "age_days": 44
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/泛型.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "泛型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1184,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/环境配置/基础语法-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "基础语法-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 527,
+   "code": 4,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/环境配置/工具类型与装饰器-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 270 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "工具类型与装饰器-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 270,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/环境配置/接口与函数-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 398 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "接口与函数-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 398,
+   "code": 2,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/环境配置/映射类型-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "映射类型-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 830,
+   "code": 4,
+   "tables": 6,
+   "age_days": 44
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/环境配置/泛型-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 226 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "泛型-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 226,
+   "code": 2,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/环境配置/类与枚举-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 262 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "类与枚举-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 262,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/环境配置/类型兼容性-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "类型兼容性-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1061,
+   "code": 4,
+   "tables": 6,
+   "age_days": 44
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/环境配置/类型声明文件-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "类型声明文件-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1035,
+   "code": 5,
+   "tables": 7,
+   "age_days": 44
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/环境配置/类型断言与守卫-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 385 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "类型断言与守卫-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 385,
+   "code": 1,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/环境配置/索引签名与索引访问类型-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "索引签名与索引访问类型-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 858,
+   "code": 4,
+   "tables": 5,
+   "age_days": 44
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/类与高级类型.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "类与高级类型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": false,
+   "chars": 1144,
+   "code": 4,
+   "tables": 7,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/类型兼容性与结构化类型.md": {
+  "maturity": "GROWING",
+  "why": "仅差「被引用≥2」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "类型兼容性与结构化类型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2081,
+   "code": 2,
+   "tables": 0,
+   "age_days": 44
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/类型声明文件.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "类型声明文件",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2046,
+   "code": 1,
+   "tables": 7,
+   "age_days": 44
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/类型断言与类型守卫.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "类型断言与类型守卫",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 1393,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/TypeScript/索引签名与索引访问类型.md": {
+  "maturity": "GROWING",
+  "why": "仅差「内容充实」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/TypeScript"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "索引签名与索引访问类型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 1922,
+   "code": 1,
+   "tables": 0,
+   "age_days": 44
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/MOC - Vue3.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 21 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "前端/Vue"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - Vue3",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1748,
+   "code": 1,
+   "tables": 21,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/Pinia状态管理核心设计.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "Pinia状态管理核心设计",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 8,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 1837,
+   "code": 7,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/Vite构建工具原理与优势.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "Vite构建工具原理与优势",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 4,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 1379,
+   "code": 5,
+   "tables": 13,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/内置组件.md": {
+  "maturity": "GROWING",
+  "why": "结构已成，关联上下文空缺（1/3）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/Vue"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "内置组件",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 3,
+   "ctx_filled": 1,
+   "trace": false,
+   "chars": 917,
+   "code": 5,
+   "tables": 7,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/响应式引擎与CompositionAPI.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "响应式引擎与CompositionAPI",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 6,
+   "ctx_filled": 1,
+   "trace": false,
+   "chars": 1641,
+   "code": 15,
+   "tables": 18,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/异步组件与自定义指令.md": {
+  "maturity": "GROWING",
+  "why": "结构已成，关联上下文空缺（0/2）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/Vue"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "异步组件与自定义指令",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 2,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 783,
+   "code": 4,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/样式与CSS特性.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/Vue"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "样式与CSS特性",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 1,
+   "trace": true,
+   "chars": 1397,
+   "code": 3,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/模板语法与指令.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/Vue"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "模板语法与指令",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1377,
+   "code": 8,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/环境配置/内置组件-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 387 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/Vue"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "内置组件-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 387,
+   "code": 1,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/环境配置/异步组件-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 305 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/Vue"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "异步组件-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 305,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/环境配置/样式与CSS-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 367 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/Vue"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "样式与CSS-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 367,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/环境配置/模板语法-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/Vue"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "模板语法-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 551,
+   "code": 2,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/环境配置/组件通信-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "前端/Vue"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "组件通信-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 569,
+   "code": 1,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/前端/Vue3/组件通信与插槽.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "前端/Vue"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "组件通信与插槽",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 2,
+   "ctx_filled": 1,
+   "trace": false,
+   "chars": 943,
+   "code": 6,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/IO流/IO流-序列化与Properties.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "IO流-序列化与Properties",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 1650,
+   "code": 7,
+   "tables": 12,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/IO流/IO流体系.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "IO流体系",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 6,
+   "ctx_filled": 1,
+   "trace": false,
+   "chars": 1396,
+   "code": 6,
+   "tables": 10,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/IO流/MOC - IO流.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 4 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "Java/IO"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - IO流",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 418,
+   "code": 0,
+   "tables": 4,
+   "age_days": 94
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/Java基础/MOC - Java基础.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 9 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "后端/Java"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - Java基础",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 723,
+   "code": 0,
+   "tables": 9,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/Java基础/Object类与String基础.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "Object类与String基础",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 4,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 1218,
+   "code": 5,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/Java基础/常用API与工具类.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "常用API与工具类",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 2223,
+   "code": 9,
+   "tables": 49,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/Java基础/控制语句.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "控制语句",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 6,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1003,
+   "code": 4,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/Java基础/数据类型与类型转换.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "数据类型与类型转换",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 7,
+   "ctx_filled": 7,
+   "trace": false,
+   "chars": 1322,
+   "code": 4,
+   "tables": 11,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/Java基础/数组.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "数组",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 833,
+   "code": 4,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/Java基础/方法重载与递归.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "方法重载与递归",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 8,
+   "ctx_filled": 5,
+   "trace": false,
+   "chars": 1273,
+   "code": 2,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/Java基础/运算符.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "运算符",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 821,
+   "code": 1,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/MOC - Java后端.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 65 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - Java后端",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 6280,
+   "code": 2,
+   "tables": 65,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/GraalVM与Launch4j打包-配置指南.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "GraalVM与Launch4j打包-配置指南",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 814,
+   "code": 9,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/JWT无状态鉴权与安全机制.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "JWT无状态鉴权与安全机制",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 8,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 1391,
+   "code": 5,
+   "tables": 14,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/MOC - SpringBoot.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 34 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - SpringBoot",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 3198,
+   "code": 2,
+   "tables": 34,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/MyBatis-Plus工程化实践.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "MyBatis-Plus工程化实践",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 0,
+   "trace": true,
+   "chars": 1501,
+   "code": 7,
+   "tables": 26,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/RBAC权限模型与五表设计.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "RBAC权限模型与五表设计",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 4,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 972,
+   "code": 4,
+   "tables": 7,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/Thymeleaf3-核心语法与模板引擎.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：有跨学科溯源、关联≥4维且无空缺",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "后端/Java",
+    "后端/SpringBoot"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "Thymeleaf3-核心语法与模板引擎",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1156,
+   "code": 8,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/可观测性与测试增强.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "后端/Java",
+    "后端/SpringBoot"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "可观测性与测试增强",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 2,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 1218,
+   "code": 3,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/外部化配置与Record绑定.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：有跨学科溯源、关联≥4维且无空缺",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "后端/Java",
+    "后端/SpringBoot"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "外部化配置与Record绑定",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1026,
+   "code": 3,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/桌面应用打包方案对比.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "桌面应用打包方案对比",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 2049,
+   "code": 3,
+   "tables": 9,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/环境配置/Thymeleaf-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 280 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "后端/Java",
+    "后端/SpringBoot"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "Thymeleaf-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 280,
+   "code": 4,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/生产环境避坑实录.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "生产环境避坑实录",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 1,
+   "trace": true,
+   "chars": 1417,
+   "code": 8,
+   "tables": 19,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/离线桌面应用架构设计.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "离线桌面应用架构设计",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 1921,
+   "code": 4,
+   "tables": 7,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/SpringBoot/自动装配原理与MVC生命周期.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "自动装配原理与MVC生命周期",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 7,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 2319,
+   "code": 4,
+   "tables": 33,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/多线程/MOC - 多线程.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 5 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "Java/多线程"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 多线程",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 448,
+   "code": 0,
+   "tables": 5,
+   "age_days": 94
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/多线程/同步与锁机制.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "同步与锁机制",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 1,
+   "trace": false,
+   "chars": 1692,
+   "code": 11,
+   "tables": 14,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/多线程/基础概念与实现.md": {
+  "maturity": "GROWING",
+  "why": "结构已成，关联上下文空缺（0/5）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "基础概念与实现",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 5,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1278,
+   "code": 7,
+   "tables": 14,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/多线程/高级特性.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "高级特性",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 8,
+   "ctx_filled": 5,
+   "trace": false,
+   "chars": 1521,
+   "code": 3,
+   "tables": 9,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/MOC - 开发手册.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 11 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "后端/Java"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 开发手册",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1129,
+   "code": 0,
+   "tables": 11,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/阿里巴巴Java开发手册-MySQL与ORM规约.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/待处理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-MySQL与ORM规约",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1976,
+   "code": 4,
+   "tables": 33,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/阿里巴巴Java开发手册-MySQL数据库规约.md": {
+  "maturity": "GROWING",
+  "why": "结构已成，关联上下文空缺（1/3）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "后端/Java",
+    "数据库/MySQL"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-MySQL数据库规约",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 3,
+   "ctx_filled": 1,
+   "trace": false,
+   "chars": 867,
+   "code": 2,
+   "tables": 15,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/阿里巴巴Java开发手册-OOP与格式规约.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "后端/Java"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-OOP与格式规约",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 2,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 998,
+   "code": 1,
+   "tables": 15,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/阿里巴巴Java开发手册-单元测试规约.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "后端/Java"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-单元测试规约",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 696,
+   "code": 3,
+   "tables": 7,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/阿里巴巴Java开发手册-命名与格式规约.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/待处理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-命名与格式规约",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 7,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 1978,
+   "code": 0,
+   "tables": 22,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/阿里巴巴Java开发手册-并发编程安全规约.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/待处理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-并发编程安全规约",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 8,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1688,
+   "code": 7,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/阿里巴巴Java开发手册-异常日志与工程规约.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "后端/Java"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-异常日志与工程规约",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 936,
+   "code": 3,
+   "tables": 12,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/阿里巴巴Java开发手册-控制语句与注释规约.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "后端/Java"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-控制语句与注释规约",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 2,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 840,
+   "code": 2,
+   "tables": 14,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/阿里巴巴Java开发手册-设计规约.md": {
+  "maturity": "GROWING",
+  "why": "结构已成，关联上下文空缺（1/3）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "后端/Java"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-设计规约",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 3,
+   "ctx_filled": 1,
+   "trace": false,
+   "chars": 768,
+   "code": 2,
+   "tables": 14,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/开发手册/阿里巴巴Java开发手册-集合处理避坑.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/待处理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "阿里巴巴Java开发手册-集合处理避坑",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 8,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1589,
+   "code": 9,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/异常与集合/MOC - 异常与集合.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 7 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "后端/Java"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 异常与集合",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 614,
+   "code": 0,
+   "tables": 7,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/异常与集合/异常处理.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "异常处理",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 1513,
+   "code": 7,
+   "tables": 11,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/异常与集合/集合框架-Collection与List.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "集合框架-Collection与List",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 6,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1584,
+   "code": 5,
+   "tables": 27,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/异常与集合/集合框架-Map详解.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "集合框架-Map详解",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1468,
+   "code": 5,
+   "tables": 26,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/异常与集合/集合框架-Set与排序.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "集合框架-Set与排序",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 6,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1256,
+   "code": 3,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/异常与集合/集合框架-泛型与foreach.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "集合框架-泛型与foreach",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 7,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1145,
+   "code": 5,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/面向对象/MOC - Java面向对象.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 9 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "后端/Java"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - Java面向对象",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 792,
+   "code": 0,
+   "tables": 9,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/面向对象/final关键字与常量.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "final关键字与常量",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 7,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1394,
+   "code": 3,
+   "tables": 12,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/面向对象/内部类与匿名内部类.md": {
+  "maturity": "GROWING",
+  "why": "结构已成，关联上下文空缺（2/7）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "内部类与匿名内部类",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 7,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 1253,
+   "code": 2,
+   "tables": 12,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/面向对象/对象与this关键字.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "对象与this关键字",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 6,
+   "ctx_filled": 4,
+   "trace": false,
+   "chars": 994,
+   "code": 3,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/面向对象/抽象类与抽象方法.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "抽象类与抽象方法",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 2,
+   "ctx_filled": 0,
+   "trace": true,
+   "chars": 1026,
+   "code": 5,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/面向对象/接口.md": {
+  "maturity": "GROWING",
+  "why": "结构已成，关联上下文空缺（0/4）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "接口",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 4,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1248,
+   "code": 4,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/面向对象/方法覆盖与多态.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "方法覆盖与多态",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 4,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 1389,
+   "code": 3,
+   "tables": 15,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/面向对象/继承与super关键字.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "继承与super关键字",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 3,
+   "ctx_filled": 1,
+   "trace": false,
+   "chars": 1110,
+   "code": 4,
+   "tables": 7,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/高级特性/MOC - 高级特性.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 4 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "Java/高级"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 高级特性",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 357,
+   "code": 0,
+   "tables": 4,
+   "age_days": 94
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/高级特性/反射机制.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "反射机制",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1185,
+   "code": 11,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/Java/高级特性/注解.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "注解",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1165,
+   "code": 8,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/MOC - 后端.md": {
+  "maturity": "INDEXED",
+  "why": "索引仅 0 条，尚未成形",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "后端"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 后端",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 278,
+   "code": 1,
+   "tables": 0,
+   "age_days": 94
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/MOC - NestJS.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 32 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "后端/NestJS"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - NestJS",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1901,
+   "code": 2,
+   "tables": 32,
+   "age_days": 83
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/TypeORM数据库集成与CRUD.md": {
+  "maturity": "GROWING",
+  "why": "仅差「有跨学科溯源」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "TypeORM数据库集成与CRUD",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": false,
+   "chars": 1379,
+   "code": 16,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/控制器与路由.md": {
+  "maturity": "GROWING",
+  "why": "仅差「有跨学科溯源」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "控制器与路由",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": false,
+   "chars": 1474,
+   "code": 5,
+   "tables": 12,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/模块系统.md": {
+  "maturity": "GROWING",
+  "why": "仅差「有跨学科溯源」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "模块系统",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": false,
+   "chars": 1326,
+   "code": 7,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/环境配置/TypeORM数据库集成-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "TypeORM数据库集成-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 679,
+   "code": 6,
+   "tables": 9,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/环境配置/控制器与路由-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 388 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "控制器与路由-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 388,
+   "code": 6,
+   "tables": 9,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/环境配置/核心架构与项目初始化.md": {
+  "maturity": "GROWING",
+  "why": "仅差「有跨学科溯源」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "核心架构与项目初始化",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": false,
+   "chars": 2750,
+   "code": 6,
+   "tables": 13,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/环境配置/模块系统-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "模块系统-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 401,
+   "code": 4,
+   "tables": 6,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/环境配置/环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 632,
+   "code": 8,
+   "tables": 5,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/环境配置/请求生命周期-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "请求生命周期-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 577,
+   "code": 6,
+   "tables": 7,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/后端/NestJS/请求生命周期.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "请求生命周期",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": false,
+   "chars": 1582,
+   "code": 12,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/技术划分.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/已完成"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "技术划分",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 4832,
+   "code": 0,
+   "tables": 64,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/MOC - 数据库系统.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 42 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 数据库系统",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 3419,
+   "code": 2,
+   "tables": 42,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/MySQL-InnoDB索引与MVCC详解.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "MySQL-InnoDB索引与MVCC详解",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1797,
+   "code": 5,
+   "tables": 15,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/Redis-高性能原理与数据结构.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "Redis-高性能原理与数据结构",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 7,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1743,
+   "code": 7,
+   "tables": 18,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/数据库系统概论/MOC - 数据库系统概论.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 33 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 数据库系统概论",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 2164,
+   "code": 2,
+   "tables": 33,
+   "age_days": 52
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/数据库系统概论/SQL核心语法.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "SQL核心语法",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 3,
+   "ctx_filled": 1,
+   "trace": false,
+   "chars": 1231,
+   "code": 7,
+   "tables": 27,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/数据库系统概论/事务恢复与并发控制.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "事务恢复与并发控制",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 7,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 2596,
+   "code": 4,
+   "tables": 41,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/数据库系统概论/关系完整性与关系代数.md": {
+  "maturity": "GROWING",
+  "why": "结构已成，关联上下文空缺（0/5）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "关系完整性与关系代数",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 5,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1826,
+   "code": 1,
+   "tables": 37,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/数据库系统概论/安全性与存取控制.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "安全性与存取控制",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 4,
+   "ctx_filled": 1,
+   "trace": false,
+   "chars": 1774,
+   "code": 8,
+   "tables": 29,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/数据库系统概论/完整性约束与触发器.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "完整性约束与触发器",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1215,
+   "code": 3,
+   "tables": 21,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/数据库系统概论/数据库设计与E-R图.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "数据库设计与E-R图",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 0,
+   "trace": true,
+   "chars": 2016,
+   "code": 1,
+   "tables": 36,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/数据库系统概论/核心概念与三级模式.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "核心概念与三级模式",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 5,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1983,
+   "code": 1,
+   "tables": 31,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/数据库系统概论/索引视图与存储过程.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "索引视图与存储过程",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 4,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 1224,
+   "code": 6,
+   "tables": 17,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/数据库/数据库系统概论/范式与关系模式分解.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "范式与关系模式分解",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 7,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 1828,
+   "code": 4,
+   "tables": 14,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/MOC - 计算机基础.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 65 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "计算机基础"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 计算机基础",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 6493,
+   "code": 1,
+   "tables": 65,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/MOC - 操作系统.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 50 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 操作系统",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": true,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 1,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": true,
+   "chars": 4683,
+   "code": 1,
+   "tables": 50,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/内存管理/内存管理基础.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "内存管理基础",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2143,
+   "code": 3,
+   "tables": 27,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/内存管理/非连续分配与虚拟内存.md": {
+  "maturity": "GROWING",
+  "why": "仅差「五块齐全」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "非连续分配与虚拟内存",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2325,
+   "code": 5,
+   "tables": 25,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/操作系统概述/操作系统体系结构与引导.md": {
+  "maturity": "GROWING",
+  "why": "仅差「五块齐全」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "操作系统体系结构与引导",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2062,
+   "code": 1,
+   "tables": 13,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/操作系统概述/操作系统概念、功能与特征.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "操作系统概念、功能与特征",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2049,
+   "code": 1,
+   "tables": 12,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/操作系统概述/操作系统运行机制-中断与系统调用.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "操作系统运行机制-中断与系统调用",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 1870,
+   "code": 2,
+   "tables": 6,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/操作系统概述/环境配置/环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 861,
+   "code": 6,
+   "tables": 6,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/文件管理/文件系统.md": {
+  "maturity": "GROWING",
+  "why": "仅差「五块齐全」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "文件系统",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2533,
+   "code": 5,
+   "tables": 39,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/设备管理/IO系统.md": {
+  "maturity": "GROWING",
+  "why": "仅差「五块齐全」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "IO系统",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2980,
+   "code": 5,
+   "tables": 39,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/进程管理/MOC - 进程管理.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 29 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 进程管理",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 2159,
+   "code": 2,
+   "tables": 29,
+   "age_days": 52
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/进程管理/信号量机制与经典同步问题.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "信号量机制与经典同步问题",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 1597,
+   "code": 5,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/进程管理/处理机调度与调度算法.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "处理机调度与调度算法",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2543,
+   "code": 2,
+   "tables": 53,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/进程管理/实验环境与代码示例.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 351 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "实验环境与代码示例",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 351,
+   "code": 5,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/进程管理/管程与死锁.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "管程与死锁",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 2188,
+   "code": 4,
+   "tables": 17,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/进程管理/线程与多线程模型.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "线程与多线程模型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 1863,
+   "code": 2,
+   "tables": 20,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/进程管理/进程同步与互斥.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "进程同步与互斥",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 1548,
+   "code": 3,
+   "tables": 12,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/进程管理/进程的概念、组成与状态.md": {
+  "maturity": "GROWING",
+  "why": "仅差「有跨学科溯源」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "进程的概念、组成与状态",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": false,
+   "chars": 1871,
+   "code": 2,
+   "tables": 14,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/操作系统/进程管理/进程通信.md": {
+  "maturity": "GROWING",
+  "why": "仅差「有跨学科溯源」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "进程通信",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": false,
+   "chars": 1507,
+   "code": 4,
+   "tables": 7,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/数据科学/MOC - 数据科学.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 4 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "数据科学"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 数据科学",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 396,
+   "code": 0,
+   "tables": 4,
+   "age_days": 94
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/数据科学/Pandas2-核心机制与高性能数据处理.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "数据科学/Pandas"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "Pandas2-核心机制与高性能数据处理",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 1,
+   "trace": true,
+   "chars": 1127,
+   "code": 6,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/数据科学/环境配置/Pandas-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 360 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "数据科学/Pandas"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "Pandas-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 360,
+   "code": 4,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/数据通信/MOC - 数据通信.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 7 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "计算机基础/数据通信"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 数据通信",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 575,
+   "code": 0,
+   "tables": 7,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/数据通信/同步与差错控制.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/数据通信"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "同步与差错控制",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1420,
+   "code": 0,
+   "tables": 16,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/数据通信/多路复用与交换技术.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/数据通信"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "多路复用与交换技术",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1156,
+   "code": 1,
+   "tables": 10,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/数据通信/学习工具与环境.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "计算机基础/数据通信"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "学习工具与环境",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 568,
+   "code": 1,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/数据通信/数字基带与频带传输.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、关联≥4维且无空缺",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/数据通信"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "数字基带与频带传输",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 2,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1191,
+   "code": 0,
+   "tables": 12,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/数据通信/模拟信号数字化.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/数据通信"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "模拟信号数字化",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1184,
+   "code": 1,
+   "tables": 12,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/数据通信/通信系统基础与信道.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/数据通信"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "通信系统基础与信道",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 2,
+   "ctx_filled": 1,
+   "trace": true,
+   "chars": 875,
+   "code": 1,
+   "tables": 11,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/编译原理/MOC - 编译原理.md": {
+  "maturity": "INDEXED",
+  "why": "索引已建 · 收录 9 条，仍可补充",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "计算机基础/编译原理"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 编译原理",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 789,
+   "code": 0,
+   "tables": 9,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/编译原理/代码优化与目标代码生成.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/编译原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "代码优化与目标代码生成",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1095,
+   "code": 2,
+   "tables": 8,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/编译原理/学习工具与环境.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "计算机基础/编译原理"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "学习工具与环境",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 462,
+   "code": 1,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/编译原理/编译器概述与文法.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/编译原理"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "编译器概述与文法",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 1328,
+   "code": 2,
+   "tables": 14,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/编译原理/词法分析.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/编译原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "词法分析",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1012,
+   "code": 3,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/编译原理/语法分析-自上而下(LL).md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：关联≥4维且无空缺、内容充实",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/编译原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "语法分析-自上而下(LL)",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 1,
+   "ctx_filled": 1,
+   "trace": true,
+   "chars": 791,
+   "code": 2,
+   "tables": 4,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/编译原理/语法分析-自下而上(LR).md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/编译原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "语法分析-自下而上(LR)",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 2,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1292,
+   "code": 1,
+   "tables": 12,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/编译原理/语法制导翻译与中间代码.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/编译原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "语法制导翻译与中间代码",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 2,
+   "trace": true,
+   "chars": 1164,
+   "code": 2,
+   "tables": 4,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/编译原理/运行时存储组织.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/编译原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "运行时存储组织",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 3,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1070,
+   "code": 2,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/计算机组成原理/CPU.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/组成原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "CPU",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1549,
+   "code": 2,
+   "tables": 19,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/计算机组成原理/MOC - 计算机组成原理.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 21 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 计算机组成原理",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1046,
+   "code": 1,
+   "tables": 21,
+   "age_days": 94
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/计算机组成原理/存储系统.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/组成原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "存储系统",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1077,
+   "code": 2,
+   "tables": 5,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/计算机组成原理/学习环境与工具.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/教程",
+    "计算机基础/组成原理"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "学习环境与工具",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 694,
+   "code": 1,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/计算机组成原理/总线与IO系统.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、关联≥4维且无空缺",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/组成原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "总线与IO系统",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1263,
+   "code": 1,
+   "tables": 10,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/计算机组成原理/指令系统.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/组成原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "指令系统",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1389,
+   "code": 1,
+   "tables": 16,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/计算机组成原理/系统概述.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/组成原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "系统概述",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 1486,
+   "code": 0,
+   "tables": 14,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/计算机组成原理/运算方法与运算器.md": {
+  "maturity": "GROWING",
+  "why": "仅差「关联≥4维且无空缺」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/笔记",
+    "计算机基础/组成原理"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "运算方法与运算器",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 3,
+   "trace": true,
+   "chars": 1267,
+   "code": 2,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/跨学科纵深/MOC - 跨学科纵深.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 22 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "跨学科纵深"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 跨学科纵深",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1935,
+   "code": 0,
+   "tables": 22,
+   "age_days": 94
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/跨学科纵深/XD-0 物理与电路.md": {
+  "maturity": "INDEXED",
+  "why": "索引仅 0 条，尚未成形",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "跨学科纵深"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "XD-0 物理与电路",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 259,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/跨学科纵深/XD-1 数字系统与体系结构.md": {
+  "maturity": "INDEXED",
+  "why": "索引仅 0 条，尚未成形",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "跨学科纵深"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "XD-1 数字系统与体系结构",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 692,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/跨学科纵深/XD-2 操作系统.md": {
+  "maturity": "INDEXED",
+  "why": "索引仅 0 条，尚未成形",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "跨学科纵深"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "XD-2 操作系统",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 406,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/跨学科纵深/XD-3 计算机网络.md": {
+  "maturity": "INDEXED",
+  "why": "索引仅 0 条，尚未成形",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "跨学科纵深"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "XD-3 计算机网络",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 690,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/跨学科纵深/XD-4 编程语言与编译.md": {
+  "maturity": "INDEXED",
+  "why": "索引仅 0 条，尚未成形",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "跨学科纵深"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "XD-4 编程语言与编译",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 762,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/跨学科纵深/XD-5 数据结构与算法.md": {
+  "maturity": "INDEXED",
+  "why": "索引仅 0 条，尚未成形",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "跨学科纵深"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "XD-5 数据结构与算法",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 330,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/跨学科纵深/XD-6 软件工程与架构.md": {
+  "maturity": "INDEXED",
+  "why": "索引仅 0 条，尚未成形",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "跨学科纵深"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "XD-6 软件工程与架构",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1015,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/跨学科纵深/XD-7 数据与智能.md": {
+  "maturity": "INDEXED",
+  "why": "索引仅 0 条，尚未成形",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "跨学科纵深"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "XD-7 数据与智能",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 602,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/计算机基础/跨学科纵深/XD-8 人工智能与前沿.md": {
+  "maturity": "INDEXED",
+  "why": "索引仅 0 条，尚未成形",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "跨学科纵深"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "XD-8 人工智能与前沿",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 257,
+   "code": 0,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/MOC - 软件工程.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 48 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 软件工程",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 4285,
+   "code": 1,
+   "tables": 48,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/多端发布/多端发布部署与运营维护.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "多端发布部署与运营维护",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 3821,
+   "code": 0,
+   "tables": 15,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/多端发布/环境配置/多端部署-运维环境配置指南.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "多端部署-运维环境配置指南",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1115,
+   "code": 7,
+   "tables": 7,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/多端测试/多端测试策略与专项测试.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "多端测试策略与专项测试",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 3068,
+   "code": 0,
+   "tables": 13,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/多端测试/环境配置/多端测试-自动化环境配置指南.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "多端测试-自动化环境配置指南",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 563,
+   "code": 8,
+   "tables": 0,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/多端设计/多端设计规范与技术选型.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "多端设计规范与技术选型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 3642,
+   "code": 0,
+   "tables": 19,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/多端设计/环境配置/多端开发-跨平台环境配置指南.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "多端开发-跨平台环境配置指南",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 908,
+   "code": 10,
+   "tables": 0,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/接单实战/MOC - 接单实战.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 27 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 接单实战",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1636,
+   "code": 2,
+   "tables": 27,
+   "age_days": 52
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/接单实战/接单交付安全与打包配置指南.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "接单交付安全与打包配置指南",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 746,
+   "code": 9,
+   "tables": 0,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/接单实战/接单交付安全与防骗机制.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "接单交付安全与防骗机制",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 3404,
+   "code": 2,
+   "tables": 14,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/接单实战/接单报价与合同模板配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "接单报价与合同模板配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1235,
+   "code": 4,
+   "tables": 8,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/接单实战/接单需求界定与报价风控.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "接单需求界定与报价风控",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 3603,
+   "code": 0,
+   "tables": 25,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/接单实战/环境配置/接单工具箱与环境配置指南.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "接单工具箱与环境配置指南",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1369,
+   "code": 5,
+   "tables": 11,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/接单实战/自由职业接单全流程指南.md": {
+  "maturity": "GROWING",
+  "why": "仅差「内容充实」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "自由职业接单全流程指南",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 3598,
+   "code": 0,
+   "tables": 0,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/项目管理/环境配置/SDLC-核心工具与环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "SDLC-核心工具与环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1941,
+   "code": 0,
+   "tables": 6,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/软件工程/项目管理/软件项目全流程-SDLC八阶段模型.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：关联≥4维且无空缺、内容充实",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "软件项目全流程-SDLC八阶段模型",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 3493,
+   "code": 0,
+   "tables": 0,
+   "age_days": 64
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Docker/Compose全栈部署与网络拓扑.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "Compose全栈部署与网络拓扑",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 8,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 981,
+   "code": 5,
+   "tables": 0,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/MOC - Git.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 32 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "运维/Git"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - Git",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1783,
+   "code": 2,
+   "tables": 32,
+   "age_days": 83
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/分布式版本控制核心概念.md": {
+  "maturity": "GROWING",
+  "why": "仅差「五块齐全」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "分布式版本控制核心概念",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 3508,
+   "code": 1,
+   "tables": 9,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/分支管理与合并策略.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "分支管理与合并策略",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": true,
+   "chars": 1559,
+   "code": 5,
+   "tables": 8,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/基本操作与历史管理.md": {
+  "maturity": "GROWING",
+  "why": "仅差「有跨学科溯源」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "基本操作与历史管理",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": false,
+   "chars": 1176,
+   "code": 5,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/环境配置/分支管理-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 393 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "分支管理-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 393,
+   "code": 5,
+   "tables": 7,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/环境配置/基本操作-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 277 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "基本操作-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 277,
+   "code": 6,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/环境配置/环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 625,
+   "code": 9,
+   "tables": 8,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/环境配置/远程协作-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 390 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "远程协作-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 390,
+   "code": 10,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/环境配置/高级技巧-环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "高级技巧-环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 527,
+   "code": 7,
+   "tables": 6,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/远程仓库与团队协作.md": {
+  "maturity": "GROWING",
+  "why": "仅差「有跨学科溯源」即可升常青",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "远程仓库与团队协作",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 5,
+   "ctx_filled": 5,
+   "trace": false,
+   "chars": 1332,
+   "code": 4,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Git/高级技巧与故障恢复.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "高级技巧与故障恢复",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 3,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": false,
+   "chars": 1047,
+   "code": 8,
+   "tables": 0,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/MOC - 运维.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 28 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "运维"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - 运维",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1532,
+   "code": 2,
+   "tables": 28,
+   "age_days": 94
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Nginx/HTTPS性能优化与运维.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "HTTPS性能优化与运维",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": false,
+   "chars": 1102,
+   "code": 11,
+   "tables": 5,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Nginx/MOC - Nginx.md": {
+  "maturity": "INDEXED",
+  "why": "索引完整 · 收录 28 条",
+  "manual": null,
+  "metrics": {
+   "tags": [
+    "status/进行中",
+    "type/MOC",
+    "运维/Nginx"
+   ],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "MOC - Nginx",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 1563,
+   "code": 2,
+   "tables": 28,
+   "age_days": 83
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Nginx/Nginx网关配置与SPA刷新问题.md": {
+  "maturity": "GROWING",
+  "why": "内容充实但骨架不全（2/5 区块）",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "Nginx网关配置与SPA刷新问题",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 8,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1346,
+   "code": 3,
+   "tables": 6,
+   "age_days": 95
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Nginx/反向代理与负载均衡.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "反向代理与负载均衡",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": false,
+   "chars": 1458,
+   "code": 6,
+   "tables": 11,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Nginx/核心概念与安装配置.md": {
+  "maturity": "EVERGREEN",
+  "why": "结构自洽 + 关联完整 + 有溯源 + 被引用",
+  "manual": "EVERGREEN",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "EVERGREEN",
+   "locked": false,
+   "name": "核心概念与安装配置",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": true,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 5,
+   "ctx_rows": 4,
+   "ctx_filled": 4,
+   "trace": true,
+   "chars": 2532,
+   "code": 4,
+   "tables": 14,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Nginx/环境配置/HTTPS运维-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 304 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "HTTPS运维-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 304,
+   "code": 7,
+   "tables": 5,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Nginx/环境配置/反向代理-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 254 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "反向代理-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 254,
+   "code": 4,
+   "tables": 4,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Nginx/环境配置/环境配置与项目初始化.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 336 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "环境配置与项目初始化",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 336,
+   "code": 11,
+   "tables": 6,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Nginx/环境配置/静态资源-环境配置.md": {
+  "maturity": "SEEDLING",
+  "why": "缺 知识体系定位、概述；无关联上下文；正文 255 字",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "静态资源-环境配置",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 255,
+   "code": 6,
+   "tables": 4,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/03_Knowledge/运维/Nginx/静态资源服务与虚拟主机.md": {
+  "maturity": "GROWING",
+  "why": "结构/关联已成，待补：五块齐全、有跨学科溯源",
+  "manual": "GROWING",
+  "metrics": {
+   "tags": [
+    "- status/进行中"
+   ],
+   "fm_maturity": "GROWING",
+   "locked": false,
+   "name": "静态资源服务与虚拟主机",
+   "blocks": {
+    "知识体系定位": true,
+    "概述": true,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 4,
+   "ctx_rows": 3,
+   "ctx_filled": 3,
+   "trace": false,
+   "chars": 1205,
+   "code": 7,
+   "tables": 5,
+   "age_days": 82
+  }
+ },
+ "KnowledgeBase/05_Templates/MOC.md": {
+  "maturity": "EXCLUDED",
+  "why": "模板骨架",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- type/MOC"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "MOC",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 563,
+   "code": 0,
+   "tables": 0,
+   "age_days": null
+  }
+ },
+ "KnowledgeBase/05_Templates/原子笔记.md": {
+  "maturity": "EXCLUDED",
+  "why": "模板骨架",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/待处理"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "原子笔记",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": true,
+    "关联上下文": true
+   },
+   "blocks_n": 2,
+   "ctx_rows": 2,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 310,
+   "code": 1,
+   "tables": 0,
+   "age_days": null
+  }
+ },
+ "KnowledgeBase/05_Templates/阅读研究.md": {
+  "maturity": "EXCLUDED",
+  "why": "模板骨架",
+  "manual": "SEEDLING",
+  "metrics": {
+   "tags": [
+    "- status/待处理"
+   ],
+   "fm_maturity": "SEEDLING",
+   "locked": false,
+   "name": "阅读研究",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": true
+   },
+   "blocks_n": 1,
+   "ctx_rows": 2,
+   "ctx_filled": 2,
+   "trace": false,
+   "chars": 268,
+   "code": 0,
+   "tables": 0,
+   "age_days": null
+  }
+ },
+ "KnowledgeBase/CLAUDE.md": {
+  "maturity": "EXCLUDED",
+  "why": "工具/规范文档",
+  "manual": null,
+  "metrics": {
+   "tags": [],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "CLAUDE",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 4190,
+   "code": 0,
+   "tables": 22,
+   "age_days": null
+  }
+ },
+ "KnowledgeBase/skills/obsidian-manager/SKILL.md": {
+  "maturity": "EXCLUDED",
+  "why": "技能文档",
+  "manual": null,
+  "metrics": {
+   "tags": [],
+   "fm_maturity": null,
+   "locked": false,
+   "name": "SKILL",
+   "blocks": {
+    "知识体系定位": false,
+    "概述": false,
+    "设计初衷": false,
+    "实现": false,
+    "关联上下文": false
+   },
+   "blocks_n": 0,
+   "ctx_rows": 0,
+   "ctx_filled": 0,
+   "trace": false,
+   "chars": 367,
+   "code": 0,
+   "tables": 0,
+   "age_days": null
+  }
+ }
+}
