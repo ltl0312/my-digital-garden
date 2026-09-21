@@ -1,0 +1,26 @@
+# ============================================================
+# 生产容器编排（镜像在开发机构建好，服务器 docker load 后直接跑）
+# 使用：docker compose -f docker-compose.prod.yml up -d
+# 前置：
+#   1) docker load -i /opt/garden-image.tar.gz   （应用镜像 my-digital-garden-app:latest）
+#   2) 同目录放置 .env（DATABASE_URL / AUTH_SECRET / NODE_OPTIONS，沿用原 PM2 部署的值）
+# 说明：
+#   - network_mode: host → 容器与宿主共享网络：无需改 PostgreSQL 的 127.0.0.1 监听，
+#     也无需端口映射，应用直接接管 3000（nginx 的 liutianle.cn 反代目标不变）
+#   - vault 挂载宿主目录，与原部署同一份数据（Markdown 源 = 唯一事实源）
+#   - 内存基准：Nitro 运行态约 200–300MB（2G 服务器实测可用）
+#   - entrypoint.sh 启动时自动执行 prisma migrate deploy（幂等）
+# ============================================================
+services:
+  app:
+    image: my-digital-garden-app:latest
+    container_name: garden-app
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+    volumes:
+      - /opt/digital-garden/content/vault:/app/content/vault
