@@ -58,14 +58,14 @@ watch(() => props.open, async (v) => {
 <template>
   <Teleport to="body">
     <Transition
-      enter-active-class="transition duration-base ease-dawn"
+      enter-active-class="transition duration-micro ease-dawn"
       enter-from-class="opacity-0"
       leave-active-class="transition duration-micro ease-dawn"
       leave-to-class="opacity-0"
     >
       <div
         v-if="open"
-        class="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto p-4 sm:p-6 bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] backdrop-blur-[2px]"
+        class="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto p-4 sm:p-6 bg-[color-mix(in_srgb,var(--ink)_38%,transparent)]"
         @click.self="onOverlay"
         @keydown="onKeydown"
       >

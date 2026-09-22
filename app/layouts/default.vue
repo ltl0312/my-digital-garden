@@ -305,7 +305,7 @@ const logout = async () => {
         <!-- 抽屉遮罩（<1024） -->
         <div
           v-if="isNarrow && sidebarOpen"
-          class="absolute inset-0 z-30 bg-[rgba(10,13,19,0.45)] backdrop-blur-[2px]"
+          class="absolute inset-0 z-30 bg-[rgba(10,13,19,0.45)]"
           @click="sidebarOpen = false"
         ></div>
 
@@ -324,45 +324,54 @@ const logout = async () => {
       </div>
     </div>
 
-    <!-- ⌘K 命令面板 -->
-    <CommandPalette v-model:open="commandOpen" />
+    <!-- 全局浮层：命令面板 / 批量导入 / 新建文件夹 / 新建笔记 / Toast / 确认框
+         一律只在客户端渲染 —— 这些组件内部都是 `Teleport to body`：SSR 会把内容输出到
+         body 末尾，客户端 hydration 再按自己的顺序去匹配，多个 Teleport 之间必然错位，
+         实测 ImportDialog 与 ToastHost 在**每个页面**都报
+         「Hydration node mismatch（server: HTMLDivElement / client: Comment）」，
+         进而让 Vue 丢弃整块 SSR DOM 重新渲染 —— 这正是用户反馈的「切换页面闪烁」。
+         它们只由交互触发、无需 SSR，包一层 ClientOnly 即可彻底消除该错配。 -->
+    <ClientOnly>
+      <!-- ⌘K 命令面板 -->
+      <CommandPalette v-model:open="commandOpen" />
 
-    <!-- 批量导入对话框 -->
-    <ImportDialog />
+      <!-- 批量导入对话框 -->
+      <ImportDialog />
 
-    <!-- 新建文件夹（spec 6 NewFolderDialog）：替代原生 prompt -->
-    <NewFolderDialog v-model:open="folderOpen" :tree="(tree as any)?.tree || []" :default-parent="folderParent" />
+      <!-- 新建文件夹（spec 6 NewFolderDialog）：替代原生 prompt -->
+      <NewFolderDialog v-model:open="folderOpen" :tree="(tree as any)?.tree || []" :default-parent="folderParent" />
 
-    <!-- 新建笔记（替代原生 prompt） -->
-    <AppDialog v-model:open="newNoteOpen" title="新建笔记" size="sm">
-      <label class="block">
-        <span class="block text-[12px] text-ink-3 mb-1.5">笔记标题</span>
-        <input
-          v-model="newNoteTitle"
-          placeholder="如：Rust 所有权模型"
-          class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
-          @keyup.enter="submitCreateRoot"
-        />
-        <span class="block mt-2 text-[12px] text-ink-3 font-mono break-all">
-          落点：Garden Vault{{ newNoteParent ? ' / ' + newNoteParent.split('/').join(' / ') : '' }} / {{ newNoteTitle.trim() || '（标题）' }}.md
-        </span>
-      </label>
-      <template #footer>
-        <button
-          class="px-3.5 py-2 rounded-ctl text-ds-sm border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
-          @click="newNoteOpen = false"
-        >取消</button>
-        <button
-          class="px-3.5 py-2 rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] transition-opacity duration-micro disabled:opacity-45"
-          :disabled="!newNoteTitle.trim() || newNoteSubmitting"
-          @click="submitCreateRoot"
-        >{{ newNoteSubmitting ? '创建中…' : '创建并打开' }}</button>
-      </template>
-    </AppDialog>
+      <!-- 新建笔记（替代原生 prompt） -->
+      <AppDialog v-model:open="newNoteOpen" title="新建笔记" size="sm">
+        <label class="block">
+          <span class="block text-[12px] text-ink-3 mb-1.5">笔记标题</span>
+          <input
+            v-model="newNoteTitle"
+            placeholder="如：Rust 所有权模型"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+            @keyup.enter="submitCreateRoot"
+          />
+          <span class="block mt-2 text-[12px] text-ink-3 font-mono break-all">
+            落点：Garden Vault{{ newNoteParent ? ' / ' + newNoteParent.split('/').join(' / ') : '' }} / {{ newNoteTitle.trim() || '（标题）' }}.md
+          </span>
+        </label>
+        <template #footer>
+          <button
+            class="px-3.5 py-2 rounded-ctl text-ds-sm border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+            @click="newNoteOpen = false"
+          >取消</button>
+          <button
+            class="px-3.5 py-2 rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] transition-opacity duration-micro disabled:opacity-45"
+            :disabled="!newNoteTitle.trim() || newNoteSubmitting"
+            @click="submitCreateRoot"
+          >{{ newNoteSubmitting ? '创建中…' : '创建并打开' }}</button>
+        </template>
+      </AppDialog>
 
-    <!-- 全局浮层：Toast（aria-live）与确认对话框 -->
-    <ToastHost />
-    <ConfirmHost />
+      <!-- 全局浮层：Toast（aria-live）与确认对话框 -->
+      <ToastHost />
+      <ConfirmHost />
+    </ClientOnly>
 
     <!-- 移动端关闭抽屉的悬浮按钮（≥1024 不显示） -->
     <button

@@ -64,6 +64,9 @@ export default defineEventHandler(async (event) => {
       where: { OR: [{ slug: rel }, { slug: { startsWith: `${rel}/` } }] }
     })
     await rmWithRetry(full, true)
+    // 目录分支也必须失效缓存：此前只有文件分支调用了 invalidateGardenCache()，
+    // 导致删完文件夹后前端 refresh 拿到 10s 内的旧树 —— 侧栏里目录还在，用户会以为删除失败。
+    invalidateGardenCache()
     return { ok: true, type: 'dir', notes: noteCount }
   }
 

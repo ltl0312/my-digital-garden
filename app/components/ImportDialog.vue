@@ -45,6 +45,9 @@ const dirPaths = computed(() => {
   return paths
 })
 
+/** AppSelect 需要的 {value,label} 形态（空路径显示为 vault 顶层） */
+const dirOptions = computed(() => dirPaths.value.map(p => ({ value: p, label: p || '/（vault 顶层）' })))
+
 const existingFiles = computed(() => {
   const out = new Set<string>()
   const walk = (arr: TreeNodeLike[], base: string) => {
@@ -228,7 +231,7 @@ const statusMeta = {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] backdrop-blur-[2px] p-4 sm:p-8">
+    <div v-if="open" class="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] p-4 sm:p-8">
       <div class="relative w-full max-w-3xl rounded-overlay border border-line bg-surface shadow-ds3">
         <!-- 头部：关闭键绝对定位钉在右上角（spec 5.8 ② .modal-x），与标题长度/行数无关 -->
         <div class="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-4 pr-14 border-b border-line">
@@ -280,9 +283,7 @@ const statusMeta = {
             <div class="grid sm:grid-cols-2 gap-3">
               <label class="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400">
                 父目录
-                <select v-model="parentDir" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-white/10 text-sm text-slate-800 dark:text-slate-200 focus:outline-none">
-                  <option v-for="p in dirPaths" :key="p" :value="p">{{ p || '/（vault 顶层）' }}</option>
-                </select>
+                <AppSelect v-model="parentDir" :options="dirOptions" />
               </label>
               <label class="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400">
                 新建子文件夹（可选）

@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import matter from 'gray-matter'
 import { resolveVaultPath, stripNul } from '../../../utils/vault'
 import { requireAdmin } from '../../../utils/auth'
+import { invalidateGardenCache } from '../../../utils/cache'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
@@ -40,5 +41,7 @@ export default defineEventHandler(async (event) => {
   const tmp = full + '.tmp'
   await fs.writeFile(tmp, finalContent, 'utf-8')
   await fs.rename(tmp, full)
+  // 保存正文后立即失效 tree/graph 缓存（树的成熟度点/列表来自缓存数据）
+  invalidateGardenCache()
   return { ok: true, slug }
 })

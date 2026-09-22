@@ -25,7 +25,7 @@ const submitting = ref(false)
 
 const parentOptions = computed(() => {
   const dirs = [...collectDirPaths(props.tree)].sort()
-  return [{ path: '', label: 'vault 顶层' }, ...dirs.map(d => ({ path: d, label: d }))]
+  return [{ value: '', label: 'vault 顶层' }, ...dirs.map(d => ({ value: d, label: d }))]
 })
 
 watch(() => props.open, (v) => {
@@ -75,12 +75,7 @@ const submit = async () => {
     <div class="space-y-4">
       <label class="block">
         <span class="block text-[12px] text-ink-3 mb-1.5">父目录</span>
-        <select
-          v-model="parent"
-          class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink focus:outline-none focus:border-accent/60 transition-colors duration-micro"
-        >
-          <option v-for="o in parentOptions" :key="o.path" :value="o.path">{{ o.label }}</option>
-        </select>
+        <AppSelect v-model="parent" :options="parentOptions" />
       </label>
 
       <label class="block">

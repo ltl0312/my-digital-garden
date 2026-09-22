@@ -57,6 +57,17 @@ const loadSettings = (): GraphSettings => {
 const settings = ref<GraphSettings>(loadSettings())
 watch(settings, s => localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)), { deep: true })
 
+// AppSelect 选项（替代原生 select：其弹层首帧黑底由 UA 决定，CSS 修不掉）
+const groupByOptions = [
+  { value: 'domain', label: '按领域' },
+  { value: 'maturity', label: '按成熟度' },
+  { value: 'tag', label: '按标签' }
+]
+const sizeModeOptions = [
+  { value: 'degree', label: '按链接数' },
+  { value: 'fixed', label: '固定' }
+]
+
 const showSettings = ref(false)
 const graphRef = ref<InstanceType<typeof GraphView> | null>(null)
 const physicsActive = ref(true)
@@ -217,19 +228,12 @@ useHead({ title: '知识图谱 · 拾光' })
 
       <label class="block">
         <span class="block text-[12px] text-ink-3 mb-1">着色</span>
-        <select v-model="settings.groupBy" class="w-full px-2.5 py-1.5 rounded-ctl text-ds-sm bg-surface-2 border border-line text-ink outline-none focus:border-accent/60">
-          <option value="domain">按领域</option>
-          <option value="maturity">按成熟度</option>
-          <option value="tag">按标签</option>
-        </select>
+        <AppSelect v-model="settings.groupBy" size="sm" :options="groupByOptions" />
       </label>
 
       <label class="block">
         <span class="block text-[12px] text-ink-3 mb-1">大小</span>
-        <select v-model="settings.sizeMode" class="w-full px-2.5 py-1.5 rounded-ctl text-ds-sm bg-surface-2 border border-line text-ink outline-none focus:border-accent/60">
-          <option value="degree">按链接数</option>
-          <option value="fixed">固定</option>
-        </select>
+        <AppSelect v-model="settings.sizeMode" size="sm" :options="sizeModeOptions" />
       </label>
 
       <label v-if="settings.sizeMode === 'fixed'" class="block">

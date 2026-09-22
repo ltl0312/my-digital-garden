@@ -108,7 +108,7 @@ const onKeydown = (e: KeyboardEvent) => {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-[100] bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] backdrop-blur-[2px] flex items-start justify-center pt-20 px-4"
+      class="fixed inset-0 z-[100] bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] flex items-start justify-center pt-20 px-4"
       @click.self="open = false"
     >
       <div
