@@ -46,8 +46,8 @@ export default defineNitroPlugin((nitroApp) => {
         // 批量导入完成后已由 import-ingest 主动入库的文件：跳过事件，避免二次解析
         if (isRecentlyIngested(filePath)) return
         await enqueue(async () => {
-          await processMarkdownFile(filePath)
-          console.log(`[garden] watcher: 已写入笔记 ${filePath}`)
+          const changed = await processMarkdownFile(filePath)
+          if (changed) console.log(`[garden] watcher: 已写入笔记 ${filePath}`)
         })
       }
     })
@@ -55,8 +55,9 @@ export default defineNitroPlugin((nitroApp) => {
       if (filePath.endsWith('.md')) {
         if (isRecentlyIngested(filePath)) return
         await enqueue(async () => {
-          await processMarkdownFile(filePath)
-          console.log(`[garden] watcher: 已更新笔记 ${filePath}`)
+          const changed = await processMarkdownFile(filePath)
+          // 内容未变（仅时间戳被触碰 / 编辑器重写）时不刷日志，避免批量事件刷屏
+          if (changed) console.log(`[garden] watcher: 已更新笔记 ${filePath}`)
         })
       }
     })

@@ -45,3 +45,8 @@ content/vault/KnowledgeBase/.obsidian/
 content/vault/KnowledgeBase/.claudian/
 content/vault/KnowledgeBase/.sync/
 content/vault/KnowledgeBase/_sync/
+
+# 未展开环境变量被当成路径创建出来的字面量目录（如 %SystemDrive%/ProgramData/...）
+%SystemDrive%/
+%USERPROFILE%/
+%TEMP%/

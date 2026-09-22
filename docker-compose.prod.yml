@@ -3,13 +3,17 @@
 # 使用：docker compose -f docker-compose.prod.yml up -d
 # 前置：
 #   1) docker load -i /opt/garden-image.tar.gz   （应用镜像 my-digital-garden-app:latest）
-#   2) 同目录放置 .env（DATABASE_URL / AUTH_SECRET / NODE_OPTIONS，沿用原 PM2 部署的值）
+#   2) 同目录放置 .env（DATABASE_URL / AUTH_SECRET，沿用原 PM2 部署的值）
 # 说明：
 #   - network_mode: host → 容器与宿主共享网络：无需改 PostgreSQL 的 127.0.0.1 监听，
 #     也无需端口映射，应用直接接管 3000（nginx 的 liutianle.cn 反代目标不变）
 #   - vault 挂载宿主目录，与原部署同一份数据（Markdown 源 = 唯一事实源）
-#   - 内存基准：Nitro 运行态约 200–300MB（2G 服务器实测可用）
 #   - entrypoint.sh 启动时自动执行 prisma migrate deploy（幂等）
+# 资源限制（2026-09-22 事故后加入）：
+#   服务器仅 1.6G 内存，曾因大量文件变更 + watcher 全量重算叠加载荷把宿主内存吃满，
+#   导致 SSH 与网站一起失去响应（TCP 可连但应用无响应），只能重启实例恢复。
+#   因此：容器限 640M，Node 堆限 384M —— 超限时在容器内被回收并自动重启，
+#   不会再把整台服务器拖死。
 # ============================================================
 services:
   app:
@@ -17,10 +21,12 @@ services:
     container_name: garden-app
     restart: unless-stopped
     network_mode: host
+    mem_limit: 640m
     env_file:
       - .env
     environment:
       NODE_ENV: production
       PORT: "3000"
+      NODE_OPTIONS: "--max-old-space-size=384"
     volumes:
       - /opt/digital-garden/content/vault:/app/content/vault

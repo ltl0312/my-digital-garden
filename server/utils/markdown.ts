@@ -89,7 +89,11 @@ function sanitizeValue(v: any): any {
   return v
 }
 
-export async function processMarkdownFile(filePath: string) {
+/**
+ * 解析单个 Markdown 文件并入库（watcher 与批量导入共用）
+ * 返回值：true = 内容确实变化并已入库；false = 内容未变被跳过或处理失败
+ */
+export async function processMarkdownFile(filePath: string): Promise<boolean> {
   try {
     const fileContent = await fs.readFile(filePath, 'utf-8')
     // 读取后立即剥离 NUL 字节，避免 PostgreSQL 写入失败
@@ -106,6 +110,30 @@ export async function processMarkdownFile(filePath: string) {
       rawMarkdown = parsed.content
     } catch (e) {
       console.warn(`[garden] markdown: frontmatter 解析失败，按纯正文处理 ${filePath}:`, (e as Error).message)
+    }
+
+    // ── 内容未变则直接返回（2026-09-22 服务器失联事故后的加固）─────────────
+    // 同步工具/编辑器只改 mtime、或应用重启触发全量重同步时，会为同一内容反复触发
+    // change 事件。原先的比对在渲染之后，意味着每个事件都要跑一遍 unified + shiki 高亮，
+    // 一次性几百个文件的重渲染叠加成内存峰值（1.6G 服务器会被拖到 SSH 都无响应）。
+    // 这里在渲染前做严格比对：正文相同 **且** frontmatter 键值相同才跳过；
+    // 任一处不同仍走完整流程（metadata 用排序键比较——PostgreSQL jsonb 不保留键序）。
+    try {
+      const existing = await prisma.note.findUnique({
+        where: { slug },
+        select: { content: true, metadata: true }
+      })
+      const normKeys = (o: unknown) => {
+        const rec = (o ?? {}) as Record<string, unknown>
+        return JSON.stringify(rec, Object.keys(rec).sort())
+      }
+      if (existing && existing.content === rawMarkdown && normKeys(existing.metadata) === normKeys(frontmatter)) {
+        console.log(`[garden] markdown: 内容未变，跳过重渲染 ${slug}`)
+        return false
+      }
+    } catch (e) {
+      // 比对失败不影响主流程（继续走完整解析入库）
+      console.warn(`[garden] markdown: 内容比对失败，按变更处理 ${slug}:`, (e as Error).message)
     }
 
     const title = frontmatter.title || path.basename(slug)
@@ -232,9 +260,11 @@ export async function processMarkdownFile(filePath: string) {
 
     // 入库完成：失效 tree/graph 进程内缓存，保证读接口拿到最新数据
     invalidateGardenCache()
+    return true
   } catch (e) {
     // 单篇失败不中断 watcher 事件链，记录日志继续
     console.error(`[garden] markdown: 处理失败 ${filePath}:`, e)
+    return false
   }
 }
 
