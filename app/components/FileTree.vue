@@ -89,8 +89,12 @@ onMounted(() => {
 })
 
 // 单根提升：vault 只有一个顶层目录时，直接展开它（不显示多余的一层）
+// 必须限定在最外层实例（props.base === undefined）：FileTree 是自递归组件，子实例的 nodes
+// 是该目录的子节点数组，只要某目录「只有一个子目录」，子实例同样满足 length === 1 —— 那个
+// 子目录就会被当成提升根而恒展开、点不动（用户反馈的 速记/2026、skills/obsidian-manager
+// 折叠不了就是这个原因：它们的父目录下确实只有它们一个子目录）。
 const promoted = computed(() => {
-  if (props.nodes.length === 1 && props.nodes[0].type === 'dir') {
+  if (props.base === undefined && props.nodes.length === 1 && props.nodes[0].type === 'dir') {
     return { root: props.nodes[0], children: props.nodes[0].children || [] }
   }
   return null
@@ -117,11 +121,26 @@ const activeSlug = computed(() => props.currentSlug || decodeURIComponent(route.
 // 会让每个目录都恒为「展开」且点不动（用户反馈的「文件夹关闭不了」就是这个）
 const hasQuery = computed(() => !!props.query?.trim())
 
-const isExpanded = (path: string) =>
-  expanded.value.has(path) || hasQuery.value || (promoted.value ? path === rootPath.value : false)
+// 提升根的默认展开态：默认展开（刷新后依旧展开，避免整棵树空空），但必须能被折叠。
+// 不能用 `path === rootPath` 恒真 —— 那样点击 toggle 就完全无效，是死按钮。
+const promotedCollapsed = useState<boolean>('shell-promoted-collapsed', () => false)
+
+const isExpanded = (path: string) => {
+  if (expanded.value.has(path)) return true
+  if (hasQuery.value) return true
+  if (promoted.value && path === rootPath.value) return !promotedCollapsed.value
+  return false
+}
 
 const toggle = (path: string) => {
   const next = new Set(expanded.value)
+  // 提升根：翻转「默认展开」标记（同时清掉显式展开记录，保证两次点击状态一致）
+  if (promoted.value && props.base === undefined && path === rootPath.value) {
+    next.delete(path)
+    setExpanded(next)
+    promotedCollapsed.value = !promotedCollapsed.value
+    return
+  }
   if (next.has(path)) next.delete(path)
   else next.add(path)
   setExpanded(next)
