@@ -297,6 +297,7 @@ const logout = async () => {
               @start-resize="startResize"
               @import="startImport"
               @new-folder="startCreateFolder"
+              @new-note="startCreateNoteIn"
             />
           </div>
         </div>

@@ -24,6 +24,22 @@ const props = defineProps<{
 
 const route = useRoute()
 const { nameProblem } = useNameRule()
+// 右键菜单：FileTree 是自递归组件，逐层 emit 会把事件停在中间层；
+// 由 ContextSidebar provide 一个 handler，任意层级直接调用（payload 带节点与鼠标坐标）
+type MenuPayload = { name: string; path: string; type: 'dir' | 'file'; slug?: string; x: number; y: number; children?: TreeNode[] }
+const openMenu = inject<((p: MenuPayload) => void) | null>('shell-tree-menu', null)
+const onContextMenu = (node: TreeNode, path: string, ev: MouseEvent) => {
+  if (!openMenu) return
+  openMenu({
+    name: node.name,
+    path,
+    type: node.type,
+    slug: node.slug,
+    x: ev.clientX,
+    y: ev.clientY,
+    children: node.children
+  })
+}
 // 折叠态必须跨递归层级共享：FileTree 是自递归组件，每个实例各有自己的 setup 作用域，
 // 若用局部 ref，则「展开某目录」只对本层生效、子实例仍是全折叠（reveal 会只展开第一层）。
 const expandedArr = useState<string[]>('shell-tree-expanded', () => [])
@@ -97,8 +113,12 @@ const pathOf = (node: TreeNode) => {
 
 const activeSlug = computed(() => props.currentSlug || decodeURIComponent(route.path.replace(/^\/notes\//, '')))
 
+// 过滤态判定必须用 trim 后的值：传进来的 query 若是空白串（如输入框里只有一个空格），
+// 会让每个目录都恒为「展开」且点不动（用户反馈的「文件夹关闭不了」就是这个）
+const hasQuery = computed(() => !!props.query?.trim())
+
 const isExpanded = (path: string) =>
-  expanded.value.has(path) || !!props.query || (promoted.value ? path === rootPath.value : false)
+  expanded.value.has(path) || hasQuery.value || (promoted.value ? path === rootPath.value : false)
 
 const toggle = (path: string) => {
   const next = new Set(expanded.value)
@@ -146,6 +166,7 @@ const submitCreate = async (dir: string, siblings: TreeNode[] = []) => {
         :aria-expanded="isExpanded(rootPath)"
         :title="promoted.root.name"
         @click="toggle(rootPath)"
+        @contextmenu.prevent="onContextMenu(promoted.root, rootPath, $event)"
       >
         <ChevronRight
           class="w-3 h-3 shrink-0 transition-transform duration-base ease-dawn"
@@ -168,6 +189,7 @@ const submitCreate = async (dir: string, siblings: TreeNode[] = []) => {
             :aria-expanded="isExpanded(pathOf(node))"
             :title="node.name"
             @click="toggle(pathOf(node))"
+            @contextmenu.prevent="onContextMenu(node, pathOf(node), $event)"
           >
             <!-- 折叠双重信号：箭头旋转 90° + 文件夹实底着色 -->
             <ChevronRight
@@ -216,6 +238,7 @@ const submitCreate = async (dir: string, siblings: TreeNode[] = []) => {
             flashSlug && flashSlug === node.slug ? 'ring-2 ring-accent' : ''
           ]"
           :title="node.slug"
+          @contextmenu.prevent="onContextMenu(node, pathOf(node), $event)"
         >
           <span
             v-if="activeSlug === node.slug"

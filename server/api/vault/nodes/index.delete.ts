@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import { resolveVaultPath, normalizeVaultRel, isStructuralPath, isDirEffectivelyEmpty } from '../../../utils/vault'
 import { requireAdmin } from '../../../utils/auth'
 import { prisma } from '../../../utils/db'
+import { invalidateGardenCache } from '../../../utils/cache'
 
 // C4 删除节点（spec 8.8/8.9）：文件直接删；文件夹按破坏面分档——
 // 空文件夹 admin 可删，非空文件夹仅 root（二次确认由前端承担，篇数在此返回）；
@@ -67,5 +68,7 @@ export default defineEventHandler(async (event) => {
   }
 
   await rmWithRetry(fileFull, false)
+  // 写操作后立即失效 tree/graph 缓存，避免前端刷新拿到 10s 内的旧树
+  invalidateGardenCache()
   return { ok: true, type: 'file', slug: fileRel.replace(/\.md$/i, '') }
 })

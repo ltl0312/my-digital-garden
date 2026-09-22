@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { resolveVaultPath, normalizeVaultRel } from '../../utils/vault'
 import { requireAdmin } from '../../utils/auth'
+import { invalidateGardenCache } from '../../utils/cache'
 
 // C3 复制 / 粘贴（spec 8.8）：文件深拷贝快照、文件夹递归复制（服务端实现，前端剪贴板仅存路径意图）。
 // - 同名一律拒绝（409）：同目录粘贴自身即被此规则拦截
@@ -74,5 +75,7 @@ export default defineEventHandler(async (event) => {
   } else {
     await fs.copyFile(srcFull, destFull)
   }
+  // 写操作后立即失效 tree/graph 缓存，避免前端刷新拿到 10s 内的旧树
+  invalidateGardenCache()
   return { ok: true, path: destRel }
 })

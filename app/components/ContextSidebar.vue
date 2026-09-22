@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { Filter, FolderTree, Grid2x2, Tags, X, Upload, FolderPlus } from 'lucide-vue-next'
+import {
+  Filter, FolderTree, Grid2x2, Tags, X, Upload, FolderPlus,
+  FilePlus, Pencil, Files, ClipboardPaste, Trash2, Link2, SquareArrowOutUpRight
+} from 'lucide-vue-next'
 import type { DomainFacet, TagGroup, GraphStats } from '~/composables/useFacets'
+import type { MenuItem } from './TreeContextMenu.vue'
 
 // ContextSidebar（spec ch.4/6）：头部（Vault 名 + 计数 + 过滤）· 分段面板（结构 / 领域 / 标签）
 // · 剪贴板提示条插槽 · 底部同步状态；宽度由 AppShell 持有并持久化。
@@ -21,7 +25,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'start-resize', ev: PointerEvent): void
   (e: 'import'): void
-  (e: 'new-folder'): void
+  /** 新建文件夹到指定父目录（空串 = vault 顶层） */
+  (e: 'new-folder', parent: string): void
+  /** 在指定目录下新建笔记 */
+  (e: 'new-note', parent: string): void
 }>()
 
 type Panel = 'tree' | 'domain' | 'tag'
@@ -53,6 +60,161 @@ const filteredTree = computed(() => {
   }
   return walk(props.tree)
 })
+
+// ── 结构树右键菜单（spec 6 / 8.9）────────────────────────────
+// 角色与结构保护规则与服务端保持一致：服务端始终是权威（前端置灰只是第一道门）
+const { actorRole } = useRoles()
+const toast = useToast()
+const { confirm } = useConfirm()
+const requestFetch = useRequestFetch()
+
+/** 结构目录：vault 根 + KnowledgeBase/NN_* 一层，任何人（含 root）禁改禁删 */
+const isStructural = (path: string) => {
+  const segs = path.split('/')
+  if (segs.length === 1) return true
+  return segs.length === 2 && /^\d{2}_/.test(segs[1])
+}
+
+/** 剪贴板（复制 / 粘贴）：跨路由与抽屉共享 */
+type ClipItem = { path: string; name: string; isDir: boolean }
+const clipboard = useState<ClipItem | null>('shell-tree-clipboard', () => null)
+
+const menu = ref<{ open: boolean; x: number; y: number; target: any | null }>({ open: false, x: 0, y: 0, target: null })
+const renameOpen = ref(false)
+// 重命名目标（对话框需要 isDir / 同级节点做重名校验）
+const renameTarget = ref<any | null>(null)
+const renameSiblings = computed(() => findSiblings(props.tree, renameTarget.value?.path || ''))
+function findSiblings(nodes: TreeNode[], path: string, base = ''): TreeNode[] {
+  for (const n of nodes) {
+    const p = base ? `${base}/${n.name}` : n.name
+    if (n.type === 'dir') {
+      if (p === path) return n.children || []
+      const deeper = findSiblings(n.children || [], path, p)
+      if (deeper.length) return deeper
+    }
+  }
+  return []
+}
+
+const openMenu = (p: { name: string; path: string; type: 'dir' | 'file'; slug?: string; x: number; y: number; children?: any[] }) => {
+  menu.value = { open: true, x: p.x, y: p.y, target: p }
+}
+provide('shell-tree-menu', openMenu)
+
+const menuItems = computed<MenuItem[]>(() => {
+  const t = menu.value.target
+  if (!t) return []
+  const isDir = t.type === 'dir'
+  const structural = isStructural(t.path)
+  const canWrite = props.canManage
+  const isRootUser = actorRole.value === 'root'
+  const dirEmpty = isDir && !(t.children || []).length
+  const clip = clipboard.value
+
+  const items: MenuItem[] = []
+  if (!isDir) {
+    items.push({ key: 'open', label: '打开', icon: SquareArrowOutUpRight })
+  }
+  // 「新建」类操作只对目录有意义（对文件操作会把文件路径当目录）
+  if (isDir) {
+    items.push({
+      key: 'new-note', label: '新建笔记', icon: FilePlus,
+      disabled: !canWrite, hint: canWrite ? '在该目录下新建一篇笔记' : '当前角色无写入权限'
+    })
+    items.push({
+      key: 'new-folder', label: '新建子文件夹', icon: FolderPlus,
+      disabled: !canWrite, hint: canWrite ? '' : '当前角色无写入权限'
+    })
+  }
+  items.push({
+    key: 'rename', label: '重命名', icon: Pencil, divider: true,
+    disabled: !canWrite || structural,
+    hint: structural ? '结构目录受保护，不可重命名' : (canWrite ? '' : '当前角色无写入权限')
+  })
+  items.push({
+    key: 'copy', label: '复制', icon: Files, disabled: !canWrite,
+    hint: canWrite ? '复制后可在目标文件夹右键粘贴' : '当前角色无写入权限'
+  })
+  if (isDir) {
+    items.push({
+      key: 'paste', label: clip ? `粘贴「${clip.name}」` : '粘贴', icon: ClipboardPaste,
+      disabled: !canWrite || !clip, hint: clip ? '' : '剪贴板为空，请先复制一个文件或文件夹'
+    })
+  }
+  items.push({
+    key: 'delete', label: '删除', icon: Trash2, danger: true, divider: true,
+    disabled: !canWrite || structural || (isDir && !dirEmpty && !isRootUser),
+    hint: structural
+      ? '结构目录受保护，不可删除'
+      : (isDir && !dirEmpty && !isRootUser ? '非空文件夹仅初始管理员可删除' : (canWrite ? '' : '当前角色无写入权限'))
+  })
+  items.push({ key: 'copy-path', label: '复制路径', icon: Link2, divider: true })
+  return items
+})
+
+const closeMenu = () => { menu.value = { ...menu.value, open: false } }
+
+const refreshTree = async () => { await refreshNuxtData('vault-tree') }
+
+const onMenuSelect = async (key: string) => {
+  const t = menu.value.target
+  if (!t) return
+  try {
+    switch (key) {
+      case 'open': {
+        const slug = (t.slug || t.path || '')
+        await navigateTo(`/notes/${slug.split('/').map(encodeURIComponent).join('/')}`)
+        break
+      }
+      case 'new-note':
+        emit('new-note', t.path)
+        break
+      case 'new-folder':
+        emit('new-folder', t.path)
+        break
+      case 'rename':
+        renameTarget.value = t
+        renameOpen.value = true
+        break
+      case 'copy':
+        clipboard.value = { path: t.path, name: t.name, isDir: t.type === 'dir' }
+        toast.success(`已复制「${t.name}」，到目标文件夹右键粘贴`)
+        break
+      case 'paste': {
+        const clip = clipboard.value
+        if (!clip) break
+        await requestFetch('/api/vault/copy', { method: 'POST', body: { path: clip.path, targetDir: t.path } })
+        await refreshTree()
+        toast.success(`已粘贴「${clip.name}」`)
+        break
+      }
+      case 'delete': {
+        const ok = await confirm({
+          title: t.type === 'dir' ? '删除文件夹' : '删除笔记',
+          message: t.type === 'dir'
+            ? `确定删除文件夹「${t.name}」及其中的全部笔记吗？此操作不可撤销。`
+            : `确定删除笔记「${t.name}」吗？此操作不可撤销。`,
+          detail: t.path,
+          confirmText: '删除',
+          danger: true
+        })
+        if (!ok) break
+        await requestFetch('/api/vault/nodes', { method: 'DELETE', body: { path: t.path } })
+        await refreshTree()
+        toast.success(`已删除「${t.name}」`)
+        break
+      }
+      case 'copy-path':
+        await navigator.clipboard.writeText(t.type === 'dir' ? t.path : (t.slug || t.path))
+        toast.success('路径已复制到剪贴板')
+        break
+    }
+  } catch (e: any) {
+    toast.error(e?.data?.message || '操作失败')
+  }
+}
+
+// 重命名对话框的提交结果由 RenameDialog 内部负责 toast 与树刷新
 </script>
 
 <template>
@@ -77,7 +239,7 @@ const filteredTree = computed(() => {
           <button
             class="w-7 h-7 rounded-ctl flex items-center justify-center text-ink-3 hover:text-accent hover:bg-surface-3 transition-colors duration-micro"
             title="新建文件夹（vault 顶层）"
-            @click="emit('new-folder')"
+            @click="emit('new-folder', '')"
           >
             <FolderPlus class="w-3.5 h-3.5" />
           </button>
@@ -128,8 +290,33 @@ const filteredTree = computed(() => {
       <TagGroups v-else :groups="tagGroups" :active-tag="activeTag" />
     </div>
 
-    <!-- 剪贴板提示条（复制 / 粘贴的可见状态，E3 接入） -->
-    <slot name="clipbar"></slot>
+    <!-- 剪贴板提示条（spec 6：复制 / 粘贴的可见状态） -->
+    <div
+      v-if="clipboard"
+      class="px-3 py-2 border-t border-line flex items-center gap-2 shrink-0 bg-[var(--accent-soft)]"
+    >
+      <ClipboardPaste class="w-3.5 h-3.5 text-accent shrink-0" />
+      <span class="flex-1 text-xs text-ink truncate" :title="clipboard.path">已复制：{{ clipboard.name }}</span>
+      <button class="text-xs text-ink-3 hover:text-ink shrink-0 transition-colors duration-micro" @click="clipboard = null">
+        取消
+      </button>
+    </div>
+
+    <!-- 结构树右键菜单 + 重命名对话框 -->
+    <TreeContextMenu
+      :open="menu.open"
+      :x="menu.x"
+      :y="menu.y"
+      :items="menuItems"
+      @select="onMenuSelect"
+      @close="closeMenu"
+    />
+    <RenameDialog
+      v-model:open="renameOpen"
+      :path="renameTarget?.path || ''"
+      :is-dir="renameTarget?.type === 'dir'"
+      :siblings="renameSiblings"
+    />
 
     <!-- 底部同步状态 -->
     <div class="px-3 py-2 border-t border-line text-xs text-ink-3 flex items-center justify-between shrink-0">

@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { resolveVaultPath, noteTemplate, stripNul, writeMarkdownAtomic } from '../../../utils/vault'
 import { requireAdmin } from '../../../utils/auth'
+import { invalidateGardenCache } from '../../../utils/cache'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
@@ -45,5 +46,7 @@ export default defineEventHandler(async (event) => {
 
   // 原子写入：先写临时文件再 rename，避免 watcher 读到半截内容（与批量导入共用同一实现）
   await writeMarkdownAtomic(full, noteTemplate(title))
+  // 写操作后立即失效 tree/graph 缓存，避免前端刷新拿到 10s 内的旧树
+  invalidateGardenCache()
   return { slug }
 })

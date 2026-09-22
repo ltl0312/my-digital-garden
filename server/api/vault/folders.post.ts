@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { resolveVaultPath, stripNul, isValidNodeName, normalizeVaultRel } from '../../utils/vault'
 import { requireAdmin } from '../../utils/auth'
+import { invalidateGardenCache } from '../../utils/cache'
 
 // C1 新建文件夹（spec 8.6/8.8）：root / admin 可用；父目录可为 vault 根（''）
 export default defineEventHandler(async (event) => {
@@ -29,5 +30,7 @@ export default defineEventHandler(async (event) => {
   if (exists) throw createError({ statusCode: 409, message: '同名目录或文件已存在' })
 
   await fs.mkdir(targetFull) // recursive:false：父目录缺失即抛错（防御竞态）
+  // 写操作后立即失效 tree/graph 缓存，避免前端刷新拿到 10s 内的旧树
+  invalidateGardenCache()
   return { path: parent ? `${parent}/${name}` : name }
 })
