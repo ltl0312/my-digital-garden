@@ -112,6 +112,51 @@ function sanitizeValue(v: any): any {
 }
 
 /**
+ * frontmatter 宽松解析（gray-matter 失败时的兜底）。
+ * Obsidian 导出的 YAML 常含非法写法：flow 数组里出现 @types、.d.ts 这类保留字/特殊开头项
+ * →「missed comma between flow collection entries」。解析失败若整段当正文，
+ * YAML 原文（aliases/maturity/tags/created…）会被渲染进笔记正文（用户实际踩到）。
+ * 这里逐行提取常见结构：key: [a, b] / key:\n - item / key: value。
+ */
+function lenientParseFrontmatter(raw: string): { data: Record<string, any>; content: string } {
+  const m = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(raw)
+  if (!m) return { data: {}, content: raw }
+  const data: Record<string, any> = {}
+  let lastKey: string | null = null
+  for (const line of m[1].split(/\r?\n/)) {
+    if (!line.trim()) continue
+    const listItem = /^\s+-\s?(.*)$/.exec(line)
+    if (listItem && lastKey) {
+      const arr = Array.isArray(data[lastKey]) ? (data[lastKey] as any[]) : []
+      const item = listItem[1].trim().replace(/^["']|["']$/g, '')
+      if (item) arr.push(item)
+      data[lastKey] = arr
+      continue
+    }
+    const kv = /^([\w.-]+)\s*:\s*(.*)$/.exec(line)
+    if (!kv) { lastKey = null; continue }
+    const key = kv[1]
+    const val = kv[2].trim()
+    const flow = /^\[(.*)\]$/.exec(val)
+    if (flow) {
+      data[key] = flow[1].split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean)
+      lastKey = key
+      continue
+    }
+    if (val === '') { data[key] = null; lastKey = key; continue }
+    data[key] = val.replace(/^["']|["']$/g, '')
+    lastKey = key
+  }
+  return { data, content: raw.slice(m[0].length) }
+}
+
+/** 仅剥离 frontmatter 块（不做任何解析），保证正文不含 YAML 原文 */
+function stripFrontmatterBlock(raw: string): string {
+  const m = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/.exec(raw)
+  return m ? raw.slice(m[0].length) : raw
+}
+
+/**
  * 解析单个 Markdown 文件并入库（watcher 与批量导入共用）
  * 返回值：true = 内容确实变化并已入库；false = 内容未变被跳过或处理失败
  */
@@ -131,7 +176,13 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
       frontmatter = sanitizeValue(parsed.data)
       rawMarkdown = parsed.content
     } catch (e) {
-      console.warn(`[garden] markdown: frontmatter 解析失败，按纯正文处理 ${filePath}:`, (e as Error).message)
+      // 解析失败兜底：① 宽松解析尽力提取字段（tags/maturity 等仍可用）；
+      // ② 正文必须剥离 frontmatter 块 —— 否则 YAML 原文会被整段渲染进笔记正文
+      const lenient = lenientParseFrontmatter(cleanContent)
+      frontmatter = sanitizeValue(lenient.data)
+      rawMarkdown = lenient.content
+      if (!Object.keys(frontmatter).length) rawMarkdown = stripFrontmatterBlock(rawMarkdown)
+      console.warn(`[garden] markdown: frontmatter 解析失败，宽松解析兜底（提取 ${Object.keys(frontmatter).length} 个字段）${filePath}:`, (e as Error).message)
     }
 
     // ── 内容未变则直接返回（2026-09-22 服务器失联事故后的加固）─────────────

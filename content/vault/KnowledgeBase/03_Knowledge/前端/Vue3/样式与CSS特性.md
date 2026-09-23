@@ -1,7 +1,7 @@
 ---
-aliases: [Vue3 CSS, scoped, :deep, CSS Modules, v-bind in CSS, 样式隔离]
+aliases: ["Vue3 CSS", "scoped", ":deep", "CSS Modules", "v-bind in CSS", "样式隔离"]
 maturity: GROWING
-tags: [status/进行中, type/笔记, 前端/Vue]
+tags: ["status/进行中", "type/笔记", "前端/Vue"]
 created: "2026-06-16 19:41"
 updated: "2026-06-16 19:41"
 source: "Vue 3 全方位详细学习笔记（已归档）"
