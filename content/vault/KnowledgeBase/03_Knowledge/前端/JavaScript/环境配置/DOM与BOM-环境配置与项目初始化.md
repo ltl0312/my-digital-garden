@@ -1,6 +1,5 @@
 ---
 aliases: [DOM 调试, Chrome DevTools Elements, BOM 调试]
-maturity: SEEDLING
 tags: [status/进行中, type/教程, 前端/JavaScript]
 created: "2026-06-16 19:19"
 updated: "2026-06-16 19:19"

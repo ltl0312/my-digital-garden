@@ -1,6 +1,5 @@
 ---
 aliases: [项目管理工具, SDLC工具配置, 项目管理环境搭建]
-maturity: SEEDLING
 tags:
   - status/进行中
   - type/教程

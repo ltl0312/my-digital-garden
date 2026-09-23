@@ -1,6 +1,5 @@
 ---
 aliases: [MOC]
-maturity: SEEDLING
 tags:
   - type/MOC
 created: "{{date}}"

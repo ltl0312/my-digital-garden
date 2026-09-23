@@ -23,7 +23,9 @@ export function noteTemplate(title: string): string {
     '---',
     `title: ${title}`,
     'tags: []',
-    'maturity: SEEDLING',
+    // 不要预置 maturity：frontmatter 里的显式值会被当作「人工指定」永久锁定，
+    // 自动生长判定（maturity-sync）就不会再介入（用户曾因此误以为笔记长不起来）。
+    // 需要人工锁定的笔记再手动在 frontmatter 加这一行。
     '---',
     '',
     `# ${title}`,

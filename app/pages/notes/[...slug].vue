@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pencil, MoreHorizontal, Link2, FolderTree, FileText, Trash2, Save, X, Info } from 'lucide-vue-next'
+import { Pencil, MoreHorizontal, Link2, FolderTree, FileText, Trash2, Save, X, Info, Tags as TagsIcon } from 'lucide-vue-next'
 
 const route = useRoute()
 const { canManage } = useRoles()
@@ -126,6 +126,7 @@ const menuItems = computed(() => [
   { key: 'copy-link', label: '复制笔记链接', icon: Link2 },
   { key: 'copy-path', label: '复制文件路径', icon: FileText },
   { key: 'reveal', label: '在结构树中定位', icon: FolderTree },
+  { key: 'meta', label: '标签与成熟度', icon: TagsIcon },
   { key: '__sep', label: '' },
   {
     key: 'delete',
@@ -146,6 +147,63 @@ const copyText = async (text: string, tip: string) => {
   }
 }
 
+// ── 标签与成熟度编辑（元数据可视化管理）──
+// frontmatter 显式写 maturity 会被当作人工指定、永不自动升档，所以这里提供
+// 「跟随自动判定」选项（= 删除 frontmatter 的 maturity 行）。
+const metaOpen = ref(false)
+const metaTags = ref<string[]>([])
+const metaMaturity = ref('auto') // 'auto' = 不写 maturity（走自动判定）
+const metaSaving = ref(false)
+const metaInput = ref('')
+
+const openMeta = () => {
+  metaTags.value = (note.value?.tags || [])
+    .map((t: any) => t?.tag?.name ?? t)
+    .filter((x: any) => typeof x === 'string' && !!x)
+  // 关键：DB 里的 maturity 是「判定/人工」的最终结果，不能直接当人工值回显 ——
+  // 否则自动判定出的 SEEDLING 会被当成人工锁定，保存时又写回 frontmatter、再次锁死。
+  // maturityExplicit（服务端读原文件判定）为 true 才回显具体档位。
+  metaMaturity.value = note.value?.maturityExplicit && note.value?.maturity
+    ? String(note.value.maturity).toUpperCase()
+    : 'auto'
+  metaInput.value = ''
+  metaOpen.value = true
+}
+
+const addMetaTag = () => {
+  const t = metaInput.value.trim()
+  if (!t) return
+  if (metaTags.value.includes(t)) { toast.warn('标签已存在'); return }
+  if (metaTags.value.length >= 12) { toast.warn('最多 12 个标签'); return }
+  metaTags.value.push(t)
+  metaInput.value = ''
+}
+
+const removeMetaTag = (t: string) => {
+  metaTags.value = metaTags.value.filter(x => x !== t)
+}
+
+const saveMeta = async () => {
+  if (!note.value) return
+  metaSaving.value = true
+  try {
+    await $fetch(`/api/vault/notes/${encodedSlug.value}`, {
+      method: 'PATCH',
+      body: {
+        tags: metaTags.value,
+        maturity: metaMaturity.value === 'auto' ? null : metaMaturity.value
+      }
+    })
+    metaOpen.value = false
+    await loadNote()
+    toast.success('已更新标签与成熟度')
+  } catch (e: any) {
+    toast.error(e?.data?.message || '保存失败')
+  } finally {
+    metaSaving.value = false
+  }
+}
+
 const onMenuSelect = async (key: string) => {
   if (key === 'copy-link') {
     await copyText(`${location.origin}/notes/${encodedSlug.value}`, '已复制笔记链接')
@@ -156,6 +214,8 @@ const onMenuSelect = async (key: string) => {
     sidebarOpen.value = true
     revealSlug.value = slug.value
     toast.success('已在结构树中定位')
+  } else if (key === 'meta') {
+    openMeta()
   } else if (key === 'delete') {
     await removeNote()
   }
@@ -233,5 +293,64 @@ useHead({
         <TocRail :note="note" :backlinks="note.incoming?.length || 0" />
       </div>
     </div>
+
+    <!-- 标签与成熟度编辑（「更多操作 → 标签与成熟度」） -->
+    <AppDialog v-model:open="metaOpen" title="标签与成熟度" size="sm">
+      <div class="space-y-4">
+        <div>
+          <span class="block text-[12px] text-ink-3 mb-1.5">标签（回车添加，最多 12 个）</span>
+          <div class="flex flex-wrap gap-1.5 mb-2">
+            <span
+              v-for="t in metaTags"
+              :key="t"
+              class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-line bg-surface-2 text-ds-sm text-ink-2"
+            >
+              {{ t }}
+              <button
+                type="button"
+                class="text-ink-3 hover:text-danger transition-colors duration-micro"
+                :aria-label="`删除标签 ${t}`"
+                @click="removeMetaTag(t)"
+              ><X class="w-3 h-3" /></button>
+            </span>
+            <span v-if="!metaTags.length" class="text-ds-sm text-ink-3">（暂无标签）</span>
+          </div>
+          <input
+            v-model="metaInput"
+            placeholder="输入标签后回车"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+            @keydown.enter.prevent="addMetaTag"
+          />
+        </div>
+
+        <div>
+          <span class="block text-[12px] text-ink-3 mb-1.5">成熟度</span>
+          <AppSelect
+            v-model="metaMaturity"
+            :options="[
+              { value: 'auto', label: '跟随自动判定（推荐）' },
+              { value: 'SEEDLING', label: '幼苗 · 人工锁定' },
+              { value: 'GROWING', label: '成长中 · 人工锁定' },
+              { value: 'EVERGREEN', label: '常青 · 人工锁定' }
+            ]"
+          />
+          <p class="mt-1.5 text-[12px] text-ink-3 leading-summary">
+            frontmatter 写了 maturity 会被视为人工指定、永不自动升档；选「跟随自动判定」即删除该行，
+            内容达标后会自动升档（详见左下角统计说明）。
+          </p>
+        </div>
+      </div>
+      <template #footer>
+        <button
+          class="px-3.5 py-2 rounded-ctl text-ds-sm border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+          @click="metaOpen = false"
+        >取消</button>
+        <button
+          class="px-3.5 py-2 rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] transition-opacity duration-micro disabled:opacity-50"
+          :disabled="metaSaving"
+          @click="saveMeta"
+        >{{ metaSaving ? '保存中…' : '保存' }}</button>
+      </template>
+    </AppDialog>
   </div>
 </template>

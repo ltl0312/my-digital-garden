@@ -1,6 +1,5 @@
 ---
 aliases: [NestJS TypeORM 配置, NestJS MySQL 配置, NestJS 数据库连接配置]
-maturity: SEEDLING
 tags:
   - status/进行中
   - type/教程

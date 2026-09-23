@@ -1,6 +1,5 @@
 ---
 aliases: [Pandas 安装, PyArrow 配置, Python 数据科学环境]
-maturity: SEEDLING
 tags: [status/进行中, type/教程, 数据科学/Pandas]
 created: "2026-06-16 22:00"
 updated: "2026-06-16 22:00"

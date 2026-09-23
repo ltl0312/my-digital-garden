@@ -1,6 +1,5 @@
 ---
 aliases: [GraalVM配置, Launch4j打包, SpringBoot exe 配置]
-maturity: SEEDLING
 tags:
   - status/进行中
   - type/教程
