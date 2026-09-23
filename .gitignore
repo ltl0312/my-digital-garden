@@ -41,6 +41,10 @@ prisma/generated
 content/vault/.maturity-backup/
 
 # vault 内的本地工具与工作区目录（Obsidian 插件 / AI 会话 / 同步工具，不入库）
+# 注意：content/vault 是指向本地笔记根（E:\Vault）的 junction，vault 根级同样要排除
+# 同步工具自身与两个双击启动脚本，否则它们会被 git 跟踪/误入库
+content/vault/.sync/
+content/vault/*.bat
 content/vault/KnowledgeBase/.obsidian/
 content/vault/KnowledgeBase/.claudian/
 content/vault/KnowledgeBase/.sync/
