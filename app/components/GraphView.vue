@@ -48,8 +48,11 @@ function loadState(): GraphState | null {
 }
 
 let simulation: d3.Simulation<any, any> | null = null
-let nodeSel: d3.Selection<SVGGElement, any, any, any> | null = null
-let zoom: d3.ZoomBehavior<SVGSVGElement, any> | null = null
+// 链式调用（selectAll(...).data(...).join(...)）产出的 Selection 会带上 Element/BaseType
+// 等额外类型参数，与本处声明的精确形状不一致；按本文件既有风格（d3.drag<any, any> 等）
+// 收敛为 any，运行时语义不变。
+let nodeSel: d3.Selection<any, any, any, any> | null = null
+let zoom: d3.ZoomBehavior<any, any> | null = null
 let canvasG: d3.Selection<SVGGElement, any, any, any> | null = null
 let currentZoom: d3.ZoomTransform = d3.zoomIdentity
 const size = { w: 800, h: 500 }
@@ -148,7 +151,7 @@ onMounted(() => {
     }))
   }
 
-  nodeSel = g.append('g')
+  const nodeSelection = g.append('g')
     .selectAll('g')
     .data(nodes)
     .join('g')
@@ -194,7 +197,10 @@ onMounted(() => {
       d3.select(this).select('circle').attr('stroke-width', d.isolated ? 1.5 : 2)
     })
 
-  nodeSel.append('circle')
+  // 供 tick 回调与对外方法（resetLayout / focusNode）使用的跨函数引用
+  nodeSel = nodeSelection
+
+  nodeSelection.append('circle')
     .attr('r', radiusOf)
     .attr('fill', colorOf)
     .attr('fill-opacity', d => (d.isolated ? 0.45 : 1))
@@ -202,10 +208,10 @@ onMounted(() => {
     .attr('stroke-width', d => (d.isolated ? 1.5 : 2))
     .attr('stroke-dasharray', d => (d.isolated ? '3 3' : null))
 
-  nodeSel.append('title').text(d => `${d.title}${d.isolated ? '（尚未连接）' : ` · ${d.degree} 条连接`}`)
+  nodeSelection.append('title').text(d => `${d.title}${d.isolated ? '（尚未连接）' : ` · ${d.degree} 条连接`}`)
 
   // 标签：3px 描边底衬避免互相压叠；仅度数 ≥ 4 常显，其余悬停显示
-  nodeSel.append('text')
+  nodeSelection.append('text')
     .attr('dy', d => radiusOf(d) + 13)
     .attr('text-anchor', 'middle')
     .attr('font-size', 12)
@@ -219,7 +225,7 @@ onMounted(() => {
     .text(d => (d.title.length > 14 ? `${d.title.slice(0, 14)}…` : d.title))
 
   // 标签置顶：把文字节点移到各自分组末尾
-  nodeSel.each(function () {
+  nodeSelection.each(function () {
     const el = this as SVGGElement
     el.appendChild(el.querySelector('text') as SVGTextElement)
   })
@@ -235,18 +241,21 @@ onMounted(() => {
   simulation.on('end', () => { physicsActive.value = false })
 
   // 画布缩放与平移：窄屏抬升最小缩放（spec 7：窄屏 0.34，以平移探索替代整图缩放）
-  zoom = d3.zoom()
+  // 显式给出泛型：与下方 svg（Selection<SVGSVGElement, …>）的元素类型对齐，
+  // 否则 d3.zoom() 推断出的 ZoomBehavior<Element, unknown> 与 call 的参数不匹配
+  const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
     .scaleExtent([minScale(), 4])
     .on('zoom', (event) => {
       currentZoom = event.transform
       g.attr('transform', event.transform)
     })
     .on('end', persistState)
-  svg.call(zoom)
+  zoom = zoomBehavior
+  svg.call(zoomBehavior)
 
   if (saved?.zoom) {
     currentZoom = d3.zoomIdentity.translate(saved.zoom.x, saved.zoom.y).scale(saved.zoom.k)
-    svg.call(zoom.transform, currentZoom)
+    svg.call(zoomBehavior.transform, currentZoom)
   }
 
   const onResize = () => {

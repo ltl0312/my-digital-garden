@@ -158,8 +158,9 @@ export async function runImport(
   const worker = async () => {
     while (true) {
       const i = cursor++
-      if (i >= accepted.length) return
       const item = accepted[i]
+      // 越界即取到 undefined（等价于原 `i >= accepted.length` 的返回条件）
+      if (item === undefined) return
       const file = files.get(item.relPath)
       if (!file) continue
       const fd = new FormData()

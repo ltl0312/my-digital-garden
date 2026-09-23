@@ -17,8 +17,11 @@ const items = computed<(number | '…')[]>(() => {
   const nums = [...set].filter(n => n >= 1 && n <= totalPages).sort((a, b) => a - b)
   const out: (number | '…')[] = []
   for (let i = 0; i < nums.length; i++) {
-    if (i > 0 && nums[i] - nums[i - 1] > 1) out.push('…')
-    out.push(nums[i])
+    const cur = nums[i]
+    const prev = nums[i - 1]
+    if (cur === undefined) continue
+    if (i > 0 && prev !== undefined && cur - prev > 1) out.push('…')
+    out.push(cur)
   }
   return out
 })

@@ -10,7 +10,10 @@ const LIMIT = { windowMs: 60_000, max: 10 } // 每 IP 每分钟 10 次
 function clientIp(event: H3Event): string {
   // Nginx 反代后取 X-Forwarded-For 首段；直连取 socket 地址
   const fwd = event.headers.get('x-forwarded-for')
-  if (fwd) return fwd.split(',')[0].trim() || 'unknown'
+  if (fwd) {
+    const first = fwd.split(',')[0]?.trim() ?? ''
+    return first || 'unknown'
+  }
   return event.node?.req?.socket?.remoteAddress || 'unknown'
 }
 
@@ -26,7 +29,8 @@ function checkRateLimit(event: H3Event) {
   // 防内存增长：条目过多时清空全部空窗口记录
   if (attempts.size > 10_000) {
     for (const [k, v] of attempts) {
-      if (!v.length || now - v[v.length - 1] > LIMIT.windowMs) attempts.delete(k)
+      const last = v[v.length - 1]
+      if (last === undefined || now - last > LIMIT.windowMs) attempts.delete(k)
     }
   }
 }
@@ -35,7 +39,7 @@ export default defineEventHandler(async (event) => {
   checkRateLimit(event)
 
   const body = await readBody<{ key?: string }>(event)
-  const key = (body.key || '').trim()
+  const key = (body?.key || '').trim()
   if (!key) throw createError({ statusCode: 400, message: '请输入密钥' })
 
   const record = await prisma.accessKey.findUnique({ where: { key } })

@@ -57,7 +57,8 @@ export function isStructuralPath(relDir: string): boolean {
   if (rel === 'KnowledgeBase') return true
   // 仅 KnowledgeBase 下第一层（深度 2）的 NN_ 前缀目录；更深层属于日常内容
   const parts = rel.split('/')
-  return parts.length === 2 && parts[0] === 'KnowledgeBase' && /^\d{2}_/.test(parts[1])
+  // parts[1] 的存在性已由 length === 2 保证；?? '' 只为满足 noUncheckedIndexedAccess
+  return parts.length === 2 && parts[0] === 'KnowledgeBase' && /^\d{2}_/.test(parts[1] ?? '')
 }
 
 // 目录是否非空（忽略 dotfile；与 tree.get 的展示口径一致）

@@ -39,13 +39,15 @@ export async function ingestFiles(
       if (timedOut) return
       if (timeoutMs && Date.now() - started > timeoutMs) { timedOut = true; return }
       const i = cursor++
-      if (i >= mdPaths.length) return
+      const target = mdPaths[i]
+      // 越界即取到 undefined（等价于原 `i >= mdPaths.length` 的返回条件）
+      if (target === undefined) return
       try {
-        await processMarkdownFile(mdPaths[i])
+        await processMarkdownFile(target)
         ingested++
       } catch (e) {
-        failed.push(mdPaths[i])
-        console.error(`[garden] import: 入库失败 ${mdPaths[i]}`, e)
+        failed.push(target)
+        console.error(`[garden] import: 入库失败 ${target}`, e)
       }
     }
   }

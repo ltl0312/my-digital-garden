@@ -4,9 +4,21 @@ import { ArrowRight, Search, Sparkles, Network, Library, KeyRound, Activity } fr
 const requestFetch = useRequestFetch()
 const commandOpen = useState<boolean>('shell-command-open', () => false)
 
+// /api/notes 的出参含 Prisma 深层 include（tags.tag），经 Nitro SerializeObject 后类型会退化，
+// 这里显式声明列表所需字段（与 NoteRow 的 props 对齐），避免模板里 list?.notes 被判为不存在
+interface RecentNote {
+  slug: string
+  title: string
+  summary?: string | null
+  maturity: string
+  readingTime?: number | null
+  updatedAt: string
+  tags?: { tag: { name: string; count?: number } }[]
+}
+
 // 取数与 E2 相同：无新增接口，全部复用既有只读数据源
 const { data: list } = await useAsyncData('notes-recent', () =>
-  requestFetch('/api/notes', { query: { pageSize: 6 } })
+  requestFetch<{ notes: RecentNote[] }>('/api/notes', { query: { pageSize: 6 } })
 )
 
 const { tags, totalNotes, domains, stats } = useFacets()

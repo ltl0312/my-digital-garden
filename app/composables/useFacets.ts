@@ -55,7 +55,8 @@ export function domainOfSlug(slug: string | undefined): { domain: string; dirPat
   parts.pop() // 去掉文件名
   const kbIdx = parts.findIndex(p => /^\d{2}_Knowledge$/i.test(p))
   const dirPath = parts.join(' / ')
-  if (kbIdx >= 0 && parts.length > kbIdx + 1) return { domain: parts[kbIdx + 1], dirPath }
+  const domain = parts[kbIdx + 1]
+  if (kbIdx >= 0 && domain !== undefined) return { domain, dirPath }
   return { domain: '', dirPath }
 }
 

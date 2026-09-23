@@ -173,9 +173,11 @@ export function classifyMaturity(input: ClassifyInput): ClassifyResult {
 
 /** 从正文解析出链目标（obsidian:// 与 [[wikilink]] 双口径，与 audit 一致） */
 export function extractLinkTargets(markdown: string): string[] {
-  const obs = [...markdown.matchAll(/obsidian:\/\/open\?file=([^"&\n]+)/g)].map(m => m[1])
-  const wl = [...markdown.matchAll(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g)].map(m => m[1])
-  return [...obs, ...wl]
+  // 两个模式的捕获组 1 都是必选组，匹配成功即必然存在；但 noUncheckedIndexedAccess 会把
+  // RegExpExecArray 的下标一律视为可能缺省，故用类型谓词把它收敛回 string[]
+  const caps = (re: RegExp): string[] =>
+    [...markdown.matchAll(re)].map(m => m[1]).filter((s): s is string => typeof s === 'string')
+  return [...caps(/obsidian:\/\/open\?file=([^"&\n]+)/g), ...caps(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g)]
 }
 
 /**
@@ -196,8 +198,10 @@ export function computeInDegrees(entries: Array<{ slug: string; content: string 
     for (const t of targets) {
       const base = t.split('/').pop()!.replace(/\.md$/, '')
       const hit = byBase.get(base)
-      if (hit && hit.length === 1 && hit[0] !== e.slug) {
-        deg.set(hit[0], (deg.get(hit[0]) ?? 0) + 1)
+      // 仅 basename 唯一时才算入链（避免同名文件互相污染）；空数组不会出现，但取下标仍需判空
+      const only = hit?.length === 1 ? hit[0] : undefined
+      if (only !== undefined && only !== e.slug) {
+        deg.set(only, (deg.get(only) ?? 0) + 1)
       }
     }
   }

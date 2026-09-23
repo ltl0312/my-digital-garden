@@ -19,7 +19,7 @@ const toc = computed<{ title: string; level: number }[]>(() => {
   const re = /<h([23])[^>]*>(.*?)<\/h\1>/g
   let m: RegExpExecArray | null
   while ((m = re.exec(html)) !== null) {
-    const title = m[2].replace(/<[^>]+>/g, '').trim()
+    const title = (m[2] ?? '').replace(/<[^>]+>/g, '').trim()
     if (title) out.push({ title, level: Number(m[1]) })
   }
   return out
@@ -47,8 +47,9 @@ const bind = () => {
   io = new IntersectionObserver((entries) => {
     // 取最靠上的一条命中项作为当前项
     const visible = entries.filter(e => e.isIntersecting)
-    if (!visible.length) return
-    const idx = heads.indexOf(visible[0].target as HTMLElement)
+    const top = visible[0]
+    if (!top) return
+    const idx = heads.indexOf(top.target as HTMLElement)
     if (idx >= 0) activeIdx.value = idx
   }, { root, rootMargin: '-8% 0px -78% 0px', threshold: 0 })
 

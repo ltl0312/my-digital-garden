@@ -9,7 +9,13 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "typecheck": "nuxt typecheck",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "acceptance:shell": "node scripts/acceptance/m-verify.mjs",
+    "acceptance:gesture": "node scripts/acceptance/m34-verify.mjs",
+    "acceptance:ui": "node scripts/acceptance/e4-check.mjs",
+    "acceptance:api": "node scripts/acceptance/e4-regression.mjs",
+    "acceptance:shots": "node scripts/acceptance/e-shots.mjs m-final",
+    "acceptance:all": "node scripts/acceptance/m-verify.mjs && node scripts/acceptance/m34-verify.mjs && node scripts/acceptance/e4-check.mjs && node scripts/acceptance/e4-regression.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",

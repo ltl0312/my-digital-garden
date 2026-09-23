@@ -3,6 +3,8 @@
 // 左上「定位笔记」/ 右上工具条 / 左下分组图例 / 右下统计；设置改为浮层，不再挤占画布
 import { Network, Maximize2, Zap, Settings2, ZoomIn, ZoomOut, Search, Locate, ChevronUp } from 'lucide-vue-next'
 import { DOMAIN_HUE_DEG, domainColor, domainOfSlug } from '~/composables/useFacets'
+// 显式引入组件：脚本里的 InstanceType<typeof GraphView> 取不到模板层的自动导入绑定
+import GraphView from '~/components/GraphView.vue'
 
 interface GraphSettings {
   groupBy: 'domain' | 'maturity' | 'tag'
@@ -95,7 +97,11 @@ watchEffect(() => {
   const tags = [...new Set(nodes.value.map((n: any) => n.primaryTag).filter(Boolean))] as string[]
   let idx = 0
   for (const t of tags) {
-    if (!settings.value.colors[t]) settings.value.colors[t] = TAG_PALETTE[idx++ % TAG_PALETTE.length]
+    if (!settings.value.colors[t]) {
+      // 取下标后判空（noUncheckedIndexedAccess）；idx 同样只在真正需要分配时才自增
+      const pal = TAG_PALETTE[idx++ % TAG_PALETTE.length]
+      if (pal) settings.value.colors[t] = pal
+    }
   }
 })
 

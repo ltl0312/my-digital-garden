@@ -9,6 +9,8 @@ interface TreeNode {
   name: string
   type: 'dir' | 'file'
   slug?: string
+  /** 成熟度：/api/vault/tree 的文件节点会带上，用于行尾色点 */
+  maturity?: string
   children?: TreeNode[]
 }
 
@@ -98,8 +100,11 @@ onMounted(() => {
 // 子目录就会被当成提升根而恒展开、点不动（用户反馈的 速记/2026、skills/obsidian-manager
 // 折叠不了就是这个原因：它们的父目录下确实只有它们一个子目录）。
 const promoted = computed(() => {
-  if (props.base === undefined && props.nodes.length === 1 && props.nodes[0].type === 'dir') {
-    return { root: props.nodes[0], children: props.nodes[0].children || [] }
+  // 先取下标再判空：既是 noUncheckedIndexedAccess 的要求，也让下方 promoted.root
+  // 的类型收敛为 TreeNode（否则整个根行模板都会报「possibly undefined」）
+  const first = props.nodes[0]
+  if (props.base === undefined && props.nodes.length === 1 && first?.type === 'dir') {
+    return { root: first, children: first.children || [] }
   }
   return null
 })

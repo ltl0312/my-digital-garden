@@ -5,7 +5,12 @@ import { resolveVaultPath, stripNul } from '../../../utils/vault'
 import { requireAdmin } from '../../../utils/auth'
 import { invalidateGardenCache } from '../../../utils/cache'
 import { prisma } from '../../../utils/db'
-import { computeMaturityForNote } from '../../../utils/maturity-sync'
+import { computeMaturityForNote, type DbMaturity } from '../../../utils/maturity-sync'
+
+// 可人工指定的成熟度（与 DB 枚举一致）；用类型谓词收敛，避免在赋值点改用 as 断言
+const MATURITY_INPUT = ['SEEDLING', 'GROWING', 'EVERGREEN'] as const
+const isDbMaturity = (v: string): v is DbMaturity =>
+  (MATURITY_INPUT as readonly string[]).includes(v)
 
 // 元数据编辑（标签 / 成熟度）：PATCH /api/vault/notes/<slug>
 // body: { tags?: string[]; maturity?: 'SEEDLING' | 'GROWING' | 'EVERGREEN' | null }
@@ -39,13 +44,13 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  let maturity: string | null | undefined
+  let maturity: DbMaturity | null | undefined
   if (body.maturity !== undefined) {
     if (body.maturity === null || body.maturity === '') {
       maturity = null // 恢复自动判定
     } else {
       const v = stripNul(String(body.maturity)).trim().toUpperCase()
-      if (!['SEEDLING', 'GROWING', 'EVERGREEN'].includes(v)) {
+      if (!isDbMaturity(v)) {
         throw createError({ statusCode: 400, message: 'maturity 仅支持 SEEDLING / GROWING / EVERGREEN（或 null 恢复自动判定）' })
       }
       maturity = v
@@ -97,7 +102,7 @@ export default defineEventHandler(async (event) => {
       : (Array.isArray(fm.tags) ? fm.tags.filter((t: unknown): t is string => typeof t === 'string' && !!t.trim()) : [])
     await prisma.$transaction(async (tx) => {
       if (maturity !== undefined) {
-        let mv: string
+        let mv: DbMaturity
         if (maturity === null) {
           // 恢复自动判定：与 watcher 同口径重判一次（explicit 置空、不锁定）
           const judged = await computeMaturityForNote({

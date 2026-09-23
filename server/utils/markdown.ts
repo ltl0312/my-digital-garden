@@ -21,6 +21,15 @@ const MATURITY_VALUES: readonly MaturityValue[] = ['SEEDLING', 'GROWING', 'EVERG
 // 摘要：正文前 120 字（折叠空白换行，便于列表展示）
 const SUMMARY_LENGTH = 120
 
+/**
+ * 正则捕获组取值。本文件的模式里被取的组都是**必选组**，匹配成功即必然存在；
+ * 但 noUncheckedIndexedAccess 会把 RegExpExecArray 的下标一律视为可能缺省。
+ * 缺省时返回空串（与原语义下的 undefined 在后续 trim/split/replace 上的表现一致，
+ * 且不会像原先那样抛 TypeError）。
+ */
+const cap = (m: RegExpMatchArray | RegExpExecArray | null | undefined, i: number): string =>
+  m?.[i] ?? ''
+
 /** 摘要清洗：把 Markdown / HTML 还原为适合列表展示的纯文本。
  *  此前 buildSummary 只做了空白折叠 + 截断，导致列表摘要直接显示原文标记 ——
  *  例如 `<h2>计算机牛马生存准则</h2>`、`# **主题**…`，看上去像「同一个标题出现了两次」。 */
@@ -123,23 +132,23 @@ function lenientParseFrontmatter(raw: string): { data: Record<string, any>; cont
   if (!m) return { data: {}, content: raw }
   const data: Record<string, any> = {}
   let lastKey: string | null = null
-  for (const line of m[1].split(/\r?\n/)) {
+  for (const line of cap(m, 1).split(/\r?\n/)) {
     if (!line.trim()) continue
     const listItem = /^\s+-\s?(.*)$/.exec(line)
     if (listItem && lastKey) {
       const arr = Array.isArray(data[lastKey]) ? (data[lastKey] as any[]) : []
-      const item = listItem[1].trim().replace(/^["']|["']$/g, '')
+      const item = cap(listItem, 1).trim().replace(/^["']|["']$/g, '')
       if (item) arr.push(item)
       data[lastKey] = arr
       continue
     }
     const kv = /^([\w.-]+)\s*:\s*(.*)$/.exec(line)
     if (!kv) { lastKey = null; continue }
-    const key = kv[1]
-    const val = kv[2].trim()
+    const key = cap(kv, 1)
+    const val = cap(kv, 2).trim()
     const flow = /^\[(.*)\]$/.exec(val)
     if (flow) {
-      data[key] = flow[1].split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean)
+      data[key] = cap(flow, 1).split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean)
       lastKey = key
       continue
     }
@@ -249,7 +258,7 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
     const outgoingTargets: string[] = []
     let match
     while ((match = wikiLinkRegex.exec(rawMarkdown)) !== null) {
-      outgoingTargets.push(match[1].trim())
+      outgoingTargets.push(cap(match, 1).trim())
     }
 
     // 第一遍：批量解析每个 target 对应的真实 slug（精确 / basename / aliases 三级）
@@ -266,7 +275,7 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
     bareSegments.forEach((seg, i) => {
       if (i % 2 === 1) return // 代码段
       for (const m of seg.matchAll(/(?<!\[)\[([^\[\]\n]+)\](?!\])/g)) {
-        const name = m[1].trim()
+        const name = cap(m, 1).trim()
         if (!name || name.toLowerCase() === 'x' || name.startsWith('^') || /^\d+$/.test(name)) continue
         bareNames.add(name)
       }
@@ -305,7 +314,7 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
     obsSegments.forEach((seg, i) => {
       if (i % 2 === 1) return
       for (const m of seg.matchAll(/<a\s[^>]*href="obsidian:\/\/open\?file=([^"]*)"[^>]*>[\s\S]*?<\/a>/g)) {
-        let f = m[1]
+        let f = cap(m, 1)
         try { f = decodeURIComponent(f) } catch { /* 保留原值 */ }
         obsNames.add(f.replace(/\.md$/i, ''))
       }
@@ -357,7 +366,12 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
       .use(remarkMath)
       .use(remarkRehype)
       .use(rehypeKatex)
-      .use(rehypeShiki, { theme: 'nord' })
+      // 类型收敛（非功能改动）：@shikijs/rehype 4.4.2 自带了**另一份 unified**
+      // （node_modules/@shikijs/rehype/node_modules/unified），其 Plugin 泛型与项目主版本的
+      // 不是同一份类型标识 —— 结构上兼容、名义上不可赋值。运行时参数完全匹配（主题名）。
+      // 上游 dedupe unified 之后应移除该断言。
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .use(rehypeShiki as any, { theme: 'nord' })
       .use(rehypeStringify)
       .process(safeLinksMarkdown)
 

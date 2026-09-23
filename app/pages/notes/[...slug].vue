@@ -13,8 +13,8 @@ const revealSlug = useState<string>('shell-reveal-slug', () => '')
 
 // catch-all 路由下 params.slug 为数组，join 还原多级 slug
 const slug = computed(() => {
-  const s = Array.isArray(route.params.slug) ? route.params.slug.join('/') : route.params.slug
-  return s
+  const s = route.params.slug
+  return Array.isArray(s) ? s.join('/') : (s ?? '')
 })
 
 // 逐段编码（保留 / 为路径分隔符；整体 encodeURIComponent 会生成 %2F 导致路由失配 404）
@@ -86,7 +86,9 @@ const saveNote = async () => {
     while (Date.now() < deadline) {
       await new Promise(r => setTimeout(r, 500))
       try {
-        const fresh = await requestFetch(`/api/notes/${encodedSlug.value}`)
+        // 显式声明所需字段：模板字符串形式的 URL 在类型化路由下推断不出唯一出参，
+        // 此处只用到 updatedAt 做「内容是否真的变了」的判断
+        const fresh = await requestFetch<{ updatedAt?: string | Date }>(`/api/notes/${encodedSlug.value}`)
         // watcher 入库后 updatedAt 会变化（内容真实变化时）
         if (fresh && fresh.updatedAt !== prevUpdatedAt) {
           note.value = fresh

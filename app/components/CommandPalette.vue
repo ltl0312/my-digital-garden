@@ -35,7 +35,8 @@ const search = async () => {
     loading.value = true
     try {
       const requestFetch = useRequestFetch()
-      const data = await requestFetch('/api/notes', { query: { q: q.value, pageSize: 8 } })
+      // 出参类型同首页：显式声明所需字段（results 本身即 any[]）
+      const data = await requestFetch<{ notes: any[] }>('/api/notes', { query: { q: q.value, pageSize: 8 } })
       if (seq === requestSeq) {
         results.value = data.notes || []
         active.value = 0

@@ -76,7 +76,7 @@ const isStructural = (path: string) => {
   const segs = path.split('/').filter(Boolean)
   if (segs.length === 0) return true
   if (segs.length === 1) return segs[0] === 'KnowledgeBase'
-  return segs.length === 2 && segs[0] === 'KnowledgeBase' && /^\d{2}_/.test(segs[1])
+  return segs.length === 2 && segs[0] === 'KnowledgeBase' && /^\d{2}_/.test(segs[1] ?? '')
 }
 
 /** 剪贴板（复制 / 粘贴）：跨路由与抽屉共享 */

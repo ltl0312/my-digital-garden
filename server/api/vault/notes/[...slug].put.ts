@@ -12,7 +12,8 @@ export default defineEventHandler(async (event) => {
   if (!slug) throw createError({ statusCode: 400, message: 'Invalid Slug' })
 
   const body = await readBody<{ content?: string }>(event)
-  if (typeof body.content !== 'string') {
+  const content = body?.content
+  if (typeof content !== 'string') {
     throw createError({ statusCode: 400, message: 'content required' })
   }
 
@@ -32,7 +33,7 @@ export default defineEventHandler(async (event) => {
     // 原文件 frontmatter 损坏：按无 frontmatter 处理（正文仍可保存）
   }
 
-  const cleanContent = stripNul(body.content)
+  const cleanContent = stripNul(content)
   const finalContent = Object.keys(frontmatter).length
     ? matter.stringify(cleanContent, frontmatter)
     : cleanContent
