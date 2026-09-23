@@ -4,6 +4,12 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   app: {
     head: {
+      meta: [
+        // 显式声明（Nuxt 本会注入一份，这里为了可审计 + 打开 safe-area）：
+        // 底部 TabBar 与 FAB 依赖 env(safe-area-inset-bottom)，
+        // 而该值只在 `viewport-fit=cover` 下才非 0，否则刘海屏上会被 Home Indicator 压住。
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+      ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },

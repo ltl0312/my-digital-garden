@@ -40,6 +40,13 @@ const editing = ref(false)
 const draft = ref('')
 const saving = ref(false)
 
+// 编辑态同步到全局：手机端底部 TabBar 在编辑态需让位给编辑器底部操作条
+// （交付物 §5 ⑤ / 第 05 屏 —— 编辑态没有底部导航）。离开页面时复位，
+// 否则返回列表页后 TabBar 会一直缺失。
+const editorOpen = useState<boolean>('shell-editor-open', () => false)
+watch(editing, (v) => { editorOpen.value = v }, { immediate: true })
+onBeforeUnmount(() => { editorOpen.value = false })
+
 // 侧边栏跳转另一篇笔记时（组件实例复用），slug 变化立即重取（手动模式，不依赖 useAsyncData 语义）
 // 同时重置编辑态：否则会把上一篇笔记的草稿误保存到当前笔记
 watch(slug, () => {

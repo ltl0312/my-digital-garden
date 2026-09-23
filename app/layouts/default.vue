@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { Search, Plus, FilePlus, FolderPlus, Upload, ChevronDown, Menu as MenuIcon, Sun, Moon, X, Settings, KeyRound, LogOut, UserRound } from 'lucide-vue-next'
+import { Search, Plus, ChevronDown, Menu as MenuIcon, Sun, Moon, X, Settings, KeyRound, LogOut, UserRound } from 'lucide-vue-next'
 
 // AppShell（spec ch.4/6）：图标栏 60px + 顶栏 60px + 主体（上下文侧栏 + 内容区）
-// 高度锁 100%，各区域内部滚动；<1024px 侧栏转为抽屉 + 遮罩，<768px 图标栏收进顶栏。
+// 高度锁 100%，各区域内部滚动；<1024px 侧栏转为抽屉 + 遮罩。
+//
+// 移动端（交付物 MOBILE-PARITY，阶段 M2）：
+//   · <640：底部 Pill TabBar（主导航）+ 顶栏新建 FAB + 顶栏吸顶 + 滚动位移联动
+//   · 640–1023：维持 E4 的「抽屉 + 汉堡」形态（底部 TabBar 与 FAB 由 CSS 隐藏）
 // 取数逻辑与持久化行为均沿用原实现（同一接口、同一 localStorage 键）。
 const { isDark, toggleTheme } = useTheme()
 const { me } = useAuth()
@@ -11,6 +15,16 @@ const { canManage, actorRole } = useRoles()
 
 const commandOpen = useState<boolean>('shell-command-open', () => false)
 const createMenuOpen = ref(false)
+// 手机 FAB 的弹出层：与顶栏下拉分开持有开合（两者锚点不同），但共用同一套动作实现
+const fabMenuOpen = ref(false)
+// 详情页编辑态（跨组件）：编辑态让位给编辑器底部操作条 → 隐藏底部 TabBar
+const editorOpen = useState<boolean>('shell-editor-open', () => false)
+
+// 断点单源 + 滚动活动（交付物 §5 ①②）：断点值不再写字面量
+const { isPhone, isNarrow, drawerW } = useViewport()
+const scrollEl = ref<HTMLElement | null>(null)
+const { scrolled, hidden: fabHidden } = useScrollActivity(scrollEl)
+
 // E4：<1024 图标栏隐藏后，管理后台 / 我的密钥 / 主题 / 退出统一收敛到顶栏「用户」菜单
 const userMenuOpen = ref(false)
 const roleLabel = computed(() => ROLES[actorRole.value]?.label || '普通用户')
@@ -56,17 +70,15 @@ const startResize = (e: PointerEvent) => {
   dragLeft = host?.getBoundingClientRect().left ?? 0
 }
 
-const isNarrow = ref(false)
+// 进入窄屏（<1024）自动收起侧栏 —— 沿用 E4 行为；断点值来自 useViewport 单源。
+// immediate: true 覆盖「首帧即为窄屏」的情形（isNarrow 在挂载后才校正为真）。
+watch(isNarrow, (v) => {
+  if (v) sidebarOpen.value = false
+}, { immediate: true })
 
 onMounted(() => {
   const saved = localStorage.getItem(SIDEBAR_KEY)
   if (saved) sidebarWidth.value = Math.min(440, Math.max(240, Number(saved)))
-  const sync = () => {
-    isNarrow.value = window.innerWidth < 1024
-    if (isNarrow.value) sidebarOpen.value = false
-  }
-  sync()
-  window.addEventListener('resize', sync)
 
   window.addEventListener('pointermove', (e) => {
     if (!resizing.value) return
@@ -94,6 +106,7 @@ onMounted(() => {
     if (e.key === 'Escape') {
       if (commandOpen.value) commandOpen.value = false
       if (createMenuOpen.value) createMenuOpen.value = false
+      if (fabMenuOpen.value) fabMenuOpen.value = false
       if (isNarrow.value && sidebarOpen.value) sidebarOpen.value = false
     }
   })
@@ -162,7 +175,18 @@ const startImport = () => {
 
 const closeCreateMenu = (e: MouseEvent) => {
   const el = e.target as HTMLElement
-  if (!el.closest?.('[data-create-menu]')) createMenuOpen.value = false
+  // FAB 弹出层内部点击不关闭（其容器同样标注了 data-create-menu）
+  if (el.closest?.('[data-create-menu]')) return
+  createMenuOpen.value = false
+  fabMenuOpen.value = false
+}
+
+// FAB 的三项动作：先收起弹出层，再复用与顶栏下拉完全相同的处理函数（单一实现，不复制逻辑）
+const onFabMenu = (kind: 'note' | 'folder' | 'import') => {
+  fabMenuOpen.value = false
+  if (kind === 'note') startCreateRoot()
+  else if (kind === 'folder') startCreateFolder()
+  else startImport()
 }
 
 const logout = async () => {
@@ -176,16 +200,19 @@ const logout = async () => {
     class="h-screen w-screen overflow-hidden bg-canvas text-ink flex"
     :style="{ '--sidebar-w': sidebarWidth + 'px' }"
   >
-    <!-- 图标栏（spec 断点表：≥1024 显示；768–1023 与手机隐藏，侧栏转抽屉） -->
+    <!-- 图标栏（spec 断点表：≥1024 显示；640–1023 与手机隐藏，改为抽屉 + 底部 TabBar） -->
     <div class="hidden lg:block h-full">
       <RailNav :sidebar-open="sidebarOpen" @toggle-sidebar="sidebarOpen = !sidebarOpen" @logout="logout" />
     </div>
 
-    <!-- 主列：顶栏 + 主体 -->
+    <!-- 主列：顶栏 + 主体 + 底部导航（手机） -->
     <div class="flex-1 min-w-0 h-full flex flex-col">
-      <!-- 顶栏 60px -->
+      <!-- 顶栏 60px（吸顶：位于 flex 列首、内容区独立滚动，因此结构上永不跟随滚动）
+           交付物 §5 ①：手机端滚动位移 > 8px 时底边 1px 分隔线渐显，回到顶部淡出。
+           仅手机生效 —— 桌面/平板的常驻分隔线是 E4 已验收的形态，不动。 -->
       <header
-        class="shrink-0 flex items-center gap-3 px-4 border-b border-line bg-surface/90 backdrop-blur z-30 select-none"
+        class="shrink-0 flex items-center gap-3 px-4 border-b bg-surface/90 backdrop-blur z-30 select-none transition-colors duration-base"
+        :class="isPhone && !scrolled ? 'border-transparent' : 'border-line'"
         :style="{ height: 'var(--header-h)' }"
       >
         <!-- 抽屉开关（<1024：图标栏隐藏，侧栏转为抽屉 + 遮罩） -->
@@ -230,11 +257,14 @@ const logout = async () => {
           <Search class="w-4 h-4" />
         </button>
 
-        <!-- 新建下拉：新建笔记 / 新建文件夹 / 导入笔记（spec 9） -->
+        <!-- 新建下拉：新建笔记 / 新建文件夹 / 导入笔记（spec 9）
+             手机端与 FAB 并存且共用同一套动作 —— FAB 滚动隐藏后此处不留死路。 -->
         <div v-if="canManage" class="relative shrink-0" data-create-menu>
           <button
             class="flex items-center gap-1.5 px-3 h-[38px] rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] shadow-ds1 transition-transform duration-micro active:scale-95"
             title="新建"
+            aria-haspopup="menu"
+            :aria-expanded="createMenuOpen"
             @click="createMenuOpen = !createMenuOpen"
           >
             <Plus class="w-3.5 h-3.5" /><span class="hidden sm:inline">新建</span>
@@ -243,16 +273,9 @@ const logout = async () => {
           <div
             v-if="createMenuOpen"
             class="absolute right-0 mt-2 w-44 rounded-card bg-surface border border-line shadow-ds3 p-1 z-50"
+            role="menu"
           >
-            <button class="w-full px-3 py-2 rounded-ctl text-ds-sm text-left flex items-center gap-2 text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro" @click="startCreateRoot">
-              <FilePlus class="w-3.5 h-3.5 text-accent" />新建笔记
-            </button>
-            <button class="w-full px-3 py-2 rounded-ctl text-ds-sm text-left flex items-center gap-2 text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro" @click="startCreateFolder()">
-              <FolderPlus class="w-3.5 h-3.5 text-accent" />新建文件夹
-            </button>
-            <button class="w-full px-3 py-2 rounded-ctl text-ds-sm text-left flex items-center gap-2 text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro" @click="startImport">
-              <Upload class="w-3.5 h-3.5 text-accent" />导入笔记
-            </button>
+            <CreateMenuItems @note="startCreateRoot" @folder="startCreateFolder()" @import="startImport" />
           </div>
         </div>
 
@@ -278,15 +301,17 @@ const logout = async () => {
 
       <!-- 主体 -->
       <div class="flex-1 min-h-0 flex relative">
-        <!-- 侧栏（≥1024 常驻；<1024 抽屉） -->
+        <!-- 侧栏（≥1024 常驻；<1024 抽屉）
+             抽屉宽度按交付物 §5 ④ 的公式：min(320, max(300, 屏宽 × 0.82))
+             —— 取代此前写死的 286px（小屏会显得局促、大屏平板浪费空间）。 -->
         <div
           class="h-full shrink-0 relative transition-[width] duration-drawer ease-dawn"
           :class="isNarrow
             ? 'absolute left-0 top-0 z-40 shadow-ds3'
             : ''"
-          :style="{ width: isNarrow ? (sidebarOpen ? '286px' : '0px') : (sidebarOpen ? 'var(--sidebar-w)' : '0px') }"
+          :style="{ width: isNarrow ? (sidebarOpen ? drawerW + 'px' : '0px') : (sidebarOpen ? 'var(--sidebar-w)' : '0px') }"
         >
-          <div v-show="sidebarOpen" class="h-full" :style="{ width: isNarrow ? '286px' : 'var(--sidebar-w)' }">
+          <div v-show="sidebarOpen" class="h-full" :style="{ width: isNarrow ? drawerW + 'px' : 'var(--sidebar-w)' }">
             <ContextSidebar
               :tree="(tree as any)?.tree || []"
               :domains="domains"
@@ -321,10 +346,23 @@ const logout = async () => {
           @pointerdown="startResize"
         ></div>
         <!-- 内容区 -->
-        <main data-scroll-root class="flex-1 min-w-0 h-full overflow-y-auto">
+        <main ref="scrollEl" data-scroll-root class="flex-1 min-w-0 h-full overflow-y-auto">
           <NuxtPage />
         </main>
+
+        <!-- 新建 FAB（手机）：拇指可达的主入口，滚动隐藏见 AppFab 内注 -->
+        <AppFab
+          v-if="canManage"
+          v-model:open="fabMenuOpen"
+          :hidden="fabHidden"
+          @note="onFabMenu('note')"
+          @folder="onFabMenu('folder')"
+          @import="onFabMenu('import')"
+        />
       </div>
+
+      <!-- 底部主导航（手机 <640；编辑态让位给编辑器操作条） -->
+      <BottomTabBar v-if="!editorOpen" />
     </div>
 
     <!-- 全局浮层：命令面板 / 批量导入 / 新建文件夹 / 新建笔记 / Toast / 确认框
@@ -376,10 +414,12 @@ const logout = async () => {
       <ConfirmHost />
     </ClientOnly>
 
-    <!-- 移动端关闭抽屉的悬浮按钮（≥1024 不显示） -->
+    <!-- 关闭抽屉的悬浮按钮：仅平板（640–1023）显示。
+         手机端已有底部 TabBar 占据右下角，且抽屉可由顶栏汉堡或遮罩关闭 —— 此处必须让位，
+         否则会与 FAB 叠在同一位置。 -->
     <button
       v-if="isNarrow && sidebarOpen"
-      class="fixed bottom-4 right-4 z-50 w-[38px] h-[38px] rounded-full bg-surface border border-line shadow-ds2 flex items-center justify-center text-ink-2 lg:hidden"
+      class="hidden sm:flex lg:hidden fixed bottom-4 right-4 z-50 w-[38px] h-[38px] rounded-full bg-surface border border-line shadow-ds2 items-center justify-center text-ink-2"
       title="关闭侧栏"
       @click="sidebarOpen = false"
     >
