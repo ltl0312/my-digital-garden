@@ -83,7 +83,11 @@ const isStructural = (path: string) => {
 type ClipItem = { path: string; name: string; isDir: boolean }
 const clipboard = useState<ClipItem | null>('shell-tree-clipboard', () => null)
 
-const menu = ref<{ open: boolean; x: number; y: number; target: any | null }>({ open: false, x: 0, y: 0, target: null })
+// 菜单双形态（交付物第 09 屏）：鼠标右键 = 跟随鼠标的锚点浮层；触屏长按 = 贴底的拇指可达面板。
+// 两者的 items 完全同源（下方 menuItems），**不存在第二套权限判断**。
+const menu = ref<{ open: boolean; x: number; y: number; target: any | null; mode: 'mouse' | 'touch' }>({
+  open: false, x: 0, y: 0, target: null, mode: 'mouse'
+})
 const renameOpen = ref(false)
 // 重命名目标（对话框需要 isDir / 同级节点做重名校验）
 const renameTarget = ref<any | null>(null)
@@ -100,8 +104,11 @@ function findSiblings(nodes: TreeNode[], path: string, base = ''): TreeNode[] {
   return []
 }
 
-const openMenu = (p: { name: string; path: string; type: 'dir' | 'file'; slug?: string; x: number; y: number; children?: any[] }) => {
-  menu.value = { open: true, x: p.x, y: p.y, target: p }
+const openMenu = (
+  p: { name: string; path: string; type: 'dir' | 'file'; slug?: string; x: number; y: number; children?: any[] },
+  mode: 'mouse' | 'touch' = 'mouse'
+) => {
+  menu.value = { open: true, x: p.x, y: p.y, target: p, mode }
 }
 provide('shell-tree-menu', openMenu)
 
@@ -306,14 +313,24 @@ const onMenuSelect = async (key: string) => {
       </button>
     </div>
 
-    <!-- 结构树右键菜单 + 重命名对话框 -->
+    <!-- 结构树操作菜单：鼠标右键走锚点浮层，触屏长按走底部面板（同一份 menuItems） -->
     <TreeContextMenu
+      v-if="menu.mode === 'mouse'"
       :open="menu.open"
       :x="menu.x"
       :y="menu.y"
       :items="menuItems"
       @select="onMenuSelect"
       @close="closeMenu"
+    />
+    <ActionSheet
+      v-else
+      :open="menu.open"
+      :items="menuItems"
+      :title="menu.target?.name || ''"
+      :subtitle="menu.target?.path || ''"
+      @update:open="(v: boolean) => { if (!v) closeMenu() }"
+      @select="onMenuSelect"
     />
     <RenameDialog
       v-model:open="renameOpen"

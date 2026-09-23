@@ -4,6 +4,7 @@
 // 紧凑模式隐藏摘要与路径；无摘要时用路径替代「暂无摘要」
 import { ArrowRight } from 'lucide-vue-next'
 import { domainOfSlug, hueVarOf } from '~/composables/useFacets'
+import { useLongPress, LONG_PRESS_CLASS } from '~/composables/useLongPress'
 
 const props = withDefaults(defineProps<{
   note: {
@@ -16,7 +17,23 @@ const props = withDefaults(defineProps<{
     tags?: { tag: { name: string; count?: number } }[]
   }
   compact?: boolean
-}>(), { compact: false })
+  /** 启用触屏长按操作（交付物第 22 屏）：只有「全部笔记」列表开启；
+   *  首页「最近更新」是浏览入口，不挂破坏性操作。 */
+  actions?: boolean
+}>(), { compact: false, actions: false })
+
+const emit = defineEmits<{
+  (e: 'longpress', note: any): void
+}>()
+
+// 长按仅在 `actions` 为真时注册。**不能无条件绑上** —— useLongPress 在长按触发后会吞掉
+// 紧随其后的 click，若始终注册，整行的「点开笔记」就会在按住 500ms 后失效。
+const longPress = useLongPress(() => emit('longpress', props.note))
+const onContextMenu = (e: MouseEvent) => {
+  // 触屏长按在 Android 上会同时触发 contextmenu，必须拦掉；
+  // 桌面右键则保持原样（用户仍可用浏览器菜单「在新标签页打开」）。
+  if (props.actions) e.preventDefault()
+}
 
 const meta = computed(() => domainOfSlug(props.note.slug))
 const hue = computed(() => `var(${hueVarOf(meta.value.domain || '其他')})`)
@@ -42,7 +59,15 @@ const when = computed(() => {
   <NuxtLink
     :to="`/notes/${note.slug.split('/').map(encodeURIComponent).join('/')}`"
     class="group relative block pl-4 pr-3 py-3.5 rounded-card border border-transparent bg-surface hover:border-line hover:shadow-ds1 transition-all duration-base ease-dawn"
+    :class="actions ? LONG_PRESS_CLASS : ''"
+    data-testid="note-row"
     :style="{ '--h': hue }"
+    @pointerdown="actions && longPress.onPointerdown($event)"
+    @pointermove="actions && longPress.onPointermove($event)"
+    @pointerup="actions && longPress.onPointerup($event)"
+    @pointercancel="actions && longPress.onPointercancel($event)"
+    @click.capture="actions && longPress.onClickCapture($event)"
+    @contextmenu="onContextMenu"
   >
     <!-- 左缘领域色条（悬停显现） -->
     <span

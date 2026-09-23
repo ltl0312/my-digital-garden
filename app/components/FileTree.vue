@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Folder, FolderOpen, ChevronRight, FileText } from 'lucide-vue-next'
+import { useLongPress, LONG_PRESS_CLASS } from '~/composables/useLongPress'
 
 // FileTree（spec ch.6）：单根提升 · 递归计数徽章 · 折叠双重信号（箭头旋转 90° + 文件夹实底着色）
 // · 过滤时保留命中子树的父级 · 当前笔记高亮 · 目录内联新建
@@ -27,18 +28,21 @@ const { nameProblem } = useNameRule()
 // 右键菜单：FileTree 是自递归组件，逐层 emit 会把事件停在中间层；
 // 由 ContextSidebar provide 一个 handler，任意层级直接调用（payload 带节点与鼠标坐标）
 type MenuPayload = { name: string; path: string; type: 'dir' | 'file'; slug?: string; x: number; y: number; children?: TreeNode[] }
-const openMenu = inject<((p: MenuPayload) => void) | null>('shell-tree-menu', null)
+/** 'mouse' = 右键锚点菜单；'touch' = 触屏长按的底部面板。同一份菜单项，只是呈现范式不同 */
+type MenuMode = 'mouse' | 'touch'
+const openMenu = inject<((p: MenuPayload, mode?: MenuMode) => void) | null>('shell-tree-menu', null)
+const payloadOf = (node: TreeNode, path: string, x: number, y: number): MenuPayload => ({
+  name: node.name,
+  path,
+  type: node.type,
+  slug: node.slug,
+  x,
+  y,
+  children: node.children
+})
 const onContextMenu = (node: TreeNode, path: string, ev: MouseEvent) => {
   if (!openMenu) return
-  openMenu({
-    name: node.name,
-    path,
-    type: node.type,
-    slug: node.slug,
-    x: ev.clientX,
-    y: ev.clientY,
-    children: node.children
-  })
+  openMenu(payloadOf(node, path, ev.clientX, ev.clientY), 'mouse')
 }
 // 折叠态必须跨递归层级共享：FileTree 是自递归组件，每个实例各有自己的 setup 作用域，
 // 若用局部 ref，则「展开某目录」只对本层生效、子实例仍是全折叠（reveal 会只展开第一层）。
@@ -146,6 +150,30 @@ const toggle = (path: string) => {
   setExpanded(next)
 }
 
+// ── 触屏长按（交付物 §5 ⑤ / 第 09 屏）────────────────────────
+// 与右键菜单**共用同一个 openMenu**，只是传 mode='touch' 让宿主换成底部面板。
+// 节点由行的 `data-tree-path` 反查 —— FileTree 自递归，setup 里无法为每一行预建 handler。
+const nodeByPath = computed(() => {
+  const map = new Map<string, TreeNode>()
+  const walk = (arr: TreeNode[]) => {
+    for (const n of arr) {
+      map.set(pathOf(n), n)
+      if (n.type === 'dir') walk(n.children || [])
+    }
+  }
+  walk(props.nodes)
+  if (promoted.value) map.set(rootPath.value, promoted.value.root)
+  return map
+})
+
+const longPress = useLongPress((el, e) => {
+  if (!openMenu) return
+  const path = el.dataset.treePath || ''
+  const node = nodeByPath.value.get(path)
+  if (!node) return
+  openMenu(payloadOf(node, path, e.clientX, e.clientY), 'touch')
+})
+
 const countFiles = (children?: TreeNode[]): number => {
   if (!children) return 0
   return children.reduce((acc, c) => acc + (c.type === 'file' ? 1 : countFiles(c.children)), 0)
@@ -180,11 +208,17 @@ const submitCreate = async (dir: string, siblings: TreeNode[] = []) => {
     <!-- 单根提升后的根行（可折叠，计数递归） -->
     <div v-if="promoted" class="mb-0.5">
       <div
-        class="group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer select-none transition-colors duration-micro"
-        :class="isExpanded(rootPath) ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-surface-3'"
+        class="group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-colors duration-micro"
+        :class="[isExpanded(rootPath) ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-surface-3', LONG_PRESS_CLASS]"
         :aria-expanded="isExpanded(rootPath)"
         :title="promoted.root.name"
+        :data-tree-path="rootPath"
         @click="toggle(rootPath)"
+        @click.capture="longPress.onClickCapture($event)"
+        @pointerdown="longPress.onPointerdown($event)"
+        @pointermove="longPress.onPointermove($event)"
+        @pointerup="longPress.onPointerup($event)"
+        @pointercancel="longPress.onPointercancel($event)"
         @contextmenu.prevent="onContextMenu(promoted.root, rootPath, $event)"
       >
         <ChevronRight
@@ -203,11 +237,17 @@ const submitCreate = async (dir: string, siblings: TreeNode[] = []) => {
         <!-- 目录 -->
         <div v-if="node.type === 'dir'" class="group">
           <div
-            class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer select-none transition-colors duration-micro"
-            :class="isExpanded(pathOf(node)) ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-surface-3'"
+            class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-colors duration-micro"
+            :class="[isExpanded(pathOf(node)) ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-surface-3', LONG_PRESS_CLASS]"
             :aria-expanded="isExpanded(pathOf(node))"
             :title="node.name"
+            :data-tree-path="pathOf(node)"
             @click="toggle(pathOf(node))"
+            @click.capture="longPress.onClickCapture($event)"
+            @pointerdown="longPress.onPointerdown($event)"
+            @pointermove="longPress.onPointermove($event)"
+            @pointerup="longPress.onPointerup($event)"
+            @pointercancel="longPress.onPointercancel($event)"
             @contextmenu.prevent="onContextMenu(node, pathOf(node), $event)"
           >
             <!-- 折叠双重信号：箭头旋转 90° + 文件夹实底着色 -->
@@ -249,14 +289,21 @@ const submitCreate = async (dir: string, siblings: TreeNode[] = []) => {
           v-else
           :to="`/notes/${(node.slug || '').split('/').map(encodeURIComponent).join('/')}`"
           :data-tree-slug="node.slug"
+          :data-tree-path="pathOf(node)"
           class="group flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-ds-sm transition-colors duration-micro relative"
           :class="[
             activeSlug === node.slug
               ? 'bg-[var(--accent-soft)] text-ink font-semibold'
               : 'text-ink-2 hover:text-ink hover:bg-surface-3',
-            flashSlug && flashSlug === node.slug ? 'ring-2 ring-accent' : ''
+            flashSlug && flashSlug === node.slug ? 'ring-2 ring-accent' : '',
+            LONG_PRESS_CLASS
           ]"
           :title="node.slug"
+          @click.capture="longPress.onClickCapture($event)"
+          @pointerdown="longPress.onPointerdown($event)"
+          @pointermove="longPress.onPointermove($event)"
+          @pointerup="longPress.onPointerup($event)"
+          @pointercancel="longPress.onPointercancel($event)"
           @contextmenu.prevent="onContextMenu(node, pathOf(node), $event)"
         >
           <span

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pencil, MoreHorizontal, Link2, FolderTree, FileText, Trash2, Save, X, Info, Tags as TagsIcon } from 'lucide-vue-next'
+import { Pencil, MoreHorizontal, Link2, FolderTree, FileText, Trash2, Save, X, Info, Tags as TagsIcon, ListTree } from 'lucide-vue-next'
 
 const route = useRoute()
 const { canManage } = useRoles()
@@ -129,6 +129,15 @@ const removeNote = async () => {
 
 // 「更多操作」菜单（spec 5.4：标题右侧不再是点了没反应的图标按钮）
 const menuOpen = ref(false)
+
+// ── 移动端两种浮层（交付物第 04 / 19 屏）──────────────────────
+// 目录：<1280 右侧栏不显示，目录此前在手机与平板上**完全不可见**（功能丢失），
+// 现由底部抽屉承载 —— 内容仍是同一个 TocRail 组件，不另起一份实现。
+const tocOpen = ref(false)
+// 更多操作：手机端顶栏空间有限，用贴底面板承载（桌面端仍是页内下拉菜单）
+const moreSheetOpen = ref(false)
+const headerActionsReady = useState<boolean>('shell-header-ready', () => false)
+
 const menuItems = computed(() => [
   { key: 'copy-link', label: '复制笔记链接', icon: Link2 },
   { key: 'copy-path', label: '复制文件路径', icon: FileText },
@@ -144,6 +153,13 @@ const menuItems = computed(() => [
     reason: canManage.value ? '' : '仅管理员'
   }
 ])
+
+/** 手机端「更多」面板的条目（交付物第 19 屏）：在既有菜单前插入「编辑笔记」。
+ *  手机端页内操作行已隐藏、编辑入口必须搬到这里，否则会丢功能。 */
+const moreSheetItems = computed(() => {
+  const head = canManage.value ? [{ key: 'edit', label: '编辑笔记', icon: Pencil }] : []
+  return [...head, ...menuItems.value]
+})
 
 const copyText = async (text: string, tip: string) => {
   try {
@@ -212,7 +228,10 @@ const saveMeta = async () => {
 }
 
 const onMenuSelect = async (key: string) => {
-  if (key === 'copy-link') {
+  if (key === 'edit') {
+    // 手机端「更多」面板里的编辑入口（桌面端没有这一项，编辑是独立按钮）
+    startEdit()
+  } else if (key === 'copy-link') {
     await copyText(`${location.origin}/notes/${encodedSlug.value}`, '已复制笔记链接')
   } else if (key === 'copy-path') {
     await copyText(`${slug.value}.md`, '已复制文件路径')
@@ -234,12 +253,54 @@ useHead({
 </script>
 
 <template>
-  <div class="max-w-[1060px] mx-auto px-4 sm:px-6 py-8">
+  <div class="max-w-[1060px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <!-- 顶栏动作（手机 <640，交付物第 04 / 05 屏）：Teleport 到布局顶栏的插槽。
+         等布局挂载完成后再渲染 —— 目标节点不在 DOM 时 Vue 会告警并丢弃内容。 -->
+    <ClientOnly>
+      <Teleport v-if="headerActionsReady" to="#shell-header-actions">
+        <template v-if="editing">
+          <button
+            class="h-[34px] px-2.5 rounded-ctl text-ds-sm border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+            :disabled="saving"
+            @click="cancelEdit"
+          >取消</button>
+          <button
+            class="h-[34px] px-3 rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] transition-opacity duration-micro disabled:opacity-50"
+            :disabled="saving"
+            @click="saveNote"
+          >{{ saving ? '保存中…' : '保存' }}</button>
+        </template>
+        <template v-else>
+          <button
+            class="w-[38px] h-[38px] rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+            title="目录与属性"
+            aria-label="目录与属性"
+            @click="tocOpen = true"
+          ><ListTree class="w-4 h-4" /></button>
+          <button
+            class="w-[38px] h-[38px] rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+            title="更多操作"
+            aria-label="更多操作"
+            @click="moreSheetOpen = true"
+          ><MoreHorizontal class="w-4 h-4" /></button>
+        </template>
+      </Teleport>
+    </ClientOnly>
+
     <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_236px] xl:gap-8">
       <!-- 正文列 -->
       <div class="min-w-0 max-w-[720px] w-full mx-auto xl:mx-0">
-        <!-- 操作行：编辑 + 更多操作（≥1280 时目录栏在右侧） -->
-        <div v-if="canManage" class="flex items-center justify-end gap-2 mb-4">
+        <!-- 操作行（≥640）：目录 + 编辑 / 更多操作。
+             <1280 右侧栏不显示，目录改由底部抽屉承载，所以这里补一个「目录」入口 ——
+             此前 <1280 时目录在手机与平板上完全不可见（功能丢失）。
+             手机端整行隐藏：动作已搬到顶栏插槽，拇指区不放这些。 -->
+        <div class="hidden sm:flex items-center justify-end gap-2 mb-4">
+          <button
+            v-if="note && !editing"
+            class="xl:hidden px-3 py-1.5 rounded-ctl text-ds-sm border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro inline-flex items-center gap-1.5"
+            @click="tocOpen = true"
+          ><ListTree class="w-3.5 h-3.5" />目录</button>
+          <template v-if="canManage">
           <template v-if="!editing">
             <button
               class="px-3 py-1.5 rounded-ctl text-ds-sm border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro inline-flex items-center gap-1.5"
@@ -266,6 +327,7 @@ useHead({
               :disabled="saving"
               @click="saveNote"
             ><Save class="w-3.5 h-3.5" />{{ saving ? '保存中…' : '保存' }}</button>
+            </template>
           </template>
         </div>
 
@@ -360,5 +422,20 @@ useHead({
         >{{ metaSaving ? '保存中…' : '保存' }}</button>
       </template>
     </AppDialog>
+
+    <!-- 目录与属性（<1280，交付物第 04 屏）：内容仍是同一个 TocRail 组件，
+         底部抽屉只是它在窄屏下的载体 —— 未新增任何目录/属性信息 -->
+    <Sheet v-model:open="tocOpen" title="目录与属性" closable>
+      <TocRail v-if="note" :note="note" :backlinks="note.incoming?.length || 0" variant="sheet" />
+    </Sheet>
+
+    <!-- 更多操作（手机 <640，交付物第 19 屏）：与桌面下拉菜单共用同一份 menuItems -->
+    <ActionSheet
+      v-model:open="moreSheetOpen"
+      :items="moreSheetItems"
+      :title="note?.title || ''"
+      subtitle="更多操作"
+      @select="onMenuSelect"
+    />
   </div>
 </template>

@@ -231,10 +231,14 @@ const statusMeta = {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] p-4 sm:p-8">
-      <div class="relative w-full max-w-3xl rounded-overlay border border-line bg-surface shadow-ds3">
+    <div v-if="open" class="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] sm:p-8">
+      <div class="relative w-full max-w-3xl h-full sm:h-auto flex flex-col max-h-[100dvh] sm:max-h-[86vh] border-t sm:border border-line bg-surface shadow-ds3 rounded-t-[24px] sm:rounded-t-[var(--r-20)] sm:rounded-b-[var(--r-20)]">
+        <!-- grabber：手机端底部弹层的拖拽暗示（交付物第 13 屏） -->
+        <div class="sm:hidden pt-3 pb-1 flex justify-center shrink-0">
+          <span class="w-10 h-1 rounded-full bg-[var(--line)]" aria-hidden="true"></span>
+        </div>
         <!-- 头部：关闭键绝对定位钉在右上角（spec 5.8 ② .modal-x），与标题长度/行数无关 -->
-        <div class="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-4 pr-14 border-b border-line">
+        <div class="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-3 sm:py-4 pr-14 border-b border-line shrink-0">
           <Upload class="w-4 h-4 text-accent" />
           <h2 class="text-ds-lg font-semibold text-ink">导入笔记</h2>
           <span class="text-[12px] text-ink-3">单文件 ≤ {{ fmtLimit(MAX_FILE_BYTES) }} · 单批总量 ≤ {{ fmtLimit(MAX_TOTAL_BYTES) }}</span>
@@ -243,7 +247,7 @@ const statusMeta = {
           <X class="w-4 h-4" />
         </button>
 
-        <div class="px-5 py-4 space-y-5 max-h-[75vh] overflow-y-auto">
+        <div class="px-5 py-4 space-y-5 flex-1 min-h-0 overflow-y-auto">
           <!-- ① 选择来源 -->
           <section>
             <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
@@ -419,7 +423,10 @@ const statusMeta = {
         </div>
 
         <!-- 底部动作（<640：单列 + 按钮拉通） -->
-        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 border-t border-line">
+        <div
+          class="shrink-0 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 px-5 pt-4 border-t border-line"
+          style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px))"
+        >
           <p class="text-[12px] text-slate-500 dark:text-slate-400 text-center sm:text-left">
             <template v-if="!canManage">当前身份为普通用户，没有导入权限</template>
             <template v-else-if="loadingTree">正在读取目录树…</template>

@@ -20,6 +20,10 @@ const fabMenuOpen = ref(false)
 // 详情页编辑态（跨组件）：编辑态让位给编辑器底部操作条 → 隐藏底部 TabBar
 const editorOpen = useState<boolean>('shell-editor-open', () => false)
 
+// 顶栏动作插槽（交付物第 04 / 19 屏）：详情页把自己的顶栏按钮（目录 / 更多）Teleport 到这里。
+// 必须等 layout 挂载后再渲染 Teleport 内容 —— 目标节点不在 DOM 中时 Vue 会告警并丢弃内容。
+const headerActionsReady = useState<boolean>('shell-header-ready', () => false)
+
 // 断点单源 + 滚动活动（交付物 §5 ①②）：断点值不再写字面量
 const { isPhone, isNarrow, drawerW } = useViewport()
 const scrollEl = ref<HTMLElement | null>(null)
@@ -77,6 +81,7 @@ watch(isNarrow, (v) => {
 }, { immediate: true })
 
 onMounted(() => {
+  headerActionsReady.value = true
   const saved = localStorage.getItem(SIDEBAR_KEY)
   if (saved) sidebarWidth.value = Math.min(440, Math.max(240, Number(saved)))
 
@@ -120,6 +125,12 @@ void graph
 
 const route = useRoute()
 const currentSlug = computed(() => decodeURIComponent(route.path.replace(/^\/notes\//, '')))
+
+// FAB 的启用页面：交付物 §5 ②「仅首页 / 列表启用；详情与编辑态不显示」。
+// 图谱页也必须排除 —— 那里底部被「图例与统计」折叠面板占据，FAB 会压在统计数字上；
+// 且图谱页本就没有「新建」语义（顶栏「新建」按钮仍在手机端保留，不构成入口死路）。
+const FAB_ROUTES = new Set(['/', '/notes'])
+const showFab = computed(() => canManage.value && FAB_ROUTES.has(route.path))
 
 // 面包屑：Garden Vault / …路径段（末段高亮）
 const crumbs = computed(() => {
@@ -257,6 +268,14 @@ const logout = async () => {
           <Search class="w-4 h-4" />
         </button>
 
+        <!-- 页面级顶栏动作插槽（交付物第 04 / 19 屏）：详情页在此注入「目录 / 更多」。
+             只在手机端占位 —— 桌面端详情页沿用页内的操作行，位置不动。 -->
+        <div
+          id="shell-header-actions"
+          data-header-actions
+          class="sm:hidden flex items-center gap-1 shrink-0 empty:hidden"
+        ></div>
+
         <!-- 新建下拉：新建笔记 / 新建文件夹 / 导入笔记（spec 9）
              手机端与 FAB 并存且共用同一套动作 —— FAB 滚动隐藏后此处不留死路。 -->
         <div v-if="canManage" class="relative shrink-0" data-create-menu>
@@ -350,9 +369,9 @@ const logout = async () => {
           <NuxtPage />
         </main>
 
-        <!-- 新建 FAB（手机）：拇指可达的主入口，滚动隐藏见 AppFab 内注 -->
+        <!-- 新建 FAB（手机）：拇指可达的主入口，仅首页 / 列表页；滚动隐藏见 AppFab 内注 -->
         <AppFab
-          v-if="canManage"
+          v-if="showFab"
           v-model:open="fabMenuOpen"
           :hidden="fabHidden"
           @note="onFabMenu('note')"
@@ -375,6 +394,9 @@ const logout = async () => {
     <ClientOnly>
       <!-- ⌘K 命令面板 -->
       <CommandPalette v-model:open="commandOpen" />
+
+      <!-- 列表行长按操作面板（交付物第 22 屏）：挂在根部，任意页面触发即可弹出 -->
+      <NoteActionSheet />
 
       <!-- 批量导入对话框 -->
       <ImportDialog />

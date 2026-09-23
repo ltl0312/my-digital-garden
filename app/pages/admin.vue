@@ -317,7 +317,98 @@ useHead({ title: '管理后台 · 拾光' })
 
       <section class="rounded-card border border-line bg-surface p-5">
         <h2 class="text-ds-lg font-semibold text-ink mb-4">密钥列表（{{ keys.length }}）</h2>
-        <div class="overflow-x-auto -mx-5 px-5">
+
+        <!-- 手机（<640，交付物第 08 屏）：7 列表格在 390 宽下只能横向滚动，等于看不见后半截。
+             改为卡片式 —— **每一列信息都仍在**，只是重排为「标题 + 角色 / 密钥 / 元信息 / 状态与操作」。
+             权限收敛规则完全复用表格那一套（canChangeRoleKey / canToggleKey / canDeleteKey）。 -->
+        <ul class="sm:hidden space-y-2" data-testid="key-cards">
+          <li v-for="k in keys" :key="k.id" class="rounded-card border border-line bg-surface-2 p-3.5">
+            <div class="flex items-start gap-2">
+              <p class="flex-1 min-w-0 text-ds-sm font-semibold text-ink truncate">{{ k.label || '—' }}</p>
+              <AppSelect
+                v-if="canChangeRoleKey(k).ok"
+                :model-value="k.role"
+                size="sm"
+                :options="[{ value: 'user', label: '普通用户' }, { value: 'admin', label: '普通管理员' }]"
+                @update:model-value="(v: string) => changeRole(k, v)"
+              />
+              <span v-else class="shrink-0" :title="canChangeRoleKey(k).why">
+                <RoleBadge :role="k.role" :builtin="k.isBuiltin" />
+              </span>
+            </div>
+
+            <div class="mt-2 flex items-center gap-1 min-w-0">
+              <code class="font-mono text-[12px] text-ink-2 truncate">{{ revealed.has(k.id) ? k.key : mask(k.key) }}</code>
+              <button
+                class="w-7 h-7 rounded-ctl flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-colors duration-micro shrink-0"
+                :title="revealed.has(k.id) ? '隐藏' : '显示'"
+                :aria-label="revealed.has(k.id) ? '隐藏密钥' : '显示密钥'"
+                @click="toggleReveal(k.id)"
+              >
+                <EyeOff v-if="revealed.has(k.id)" class="w-3.5 h-3.5" />
+                <Eye v-else class="w-3.5 h-3.5" />
+              </button>
+              <button
+                class="w-7 h-7 rounded-ctl flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-colors duration-micro shrink-0"
+                title="复制密钥"
+                aria-label="复制密钥"
+                @click="copy(k.key, k.id)"
+              >
+                <Check v-if="copiedField === k.id" class="w-3.5 h-3.5 text-evergreen" />
+                <Copy v-else class="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[12px]">
+              <div class="min-w-0">
+                <dt class="text-ink-3">创建者</dt>
+                <dd class="text-ink-2 truncate">{{ k.creatorLabel || '内置' }}</dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-ink-3">最近使用</dt>
+                <dd class="text-ink-2 truncate">{{ rel(k.lastUsedAt) }}</dd>
+              </div>
+            </dl>
+
+            <div class="mt-3 pt-3 border-t border-line flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2 min-w-0">
+                <button
+                  role="switch"
+                  :aria-checked="k.isActive"
+                  :aria-label="`${k.label} 的状态`"
+                  :disabled="!canToggleKey(k).ok"
+                  :title="canToggleKey(k).ok ? (k.isActive ? '点击禁用' : '点击启用') : canToggleKey(k).why"
+                  class="relative inline-flex w-[38px] h-[22px] rounded-full border transition-colors duration-micro disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  :class="k.isActive ? 'bg-accent border-transparent' : 'bg-surface-3 border-line'"
+                  @click="toggleKey(k)"
+                >
+                  <span
+                    class="absolute top-[2px] w-[16px] h-[16px] rounded-full bg-white shadow-ds1 transition-[left] duration-base ease-dawn"
+                    :style="{ left: k.isActive ? '19px' : '2px' }"
+                  ></span>
+                </button>
+                <span class="text-[12px] truncate" :class="k.isActive ? 'text-evergreen' : 'text-danger'">
+                  {{ k.isActive ? '启用' : '已禁用' }}
+                </span>
+              </div>
+
+              <button
+                v-if="canToggleKey(k).ok || canDeleteKey(k).ok"
+                class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-ctl text-[12px] text-danger hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] transition-colors duration-micro disabled:cursor-not-allowed"
+                :disabled="!canDeleteKey(k).ok"
+                :title="canDeleteKey(k).ok ? '删除该密钥' : canDeleteKey(k).why"
+                @click="removeKey(k)"
+              >
+                <Trash2 class="w-3.5 h-3.5" />删除
+              </button>
+              <span v-else class="shrink-0 text-[12px] text-ink-3 truncate" :title="canToggleKey(k).why">
+                {{ canToggleKey(k).why }}
+              </span>
+            </div>
+          </li>
+        </ul>
+
+        <div class="hidden sm:block overflow-x-auto -mx-5 px-5" data-testid="key-table">
           <table class="w-full text-ds-sm border-collapse">
             <thead>
               <tr class="text-left text-[12px] text-ink-3">

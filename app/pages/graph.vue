@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 知识图谱（spec 5.5）：通栏画布 + 四角浮层
 // 左上「定位笔记」/ 右上工具条 / 左下分组图例 / 右下统计；设置改为浮层，不再挤占画布
-import { Network, Maximize2, Zap, Settings2, ZoomIn, ZoomOut, Search, Locate } from 'lucide-vue-next'
+import { Network, Maximize2, Zap, Settings2, ZoomIn, ZoomOut, Search, Locate, ChevronUp } from 'lucide-vue-next'
 import { DOMAIN_HUE_DEG, domainColor, domainOfSlug } from '~/composables/useFacets'
 
 interface GraphSettings {
@@ -124,6 +124,10 @@ const legend = computed(() => {
     count: nodes.value.filter((n: any) => (n.primaryTag || '未分类') === t).length
   }))
 })
+
+// 手机端底部面板开合（交付物第 06 屏）：<640 时图例与统计收进可折叠面板，
+// 信息一项不少，只是从「两个常驻浮层」变成「一个收起时只占一行摘要的面板」。
+const mobilePanelOpen = ref(false)
 
 // 左上「定位笔记」
 const locateQuery = ref('')
@@ -249,8 +253,8 @@ useHead({ title: '知识图谱 · 拾光' })
       </div>
     </div>
 
-    <!-- 左下：分组图例（色块 + 名称 + 数量） -->
-    <div v-if="graph" class="absolute left-3 sm:left-4 bottom-3 sm:bottom-4 z-20 w-[136px] sm:w-auto sm:max-w-[240px] rounded-card border border-line bg-surface/95 backdrop-blur shadow-ds1 p-2 sm:p-3">
+    <!-- 左下：分组图例（色块 + 名称 + 数量）。<640 收进底部面板 -->
+    <div v-if="graph" class="hidden sm:block absolute left-3 sm:left-4 bottom-3 sm:bottom-4 z-20 w-[136px] sm:w-auto sm:max-w-[240px] rounded-card border border-line bg-surface/95 backdrop-blur shadow-ds1 p-2 sm:p-3" data-testid="graph-legend">
       <p class="text-[12px] font-semibold text-ink-3 mb-2 flex items-center gap-1.5">
         <Network class="w-3.5 h-3.5" />{{ settings.groupBy === 'domain' ? '按领域' : settings.groupBy === 'maturity' ? '按成熟度' : '按标签' }}
       </p>
@@ -263,13 +267,70 @@ useHead({ title: '知识图谱 · 拾光' })
       </ul>
     </div>
 
-    <!-- 右下：统计（窄屏纵向堆叠，避免与图例重叠） -->
-    <div v-if="graph" class="absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-20 rounded-card border border-line bg-surface/95 backdrop-blur shadow-ds1 px-3 py-2 flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3 text-[12px] font-mono text-ink-2">
+    <!-- 右下：统计（窄屏纵向堆叠，避免与图例重叠）。<640 收进底部面板 -->
+    <div v-if="graph" class="hidden sm:flex absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-20 rounded-card border border-line bg-surface/95 backdrop-blur shadow-ds1 px-3 py-2 flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3 text-[12px] font-mono text-ink-2" data-testid="graph-stats">
       <span><b class="text-ink">{{ nodes.length }}</b> 节点</span>
       <span class="text-line hidden sm:inline">|</span>
       <span><b class="text-ink">{{ graph?.edges?.length || 0 }}</b> 连接</span>
       <span class="text-line hidden sm:inline">|</span>
       <span><b class="text-ink">{{ isolatedCount }}</b> 孤立</span>
+    </div>
+
+    <!-- 底部折叠面板（<640，交付物第 06 屏）：图例 + 统计的拇指可达载体。
+         收起时只占一行摘要（分组口径 + 节点/连接/孤立），展开后是完整图例与统计 ——
+         原左下「图例」与右下「统计」在此宽度下会互相挤压，现在信息一项不减。 -->
+    <div v-if="graph" class="sm:hidden absolute inset-x-0 bottom-0 z-20">
+      <div class="rounded-t-[20px] border-t border-line bg-surface/95 backdrop-blur shadow-ds3">
+        <button
+          type="button"
+          class="w-full px-4 py-3 flex items-center gap-2 text-left"
+          :aria-expanded="mobilePanelOpen"
+          aria-label="图例与统计"
+          data-testid="graph-panel-toggle"
+          @click="mobilePanelOpen = !mobilePanelOpen"
+        >
+          <Network class="w-3.5 h-3.5 text-ink-3 shrink-0" />
+          <span class="text-ds-sm font-semibold text-ink truncate">
+            {{ settings.groupBy === 'domain' ? '按领域' : settings.groupBy === 'maturity' ? '按成熟度' : '按标签' }}
+          </span>
+          <span class="ml-auto shrink-0 font-mono text-[12px] text-ink-3 tabular-nums">
+            {{ nodes.length }} · {{ graph?.edges?.length || 0 }} · {{ isolatedCount }}
+          </span>
+          <ChevronUp
+            class="w-4 h-4 shrink-0 text-ink-3 transition-transform duration-base ease-dawn"
+            :class="mobilePanelOpen ? 'rotate-180' : ''"
+          />
+        </button>
+
+        <div v-if="mobilePanelOpen" class="px-4 pb-4 max-h-[44vh] overflow-y-auto">
+          <p class="text-[12px] font-semibold text-ink-3 mb-2">图例</p>
+          <ul class="space-y-1.5">
+            <li v-for="g in legend" :key="g.key" class="flex items-center gap-2 text-[12px] text-ink-2">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: g.color }"></span>
+              <span class="flex-1 truncate">{{ g.label }}</span>
+              <span class="font-mono text-ink-3 tabular-nums">{{ g.count }}</span>
+            </li>
+          </ul>
+
+          <div class="mt-3 pt-3 border-t border-line">
+            <p class="text-[12px] font-semibold text-ink-3 mb-2">统计</p>
+            <dl class="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ nodes.length }}</dd>
+                <dt class="text-[12px] text-ink-3">节点</dt>
+              </div>
+              <div>
+                <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ graph?.edges?.length || 0 }}</dd>
+                <dt class="text-[12px] text-ink-3">连接</dt>
+              </div>
+              <div>
+                <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ isolatedCount }}</dd>
+                <dt class="text-[12px] text-ink-3">孤立</dt>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

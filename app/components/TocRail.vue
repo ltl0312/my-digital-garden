@@ -3,11 +3,13 @@
 import { ListTree, Clock, Calendar, Link2 } from 'lucide-vue-next'
 import { domainOfSlug } from '~/composables/useFacets'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   note: any
   /** 反链数（由页面传入，避免此处再依赖 note.incoming 结构） */
   backlinks?: number
-}>()
+  /** 'rail' = ≥1280 右侧常驻栏；'sheet' = 底部抽屉内（<1280，交付物第 04 屏） */
+  variant?: 'rail' | 'sheet'
+}>(), { variant: 'rail' })
 
 // 目录：与 ArticleReader 渲染的标题按出现顺序一一对应（用索引对齐，避免文本匹配差异）
 const toc = computed<{ title: string; level: number }[]>(() => {
@@ -90,7 +92,7 @@ const dash = computed(() => `${(progress.value / 100) * C} ${C}`)
 </script>
 
 <template>
-  <aside data-toc-rail class="sticky top-6 space-y-4 text-ds-sm">
+  <aside data-toc-rail class="space-y-4 text-ds-sm" :class="variant === 'rail' ? 'sticky top-6' : ''">
     <!-- 阅读进度环 -->
     <div class="rounded-card border border-line bg-surface p-3.5 flex items-center gap-3">
       <svg viewBox="0 0 36 36" class="w-9 h-9 -rotate-90 shrink-0" aria-hidden="true">

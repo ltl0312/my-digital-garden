@@ -279,6 +279,15 @@ select optgroup {
   border-color: var(--line);
 }
 
+/* 触屏长按目标保护（交付物 §5 ⑤）：禁掉系统长按菜单（iOS callout）与文本选择 ——
+   否则长按列表行 / 结构树行时会先弹出系统「拷贝」菜单，抢在操作面板之前。
+   刻意用独立类，不依赖 Tailwind JIT 对 `[-webkit-*]` arbitrary property 的提取。 */
+.lp-guard {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* 主题切换同步：切换瞬间所有元素过渡统一 0.2s，避免割裂（配合 FOUC 内联脚本） */
 html.theme-switching *,
 html.theme-switching *::before,

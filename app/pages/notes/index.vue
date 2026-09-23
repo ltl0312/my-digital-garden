@@ -4,6 +4,9 @@ import { Search, X, LayoutList, Rows3 } from 'lucide-vue-next'
 const route = useRoute()
 const router = useRouter()
 
+// 触屏长按逐行操作（交付物第 22 屏）；notesRev 在删除后自增，触发下方重新取数
+const { openNoteSheet, notesRev } = useNoteActions()
+
 const page = computed(() => Math.max(1, Number(route.query.page) || 1))
 const activeTag = computed(() => (typeof route.query.tag === 'string' ? route.query.tag : ''))
 const activeDir = computed(() => (typeof route.query.dir === 'string' ? route.query.dir : ''))
@@ -40,6 +43,9 @@ await loadNotes()
 
 // 客户端 query 变化（分页/搜索/标签/领域/排序）→ 重新取数（手动模式，不依赖 useAsyncData 缓存语义）
 watch(() => route.query, () => loadNotes())
+
+// 长按面板删除笔记后重新取数（列表数据不归 useAsyncData 管，refreshNuxtData 覆盖不到）
+watch(notesRev, () => loadNotes())
 
 // 密度切换：仅前端本地状态（spec 5.3），持久化到 localStorage
 const density = ref<'standard' | 'compact'>('standard')
@@ -186,7 +192,7 @@ useHead({ title: '全部笔记 · 拾光' })
 
     <ul v-else-if="list?.notes?.length" class="space-y-1 mb-8" :class="density === 'compact' ? 'space-y-0.5' : ''">
       <li v-for="note in list.notes" :key="note.slug">
-        <NoteRow :note="note" :compact="density === 'compact'" />
+        <NoteRow :note="note" :compact="density === 'compact'" actions @longpress="openNoteSheet" />
       </li>
     </ul>
 

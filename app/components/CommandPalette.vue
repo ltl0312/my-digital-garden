@@ -108,7 +108,7 @@ const onKeydown = (e: KeyboardEvent) => {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-[100] bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] flex items-start justify-center pt-20 px-4"
+      class="fixed inset-0 z-[100] bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] flex items-start justify-center pt-6 px-3 sm:pt-20 sm:px-4"
       @click.self="open = false"
     >
       <div
@@ -131,7 +131,7 @@ const onKeydown = (e: KeyboardEvent) => {
           <kbd class="text-[12px] font-mono text-ink-3 bg-surface-3 px-2 py-1 rounded-ctl cursor-pointer shrink-0" @click="open = false">ESC</kbd>
         </div>
 
-        <div ref="listRef" class="max-h-80 overflow-y-auto p-2">
+        <div ref="listRef" class="max-h-[58vh] sm:max-h-80 overflow-y-auto p-2">
           <template v-for="g in groups" :key="g.domain">
             <p class="px-2.5 pt-2 pb-1 text-[12px] font-semibold text-ink-3">{{ g.domain }}</p>
             <button
