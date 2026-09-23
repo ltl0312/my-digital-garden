@@ -31,9 +31,11 @@ const isActive = (item: { to: string; match?: string }) => {
     :style="{ width: 'var(--rail-w)' }"
     aria-label="主导航"
   >
+    <!-- shrink-0：图标栏是 flex 列，窗口高度偏矮时其余子项会被压缩；品牌图标（最上方）
+         必须保持 40px 不参与压缩，否则会被挤成一条线，看起来像「图标消失了」 -->
     <NuxtLink
       to="/"
-      class="w-10 h-10 mb-2 rounded-xl flex items-center justify-center bg-accent text-[var(--accent-ink)] shadow-ds1 hover:scale-105 transition-transform duration-micro"
+      class="w-10 h-10 mb-2 shrink-0 rounded-xl flex items-center justify-center bg-accent text-[var(--accent-ink)] shadow-ds1 hover:scale-105 transition-transform duration-micro"
       title="拾光 · 数字花园"
     >
       <Sprout class="w-5 h-5" :stroke-width="2.5" />
