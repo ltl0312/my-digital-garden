@@ -334,22 +334,28 @@ $ vue-tsc --noEmit --listFiles | wc -l
 
 修复后复核：**92 条 = 基线 92 条，零新增、零消失**（纯修复，未掩盖任何既有告警）。
 
-**④ 剩余 92 条为项目历史债 —— 本轮不修，如实暴露**
+**④ 历史债已于收口后专项清偿（2026-09-23 深夜）—— 见 §7.1 与提交 `43560341`**
 
-| 文件 | 条数 |
+> 以下为立项时的快照，供追溯。**现全部清零**，实际唯一错误数为 **65 条**
+>（本节的 30/11/8/6/6/31 为含重复计入的原始计数 —— server 文件同时属于
+> server 与 shared 两个 project，同一错误被统计两次）。
+
+| 文件 | 条数（原始计数） |
 |---|---|
-| `server/utils/markdown.ts` | 30 |
+| `server/utils/markdown.ts` | 30（实际 15） |
 | `app/components/FileTree.vue` | 11 |
 | `app/components/GraphView.vue` | 8 |
-| `server/api/auth/verify.post.ts` | 6 |
-| `server/utils/maturity.ts` | 6 |
+| `server/api/auth/verify.post.ts` | 6（实际 3） |
+| `server/utils/maturity.ts` | 6（实际 3） |
 | 其余 15 个文件 | 31 |
 
 全部是 `strict` + `noUncheckedIndexedAccess` 下的**严格性告警**（`possibly undefined`、索引可能越界），**不是运行期故障**（应用行为正常，185 项验收全绿即为佐证）。
 
-**不修的理由**：涉及 server 核心逻辑（`markdown.ts` 单文件 30 条），属独立范畴；应单独立项、单独验收，而不是把"移动端收口"扩成"全项目重构"。仓促批量加 `!` 断言反而会**掩盖真实问题**。
+**清偿原则与结果**（详细修法见提交 `43560341` 的提交说明）：只加判空与类型谓词、不改运行时行为；
+`@shikijs/rehype` 因自带另一份 `unified` 导致的泛型名义冲突，以带注释的收敛断言处理（上游 dedupe 后应移除）。
+复核：**65 → 0**，逐 project `vue-tsc` 全部 exit=0，并注入探针（string 赋给 number）确认能被捕获，排除空跑假绿。
 
-→ 门禁现状：`pnpm typecheck` 会**如实报出这 92 条**（不再静默通过）。
+→ 门禁现状：`pnpm typecheck` **exit=0**，正式成为可用的收口门禁。
 
 ---
 
