@@ -191,6 +191,10 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
     // 一次性几百个文件的重渲染叠加成内存峰值（1.6G 服务器会被拖到 SSH 都无响应）。
     // 这里在渲染前做严格比对：正文相同 **且** frontmatter 键值相同才跳过；
     // 任一处不同仍走完整流程（metadata 用排序键比较——PostgreSQL jsonb 不保留键序）。
+    // RENDER_VERSION：渲染管线本身升级（如 wikilink URL 编码修复）时递增 ——
+    // metadata 里存有上次渲染的版本号，版本不同则强制重渲染一次，让修复触达已入库内容。
+    const RENDER_VERSION = 2
+    const metaWithRv = { ...frontmatter, __rv: RENDER_VERSION }
     try {
       const existing = await prisma.note.findUnique({
         where: { slug },
@@ -200,7 +204,8 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
         const rec = (o ?? {}) as Record<string, unknown>
         return JSON.stringify(rec, Object.keys(rec).sort())
       }
-      if (existing && existing.content === rawMarkdown && normKeys(existing.metadata) === normKeys(frontmatter)) {
+      const existingRv = Number((existing?.metadata as Record<string, unknown> | null)?.__rv ?? 0)
+      if (existing && existing.content === rawMarkdown && normKeys(existing.metadata) === normKeys(metaWithRv) && existingRv === RENDER_VERSION) {
         console.log(`[garden] markdown: 内容未变，跳过重渲染 ${slug}`)
         return false
       }
@@ -246,11 +251,19 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
     const slugMap = await resolveTargetSlugs(outgoingTargets)
 
     // 第二遍：href 使用真实 slug，未解析到的保留原 target 路径
+    // 输出 URL 必须逐段 encodeURIComponent：slug 常含空格（如「MOC - 多线程」），
+    // 未编码的空格会让 CommonMark 拒绝解析 → 整个链接按字面量显示（用户截图反馈）
     const processedMarkdown = rawMarkdown.replace(wikiLinkRegex, (_, target, display) => {
       const text = display || target
       const realSlug = slugMap.get(target.trim())
-      return `[${text}](/notes/${realSlug ?? target.trim()})`
+      const href = (realSlug ?? target.trim()).split('/').map(encodeURIComponent).join('/')
+      return `[${text}](/notes/${href})`
     })
+
+    // 手写链接的 URL 含未转义空格时，CommonMark 同样会拒绝解析（整段按字面量显示）
+    const safeLinksMarkdown = processedMarkdown.replace(/\]\(([^()\n]+)\)/g, (whole, url: string) =>
+      url.includes(' ') ? `](${url.split(' ').join('%20')})` : whole
+    )
 
     const htmlResult = await unified()
       .use(remarkParse)
@@ -260,7 +273,7 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
       .use(rehypeKatex)
       .use(rehypeShiki, { theme: 'nord' })
       .use(rehypeStringify)
-      .process(processedMarkdown)
+      .process(safeLinksMarkdown)
 
     const htmlContent = htmlResult.toString()
 
@@ -284,7 +297,7 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
           readingTime,
           maturity,
           isPublished,
-          metadata: frontmatter,
+          metadata: metaWithRv,
           ...(contentChanged ? { updatedAt: new Date() } : {})
         },
         create: {
@@ -296,7 +309,7 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
           readingTime,
           maturity,
           isPublished,
-          metadata: frontmatter
+          metadata: metaWithRv
         }
       })
 

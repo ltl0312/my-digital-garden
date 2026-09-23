@@ -4,6 +4,8 @@ import matter from 'gray-matter'
 import { resolveVaultPath, stripNul } from '../../../utils/vault'
 import { requireAdmin } from '../../../utils/auth'
 import { invalidateGardenCache } from '../../../utils/cache'
+import { prisma } from '../../../utils/db'
+import { computeMaturityForNote } from '../../../utils/maturity-sync'
 
 // 元数据编辑（标签 / 成熟度）：PATCH /api/vault/notes/<slug>
 // body: { tags?: string[]; maturity?: 'SEEDLING' | 'GROWING' | 'EVERGREEN' | null }
@@ -85,6 +87,44 @@ export default defineEventHandler(async (event) => {
   const tmp = full + '.tmp'
   await fs.writeFile(tmp, finalContent, 'utf-8')
   await fs.rename(tmp, full)
+
+  // ── 同步更新 DB：若只写文件、等 watcher 异步入库，前端会感知「改完不自动刷新」。
+  // 这里立即落库（后续 watcher 重解析结果相同，幂等）。
+  const noteRow = await prisma.note.findUnique({ where: { slug }, select: { id: true, title: true } })
+  if (noteRow) {
+    const effectiveTags = tags !== undefined
+      ? tags
+      : (Array.isArray(fm.tags) ? fm.tags.filter((t: unknown): t is string => typeof t === 'string' && !!t.trim()) : [])
+    await prisma.$transaction(async (tx) => {
+      if (maturity !== undefined) {
+        let mv: string
+        if (maturity === null) {
+          // 恢复自动判定：与 watcher 同口径重判一次（explicit 置空、不锁定）
+          const judged = await computeMaturityForNote({
+            slug,
+            title: noteRow.title,
+            tags: effectiveTags,
+            markdown: parsed.content,
+            created: typeof fm.created === 'string' ? fm.created : undefined,
+            explicit: undefined,
+            locked: false
+          })
+          mv = judged.value
+        } else {
+          mv = maturity
+        }
+        await tx.note.update({ where: { id: noteRow.id }, data: { maturity: mv } })
+      }
+      if (tags !== undefined) {
+        await tx.noteTag.deleteMany({ where: { noteId: noteRow.id } })
+        for (const tagName of tags) {
+          const tag = await tx.tag.upsert({ where: { name: tagName }, update: {}, create: { name: tagName } })
+          await tx.noteTag.create({ data: { noteId: noteRow.id, tagId: tag.id } })
+        }
+      }
+    }, { maxWait: 10000, timeout: 30000 })
+  }
+
   invalidateGardenCache()
   return { ok: true, slug, tags: fm.tags ?? [], maturity: fm.maturity ?? null }
 })
