@@ -193,7 +193,8 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
     // 任一处不同仍走完整流程（metadata 用排序键比较——PostgreSQL jsonb 不保留键序）。
     // RENDER_VERSION：渲染管线本身升级（如 wikilink URL 编码修复）时递增 ——
     // metadata 里存有上次渲染的版本号，版本不同则强制重渲染一次，让修复触达已入库内容。
-    const RENDER_VERSION = 2
+    // v3：支持 [单方括号引用] 与 obsidian 协议链接渲染为站内链接（不入图谱）
+    const RENDER_VERSION = 3
     const metaWithRv = { ...frontmatter, __rv: RENDER_VERSION }
     try {
       const existing = await prisma.note.findUnique({
@@ -250,15 +251,77 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
     // 第一遍：批量解析每个 target 对应的真实 slug（精确 / basename / aliases 三级）
     const slugMap = await resolveTargetSlugs(outgoingTargets)
 
+    // ① 单方括号引用（[Java内存模型]）：用户约定不入图谱，仅正文可点击跳转。
+    //    目标存在 → 站内链接；不存在 → 保持原文本。
+    //    必须在 wikilink 转换之前：转换产物 [text](url) 同为单括号形式，后处理会误伤。
+    //    排除任务列表（[ ]/[x]）、脚注（[^1]）、纯数字引用；**代码块/行内代码一律跳过**
+    //    （代码示例里的 [name]、[status] 占位符不能被改成链接）。
+    const bareNames = new Set<string>()
+    const codeSplitRe = /(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/g
+    const bareSegments = rawMarkdown.split(codeSplitRe)
+    bareSegments.forEach((seg, i) => {
+      if (i % 2 === 1) return // 代码段
+      for (const m of seg.matchAll(/(?<!\[)\[([^\[\]\n]+)\](?!\])/g)) {
+        const name = m[1].trim()
+        if (!name || name.toLowerCase() === 'x' || name.startsWith('^') || /^\d+$/.test(name)) continue
+        bareNames.add(name)
+      }
+    })
+    let stageMarkdown = rawMarkdown
+    if (bareNames.size) {
+      const bareMap = await resolveTargetSlugs([...bareNames])
+      stageMarkdown = bareSegments.map((seg, i) => {
+        if (i % 2 === 1) return seg
+        return seg.replace(/(?<!\[)\[([^\[\]\n]+)\](?!\])/g, (whole, name: string) => {
+          const t = name.trim()
+          if (!bareNames.has(t)) return whole
+          const real = bareMap.get(t)
+          return real ? `[${name}](/notes/${real.split('/').map(encodeURIComponent).join('/')})` : whole
+        })
+      }).join('')
+    }
+
     // 第二遍：href 使用真实 slug，未解析到的保留原 target 路径
     // 输出 URL 必须逐段 encodeURIComponent：slug 常含空格（如「MOC - 多线程」），
     // 未编码的空格会让 CommonMark 拒绝解析 → 整个链接按字面量显示（用户截图反馈）
-    const processedMarkdown = rawMarkdown.replace(wikiLinkRegex, (_, target, display) => {
+    let processedMarkdown = stageMarkdown.replace(wikiLinkRegex, (_, target, display) => {
       const text = display || target
       const realSlug = slugMap.get(target.trim())
       const href = (realSlug ?? target.trim()).split('/').map(encodeURIComponent).join('/')
       return `[${text}](/notes/${href})`
     })
+
+    // ② obsidian 协议链接（<a href="obsidian://open?file=X">）：网页端没有 Obsidian 客户端，
+    //    点击只会失败。目标存在 → 转站内链接；不存在 → 保留原样。
+    //    仅渲染层转换，不建 NoteLink（用户约定：这类引用不进图谱，避免混乱）。
+    //    同样跳过代码块/行内代码。
+    const obsNames = new Set<string>()
+    const obsSegments = processedMarkdown.split(codeSplitRe)
+    obsSegments.forEach((seg, i) => {
+      if (i % 2 === 1) return
+      for (const m of seg.matchAll(/href="obsidian:\/\/open\?file=([^"]*)"/g)) {
+        let f = m[1]
+        try { f = decodeURIComponent(f) } catch { /* 保留原值 */ }
+        obsNames.add(f.replace(/\.md$/i, ''))
+      }
+    })
+    if (obsNames.size) {
+      const obsMap = await resolveTargetSlugs([...obsNames])
+      processedMarkdown = obsSegments.map((seg, i) => {
+        if (i % 2 === 1) return seg
+        return seg.replace(
+          /(<a\s[^>]*href=")obsidian:\/\/open\?file=([^"]*)("[^>]*>[\s\S]*?<\/a>)/g,
+          (whole, pre: string, file: string, rest: string) => {
+            let f = file
+            try { f = decodeURIComponent(f) } catch { /* 保留原值 */ }
+            const real = obsMap.get(f.replace(/\.md$/i, ''))
+            if (!real) return whole
+            const href = '/notes/' + real.split('/').map(encodeURIComponent).join('/')
+            return `${pre}${href}"${rest}`
+          }
+        )
+      }).join('')
+    }
 
     // 手写链接的 URL 含未转义空格时，CommonMark 同样会拒绝解析（整段按字面量显示）
     const safeLinksMarkdown = processedMarkdown.replace(/\]\(([^()\n]+)\)/g, (whole, url: string) =>
