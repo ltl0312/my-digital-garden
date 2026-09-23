@@ -194,7 +194,11 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
     // RENDER_VERSION：渲染管线本身升级（如 wikilink URL 编码修复）时递增 ——
     // metadata 里存有上次渲染的版本号，版本不同则强制重渲染一次，让修复触达已入库内容。
     // v3：支持 [单方括号引用] 与 obsidian 协议链接渲染为站内链接（不入图谱）
-    const RENDER_VERSION = 3
+    // v4：obsidian 链接整条替换为 markdown 链接 —— 管线对 markdown 内嵌 HTML 是转义显示
+    //     的（rehype-raw 未启用），改写 <a> 标签的 href 会整段变字面量 + 目录栏乱码
+    // v5：markdown 内嵌的 <a href> 标签（zrw 笔记大量站内/外链写成 HTML 形式）统一转
+    //     markdown 链接，否则全部转义显示
+    const RENDER_VERSION = 5
     const metaWithRv = { ...frontmatter, __rv: RENDER_VERSION }
     try {
       const existing = await prisma.note.findUnique({
@@ -291,15 +295,16 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
       return `[${text}](/notes/${href})`
     })
 
-    // ② obsidian 协议链接（<a href="obsidian://open?file=X">）：网页端没有 Obsidian 客户端，
-    //    点击只会失败。目标存在 → 转站内链接；不存在 → 保留原样。
-    //    仅渲染层转换，不建 NoteLink（用户约定：这类引用不进图谱，避免混乱）。
+    // ② obsidian 协议链接（<a href="obsidian://open?file=X">text</a>）：网页端没有
+    //    Obsidian 客户端，点击只会失败；且渲染管线对 markdown 内嵌 HTML 是转义显示的
+    //    （rehype-raw 未启用）—— 改写 <a> 标签 href 会让整段变字面量 + 目录栏 &#x3C;a> 乱码。
+    //    这里整条替换为 markdown 链接。仅渲染层转换，不建 NoteLink（用户约定不入图谱）。
     //    同样跳过代码块/行内代码。
     const obsNames = new Set<string>()
     const obsSegments = processedMarkdown.split(codeSplitRe)
     obsSegments.forEach((seg, i) => {
       if (i % 2 === 1) return
-      for (const m of seg.matchAll(/href="obsidian:\/\/open\?file=([^"]*)"/g)) {
+      for (const m of seg.matchAll(/<a\s[^>]*href="obsidian:\/\/open\?file=([^"]*)"[^>]*>[\s\S]*?<\/a>/g)) {
         let f = m[1]
         try { f = decodeURIComponent(f) } catch { /* 保留原值 */ }
         obsNames.add(f.replace(/\.md$/i, ''))
@@ -310,18 +315,36 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
       processedMarkdown = obsSegments.map((seg, i) => {
         if (i % 2 === 1) return seg
         return seg.replace(
-          /(<a\s[^>]*href=")obsidian:\/\/open\?file=([^"]*)("[^>]*>[\s\S]*?<\/a>)/g,
-          (whole, pre: string, file: string, rest: string) => {
+          /<a\s[^>]*href="obsidian:\/\/open\?file=([^"]*)"[^>]*>([\s\S]*?)<\/a>/g,
+          (whole, file: string, inner: string) => {
             let f = file
             try { f = decodeURIComponent(f) } catch { /* 保留原值 */ }
             const real = obsMap.get(f.replace(/\.md$/i, ''))
             if (!real) return whole
             const href = '/notes/' + real.split('/').map(encodeURIComponent).join('/')
-            return `${pre}${href}"${rest}`
+            // 链接文本剥离内嵌 HTML（markdown 链接文本里再放 HTML 会被转义显示）
+            const text = inner.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+              || f.split('/').pop() || '链接'
+            return `[${text}](${href})`
           }
         )
       }).join('')
     }
+
+    // ③ markdown 内嵌的 <a href="..."> 标签：渲染管线对内嵌 HTML 是转义显示的
+    //    （rehype-raw 未启用），zrw 笔记里大量站内/外链直接写成 HTML 形式 → 全部转义显示。
+    //    统一转为 markdown 链接（跳过代码块/行内代码；页内锚点保留）。
+    const aSegments = processedMarkdown.split(codeSplitRe)
+    processedMarkdown = aSegments.map((seg, i) => {
+      if (i % 2 === 1) return seg
+      return seg.replace(/<a\s([^>]*)href="([^"]*)"([^>]*)>([\s\S]*?)<\/a>/gi, (whole, pre: string, href: string, post: string, inner: string) => {
+        const text = inner.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+        if (!text) return whole
+        const cleanHref = href.trim()
+        if (!cleanHref || cleanHref.startsWith('#')) return whole // 页内锚点保留
+        return `[${text}](${cleanHref})`
+      })
+    }).join('')
 
     // 手写链接的 URL 含未转义空格时，CommonMark 同样会拒绝解析（整段按字面量显示）
     const safeLinksMarkdown = processedMarkdown.replace(/\]\(([^()\n]+)\)/g, (whole, url: string) =>
