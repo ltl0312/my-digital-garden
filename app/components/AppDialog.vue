@@ -83,6 +83,7 @@ watch(() => props.open, async (v) => {
           aria-modal="true"
           aria-labelledby="dlg-title"
           tabindex="-1"
+          data-dialog-card
           data-testid="app-dialog"
         >
           <!-- grabber：手机端底部弹层的拖拽暗示（纯装饰） -->

@@ -31,7 +31,10 @@ export function useLongPress(
   let startY = 0
   let firing = false
 
-  const clear = () => {
+  /** 取消长按。
+   *  签名接受（并忽略）一个参数：它会直接作为事件回调绑定到模板上（`@pointerup="…($event)"`），
+   *  若声明为 0 参，vue-tsc 会对每一处绑定报 TS2554「Expected 0 arguments, but got 1」。 */
+  const clear = (_e?: unknown) => {
     if (timer) {
       clearTimeout(timer)
       timer = null

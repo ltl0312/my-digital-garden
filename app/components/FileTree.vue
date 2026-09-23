@@ -162,7 +162,10 @@ const nodeByPath = computed(() => {
     }
   }
   walk(props.nodes)
-  if (promoted.value) map.set(rootPath.value, promoted.value.root)
+  // 判空用 `p?.root`：`promoted` 的 root 取自已开启 noUncheckedIndexedAccess 的数组下标，
+  // 类型是 `TreeNode | undefined`，直接 set 会报 TS2345。
+  const p = promoted.value
+  if (p?.root) map.set(rootPath.value, p.root)
   return map
 })
 

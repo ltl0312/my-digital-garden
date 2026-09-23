@@ -232,7 +232,7 @@ const statusMeta = {
 <template>
   <Teleport to="body">
     <div v-if="open" class="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] sm:p-8">
-      <div class="relative w-full max-w-3xl h-full sm:h-auto flex flex-col max-h-[100dvh] sm:max-h-[86vh] border-t sm:border border-line bg-surface shadow-ds3 rounded-t-[24px] sm:rounded-t-[var(--r-20)] sm:rounded-b-[var(--r-20)]">
+      <div class="relative w-full max-w-3xl h-full sm:h-auto flex flex-col max-h-[100dvh] sm:max-h-[86vh] border-t sm:border border-line bg-surface shadow-ds3 rounded-t-[24px] sm:rounded-t-[var(--r-20)] sm:rounded-b-[var(--r-20)]" data-dialog-card>
         <!-- grabber：手机端底部弹层的拖拽暗示（交付物第 13 屏） -->
         <div class="sm:hidden pt-3 pb-1 flex justify-center shrink-0">
           <span class="w-10 h-1 rounded-full bg-[var(--line)]" aria-hidden="true"></span>
