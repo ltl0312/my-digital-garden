@@ -68,9 +68,10 @@ const when = computed(() => {
       {{ meta.dirPath }}
     </p>
 
-    <!-- 摘要：无摘要时不让位留给空白（紧凑模式隐藏） -->
-    <p v-if="!compact" class="text-ds-sm text-ink-2 leading-summary line-clamp-2">
-      {{ note.summary || meta.dirPath || '（暂无摘要）' }}
+    <!-- 摘要：仅在真正有摘要时显示。此前 summary 为空会 fallback 到路径，
+         与上方「路径」行重复成两条一模一样的文字（用户反馈的「重复显示」之一） -->
+    <p v-if="!compact && note.summary" class="text-ds-sm text-ink-2 leading-summary line-clamp-2">
+      {{ note.summary }}
     </p>
 
     <!-- 标签 -->

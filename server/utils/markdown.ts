@@ -21,8 +21,30 @@ const MATURITY_VALUES: readonly MaturityValue[] = ['SEEDLING', 'GROWING', 'EVERG
 // 摘要：正文前 120 字（折叠空白换行，便于列表展示）
 const SUMMARY_LENGTH = 120
 
+/** 摘要清洗：把 Markdown / HTML 还原为适合列表展示的纯文本。
+ *  此前 buildSummary 只做了空白折叠 + 截断，导致列表摘要直接显示原文标记 ——
+ *  例如 `<h2>计算机牛马生存准则</h2>`、`# **主题**…`，看上去像「同一个标题出现了两次」。 */
+export function cleanSummary(raw: string): string {
+  let s = String(raw || '')
+  s = s.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '') // frontmatter
+  s = s.replace(/```[\s\S]*?```/g, ' ').replace(/~~~[\s\S]*?~~~/g, ' ') // 围栏代码块
+  s = s.replace(/`([^`]*)`/g, '$1') // 行内代码保留文字
+  s = s.replace(/<[^>]+>/g, ' ') // HTML 标签（<h2> 等）
+  s = s.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ') // 图片整体丢弃
+  s = s.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // 链接保留文字
+  s = s.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2').replace(/\[\[([^\]]+)\]\]/g, '$1') // wiki 链接
+  s = s.replace(/^[ \t]{0,3}(#{1,6}|>|[-*+]|\d+[.)])[ \t]+/gm, '') // 行首标题/引用/列表标记
+  s = s.replace(/(\*\*|__)(.*?)\1/g, '$2') // 粗体
+  s = s.replace(/(\*|_)(.*?)\1/g, '$2') // 斜体
+  s = s.replace(/~~(.*?)~~/g, '$1') // 删除线
+  s = s.replace(/^[ \t]*\|?[ \t]*:?-{2,}:?[ \t]*(\|[ \t]*:?-{2,}:?[ \t]*)*\|?[ \t]*$/gm, ' ') // 表格分隔行
+  s = s.replace(/^[ \t]*([-*_])\1{2,}[ \t]*$/gm, ' ') // 水平线
+  s = s.replace(/\|/g, ' ') // 表格竖线
+  return s.replace(/\s+/g, ' ').trim()
+}
+
 export function buildSummary(markdown: string): string {
-  return markdown.replace(/\s+/g, ' ').trim().slice(0, SUMMARY_LENGTH)
+  return cleanSummary(markdown).slice(0, SUMMARY_LENGTH)
 }
 
 // 阅读时长估算：与前端 ArticleReader 展示逻辑对齐（字符数 / 400，最少 1 分钟）

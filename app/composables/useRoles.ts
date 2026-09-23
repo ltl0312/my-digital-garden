@@ -45,5 +45,15 @@ export const useRoles = () => {
     return { ok: false, why: '普通管理员仅可管理普通用户密钥' }
   }
 
-  return { actorRole, isRoot, canManage, canCreateRole, canToggleKey, canDeleteKey }
+  // 变更他人权限等级（admin ⇄ user）：仅 root（初始管理员）可操作 —— 若 admin 也能改角色，
+  // 它就能把自己提权到与 root 同级，三级体系会塌掉。root 自身与内置身份不可改，
+  // 也不能改自己（否则把自己降级后系统再无 root）。与服务端 canChangeRole 逐条一致。
+  const canChangeRoleKey = (target: KeyLike): { ok: boolean; why?: string } => {
+    if (actorRole.value !== 'root') return { ok: false, why: '仅初始管理员可变更他人权限等级' }
+    if (target.id === me.value?.id) return { ok: false, why: '不能变更自己的权限等级' }
+    if (target.role === 'root' || target.isBuiltin) return { ok: false, why: '初始管理员的权限等级不可变更' }
+    return { ok: true }
+  }
+
+  return { actorRole, isRoot, canManage, canCreateRole, canToggleKey, canDeleteKey, canChangeRoleKey }
 }

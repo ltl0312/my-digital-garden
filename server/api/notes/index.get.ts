@@ -1,5 +1,6 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { prisma } from '../../utils/db'
+import { cleanSummary } from '../../utils/markdown'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -45,5 +46,13 @@ export default defineEventHandler(async (event) => {
   })
   const total = await prisma.note.count({ where })
 
-  return { notes, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
+  // 出参统一清洗摘要：DB 里的历史摘要由旧版 buildSummary 生成，含 markdown/HTML 标记
+  // （列表里会显示成 `<h2>标题</h2>`，看起来像标题重复）→ 这里兜底洗一遍，无需重算全库
+  return {
+    notes: notes.map(n => ({ ...n, summary: n.summary ? cleanSummary(n.summary) : n.summary })),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize)
+  }
 })

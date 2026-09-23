@@ -133,6 +133,28 @@ export function canDelete(actor: RoleSubject, target: RoleSubject): { ok: boolea
   return { ok: false, why: '越权操作：普通管理员仅可管理普通用户密钥' }
 }
 
+// 变更权限等级（spec 8.1 延伸）：仅 root（初始管理员）可操作，可在 admin ⇄ user 之间升降级。
+// 之所以只给 root：admin 若能改角色就能自我提权到与 root 同级，三级体系会塌掉。
+// 另外 root 本身既不可被改（唯一内置身份），也不能改自己（避免把自己降级后系统再无 root）。
+export function canChangeRole(actor: RoleSubject, target: RoleSubject, nextRole: string): { ok: boolean; why?: string } {
+  if (nextRole === 'root') {
+    return { ok: false, why: '越权操作：初始管理员为内置唯一身份，不可授予' }
+  }
+  if (nextRole !== 'admin' && nextRole !== 'user') {
+    return { ok: false, why: '角色非法：仅支持 admin / user' }
+  }
+  if (actor.role !== 'root') {
+    return { ok: false, why: '越权操作：仅初始管理员可变更他人权限等级' }
+  }
+  if (target.id === actor.id) {
+    return { ok: false, why: '越权操作：不能变更自己的权限等级' }
+  }
+  if (isRootTarget(target)) {
+    return { ok: false, why: '越权操作：初始管理员的权限等级不可变更' }
+  }
+  return { ok: true }
+}
+
 export function setAuthCookie(event: H3Event, keyId: string) {
   setCookie(event, AUTH_COOKIE, signToken({ kid: keyId, exp: Date.now() + TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000 }), {
     httpOnly: true,

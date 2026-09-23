@@ -18,6 +18,25 @@ const dateText = computed(() => props.note?.updatedAt
 const mins = computed(() => props.note?.readingTime || Math.max(1, Math.round((props.note?.content?.length || 0) / 400)))
 
 const domainOf = (slug: string) => domainOfSlug(slug).domain
+
+// 正文若以「与标题同名」的 H1/H2 开头（Obsidian 等导出的笔记很常见，标题取自 frontmatter
+// 而正文首行又写了一遍），会与上方文章头标题重复显示成两个一样的标题。
+// v-html 直接注入 HTML，这里在渲染后把首部那个重复标题移除（内容不变，仅去掉视觉重复）。
+const articleEl = ref<HTMLElement | null>(null)
+
+const dedupeLeadingTitle = () => {
+  const el = articleEl.value
+  const title = String(props.note?.title || '').trim()
+  if (!el || !title) return
+  const first = Array.from(el.children).find(c => /^H[12]$/.test(c.tagName) && (c.textContent || '').trim())
+  if (first && (first.textContent || '').trim() === title) first.remove()
+}
+
+onMounted(() => nextTick(dedupeLeadingTitle))
+watch(
+  () => [props.note?.slug, props.note?.htmlContent],
+  () => nextTick(dedupeLeadingTitle)
+)
 </script>
 
 <template>
@@ -43,7 +62,8 @@ const domainOf = (slug: string) => domainOfSlug(slug).domain
         </span>
       </div>
 
-      <h1 class="text-[30px] sm:text-[38px] leading-[1.2] font-extrabold tracking-tight text-ink mb-4">
+      <!-- 移动端字号降级：38px 长标题在 390px 宽下每行只能放 ~10 字，会把屏幕挤满（用户反馈的移动端文字挤压） -->
+      <h1 class="text-[24px] sm:text-[32px] lg:text-[38px] leading-[1.25] font-extrabold tracking-tight text-ink mb-4 break-words">
         {{ note.title }}
       </h1>
 
@@ -59,6 +79,7 @@ const domainOf = (slug: string) => domainOfSlug(slug).domain
 
     <!-- 正文（TocRail 通过 [data-article-body] 观察标题） -->
     <article
+      ref="articleEl"
       data-article-body
       class="prose dark:prose-invert max-w-none text-ink-2 text-[16px] leading-prose"
       v-html="note.htmlContent"

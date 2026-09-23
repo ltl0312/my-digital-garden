@@ -4,7 +4,9 @@ import { prisma } from '../../../utils/db'
 
 // 可见范围（spec 8.2 查看，下沉到查询层 where，禁止取全量后前端过滤）：
 //   root → 全部；admin → 自己 + 全部普通用户；user → 仅自己（供「我的密钥」身份卡）。
-// 密钥脱敏：仅本人可拿到完整密钥（复制用），其余一律打码。
+// 密钥明文：能出现在结果里的记录，对当前角色都属于「可管理范围」（查询层已按角色收窄），
+// 因此一律返回明文 —— 否则管理员看不见也复制不到用户密钥，无法把密钥交付给用户
+// （用户实际反馈：显示与复制出来都是 41BK••••••••TGVL）。maskKey 仅作越界兜底。
 export default defineEventHandler(async (event) => {
   const actor = await requireAuth(event)
 
@@ -38,7 +40,9 @@ export default defineEventHandler(async (event) => {
       creatorLabel: k.createdBy ? creatorLabel.get(k.createdBy) ?? null : null,
       lastUsedAt: k.lastUsedAt,
       createdAt: k.createdAt,
-      key: isSelf ? k.key : maskKey(k.key)
+      // 查询层已保证：user 只会拿到自己那条 → 列表里出现的密钥都可直接给当前身份看。
+      // 仅保留一条理论越界兜底（user 拿到他人记录时才打码），便于未来调整可见范围时不泄露。
+      key: actor.role !== 'user' || isSelf ? k.key : maskKey(k.key)
     }
   })
 })

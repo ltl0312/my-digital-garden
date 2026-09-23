@@ -3,7 +3,7 @@ import { Copy, Check, Eye, EyeOff, ShieldAlert, KeyRound, Plus, Trash2 } from 'l
 
 const requestFetch = useRequestFetch()
 const { me } = useAuth()
-const { actorRole, isRoot, canManage, canCreateRole, canToggleKey, canDeleteKey } = useRoles()
+const { actorRole, isRoot, canManage, canCreateRole, canToggleKey, canDeleteKey, canChangeRoleKey } = useRoles()
 const toast = useToast()
 const { confirm } = useConfirm()
 
@@ -149,6 +149,23 @@ const removeKey = async (k: KeyRow) => {
     toast.success('密钥已删除')
   } catch (e: any) {
     toast.error(e?.data?.message || '删除失败')
+  }
+}
+
+// 权限等级变更（普通用户 ⇄ 普通管理员）：仅初始管理员可操作（前端置灰 + 服务端权威校验）。
+// 乐观更新，失败回滚。
+const changeRole = async (k: KeyRow, next: string) => {
+  const guard = canChangeRoleKey(k)
+  if (!guard.ok) { toast.error(guard.why || '无权操作'); return }
+  if (k.role === next) return
+  const prev = k.role
+  k.role = next
+  try {
+    await $fetch(`/api/admin/keys/${k.id}`, { method: 'PATCH', body: { role: next } })
+    toast.success(`已将「${k.label}」设为${next === 'admin' ? '普通管理员' : '普通用户'}`)
+  } catch (e: any) {
+    k.role = prev
+    toast.error(e?.data?.message || '变更失败')
   }
 }
 
@@ -346,7 +363,19 @@ useHead({ title: '管理后台 · 拾光' })
                   </div>
                 </td>
 
-                <td class="py-2.5 pr-3"><RoleBadge :role="k.role" :builtin="k.isBuiltin" /></td>
+                <td class="py-2.5 pr-3">
+                  <!-- 权限等级：仅初始管理员可改（普通用户 ⇄ 普通管理员），其余身份只读展示 -->
+                  <AppSelect
+                    v-if="canChangeRoleKey(k).ok"
+                    :model-value="k.role"
+                    size="sm"
+                    :options="[{ value: 'user', label: '普通用户' }, { value: 'admin', label: '普通管理员' }]"
+                    @update:model-value="(v: string) => changeRole(k, v)"
+                  />
+                  <span v-else :title="canChangeRoleKey(k).why">
+                    <RoleBadge :role="k.role" :builtin="k.isBuiltin" />
+                  </span>
+                </td>
 
                 <!-- 状态：switch 控件 -->
                 <td class="py-2.5 pr-3">
