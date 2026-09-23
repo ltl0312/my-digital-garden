@@ -140,15 +140,18 @@ const submitCreateRoot = async () => {
   }
 }
 
-const startCreateFolder = (parent = '') => {
+// parent 只接受字符串。注意：模板里若写成 `@click="startCreateFolder"`，Vue 会把 MouseEvent
+// 当第一个参数传进来 → 状态被污染成 Event 对象 → 对话框 preview 里 .split() 抛错、组件渲染崩溃，
+// 而 folderOpen 又已置为 true，后续点击赋值无变化 → 所有「新建文件夹」入口全部无反应。
+const startCreateFolder = (parent: unknown = '') => {
   createMenuOpen.value = false
-  folderParent.value = parent
+  folderParent.value = typeof parent === 'string' ? parent : ''
   folderOpen.value = true
 }
 
-const startCreateNoteIn = (parent = '') => {
+const startCreateNoteIn = (parent: unknown = '') => {
   newNoteTitle.value = ''
-  newNoteParent.value = parent
+  newNoteParent.value = typeof parent === 'string' ? parent : ''
   newNoteOpen.value = true
 }
 
@@ -244,7 +247,7 @@ const logout = async () => {
             <button class="w-full px-3 py-2 rounded-ctl text-ds-sm text-left flex items-center gap-2 text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro" @click="startCreateRoot">
               <FilePlus class="w-3.5 h-3.5 text-accent" />新建笔记
             </button>
-            <button class="w-full px-3 py-2 rounded-ctl text-ds-sm text-left flex items-center gap-2 text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro" @click="startCreateFolder">
+            <button class="w-full px-3 py-2 rounded-ctl text-ds-sm text-left flex items-center gap-2 text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro" @click="startCreateFolder()">
               <FolderPlus class="w-3.5 h-3.5 text-accent" />新建文件夹
             </button>
             <button class="w-full px-3 py-2 rounded-ctl text-ds-sm text-left flex items-center gap-2 text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro" @click="startImport">

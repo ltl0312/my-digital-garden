@@ -123,17 +123,25 @@ const onPointerDownOutside = (e: PointerEvent) => {
   if (root.value?.contains(t) || listEl.value?.contains(t)) return
   close()
 }
-const onViewportChange = () => { if (open.value) close() }
+// 视口变化时关闭下拉。滚动事件用捕获阶段监听（window + capture），因此**列表自身**的滚动
+// 也会被捕获到 —— 用户滑动选项列表时下拉会自己关掉。这里按 target 是否在列表内排除。
+const onScroll = (e: Event) => {
+  if (!open.value) return
+  const t = e.target as Node | null
+  if (t && listEl.value?.contains(t)) return
+  close()
+}
+const onResize = () => { if (open.value) close() }
 
 onMounted(() => {
   document.addEventListener('pointerdown', onPointerDownOutside, true)
-  window.addEventListener('scroll', onViewportChange, true)
-  window.addEventListener('resize', onViewportChange)
+  window.addEventListener('scroll', onScroll, true)
+  window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onPointerDownOutside, true)
-  window.removeEventListener('scroll', onViewportChange, true)
-  window.removeEventListener('resize', onViewportChange)
+  window.removeEventListener('scroll', onScroll, true)
+  window.removeEventListener('resize', onResize)
 })
 </script>
 

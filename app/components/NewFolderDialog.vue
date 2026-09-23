@@ -43,7 +43,10 @@ const problem = computed(() => {
 
 const preview = computed(() => {
   const n = name.value.trim() || '（文件夹名）'
-  return parent.value ? `Garden Vault / ${parent.value.split('/').join(' / ')} / ${n}` : `Garden Vault / ${n}`
+  // 防御：上游若把非字符串（如 MouseEvent）塞进 default-parent，这里 split 会抛错并让整个
+  // 对话框渲染崩溃（表现为「点了没反应」，且状态卡住后所有入口都失效）
+  const p = typeof parent.value === 'string' ? parent.value : ''
+  return p ? `Garden Vault / ${p.split('/').join(' / ')} / ${n}` : `Garden Vault / ${n}`
 })
 
 const submit = async () => {

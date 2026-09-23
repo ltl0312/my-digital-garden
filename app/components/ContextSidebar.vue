@@ -68,11 +68,15 @@ const toast = useToast()
 const { confirm } = useConfirm()
 const requestFetch = useRequestFetch()
 
-/** 结构目录：vault 根 + KnowledgeBase/NN_* 一层，任何人（含 root）禁改禁删 */
+/** 结构目录：vault 根 + KnowledgeBase 本身 + KnowledgeBase/NN_* 一层，任何人（含 root）禁改禁删。
+ *  必须与服务端 `isStructuralPath`（server/utils/vault.ts）逐字一致 —— 此前前端写成
+ *  「任意一层目录都算」（segs.length === 1）且漏了 KnowledgeBase 前缀限定，导致 vault 下
+ *  普通目录（如 zrw）的重命名/删除被误禁用。 */
 const isStructural = (path: string) => {
-  const segs = path.split('/')
-  if (segs.length === 1) return true
-  return segs.length === 2 && /^\d{2}_/.test(segs[1])
+  const segs = path.split('/').filter(Boolean)
+  if (segs.length === 0) return true
+  if (segs.length === 1) return segs[0] === 'KnowledgeBase'
+  return segs.length === 2 && segs[0] === 'KnowledgeBase' && /^\d{2}_/.test(segs[1])
 }
 
 /** 剪贴板（复制 / 粘贴）：跨路由与抽屉共享 */
