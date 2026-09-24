@@ -169,7 +169,7 @@
 
 ### 优化与细节
 
-- 初始管理员密钥 `liutl` 由 `seed-auth.ts` 插件启动时自动播种（幂等）
+- 初始管理员密钥 `<初始 root 密钥>` 由 `seed-auth.ts` 插件启动时自动播种（幂等）
 - 密钥生成：16 位 base64url 大写字母数字（随机 12 字节）
 
 ---
@@ -280,7 +280,7 @@
 | 验证项 | 结果 |
 |---|---|
 | 服务器 HTTPS：login/notes/tree/graph/tags | 全部 200 |
-| verify：liutl / 错误密钥 / 连错触发限流 | 200 / 401 / 429 |
+| verify：<初始 root 密钥> / 错误密钥 / 连错触发限流 | 200 / 401 / 429 |
 | pm2：1 实例 online、内存 130MB、watcher 单实例监听日志 | ✅ |
 | 数据库：`Note_title_trgm_idx` / `Note_content_trgm_idx` 存在 | ✅ |
 | 本机容器：garden-app Up、迁移完成、watcher 监听、接口 200/401 | ✅ |

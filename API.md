@@ -584,7 +584,7 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 # 1. 登录（保存 Cookie）
 curl -s -c cookies.txt -X POST http://localhost:3000/api/auth/verify \
   -H 'Content-Type: application/json' \
-  -d '{"key":"liutl"}'
+  -d '{"key":"<你的 root 密钥>"}'
 
 # 2. 当前身份
 curl -s -b cookies.txt http://localhost:3000/api/auth/me

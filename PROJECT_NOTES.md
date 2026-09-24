@@ -62,7 +62,7 @@ my-digital-garden/
 │   ├── middleware/auth.ts      # API 级鉴权（白名单 /api/auth/*，其余需有效 token）
 │   ├── plugins/
 │   │   ├── watcher.ts          # chokidar 监听 vault → 串行队列处理
-│   │   └── seed-auth.ts        # 启动时确保存在初始管理员密钥 liutl
+│   │   └── seed-auth.ts        # 启动时确保存在初始管理员密钥 <初始 root 密钥>
 │   ├── utils/
 │   │   ├── db.ts               # PrismaClient 单例（globalThis 防热更新爆池）
 │   │   ├── vault.ts            # VAULT_DIR 常量 + resolveVaultPath 防穿越 + NUL 剥离 + 笔记模板
@@ -159,7 +159,7 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 - token = base64url(JSON {kid, exp}) + "." + HMAC-SHA256 签名（`AUTH_SECRET`，默认 dev-secret-change-me）。
 - cookie：`garden_token`，httpOnly + sameSite=lax，30 天 maxAge。
 - 前端：全局路由守卫 `auth.global.ts`（未登录跳 /login?redirect=）；`useAuth` 提供 `isAdmin` 控制 UI；`useRequestFetch` 保证 SSR 端 cookie 转发（解决刷新丢登录）。
-- 初始管理员：`server/plugins/seed-auth.ts` 启动时创建密钥 `liutl`（role=admin）。
+- 初始管理员：`server/plugins/seed-auth.ts` 启动时创建密钥 `<初始 root 密钥>`（role=admin）。
 
 ---
 

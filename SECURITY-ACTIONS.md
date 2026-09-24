@@ -13,7 +13,7 @@
 - [x] `/opt/digital-garden/ecosystem.config.cjs` 已更新（备份：`ecosystem.config.cjs.bak-2026-08-15-2347`）
 - [x] 新密码落盘：`/root/.garden-db-password.txt`（权限 600，root 专属）
 - [x] PM2 daemon 重启 + 重新加载配置 + `pm2 save` 持久化
-- [x] 验证：`POST /api/auth/verify`（liutl → 200，错误密钥 → 401）、`GET /login` → 200
+- [x] 验证：`POST /api/auth/verify`（<初始 root 密钥> → 200，错误密钥 → 401）、`GET /login` → 200
 - [x] 本地临时密钥副本已全部删除；OneDrive 源私钥 ACL 已恢复原状
 
 ## 密码位置速查

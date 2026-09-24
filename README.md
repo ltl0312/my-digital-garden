@@ -83,7 +83,7 @@ echo -e "---\ntitle: Hello Garden\ntags: [Nuxt, Garden]\nmaturity: SEEDLING\n---
 pnpm dev
 ```
 
-访问 http://localhost:3000 ，使用访问密钥登录（开发环境自动播种初始管理员密钥 `liutl`，见 `server/plugins/seed-auth.ts`；**生产环境务必在数据库中更换或禁用该默认密钥**）。
+访问 http://localhost:3000 ，使用访问密钥登录。初始管理员密钥**只从环境变量 `SEED_ADMIN_KEY` 注入**（源码不含默认值）：仅在密钥表为空的首次启动播种一次，存量部署无需配置；空库且未配置时应用拒绝启动（见 `server/plugins/seed-auth.ts`）。
 
 ---
 
