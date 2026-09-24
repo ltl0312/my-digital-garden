@@ -27,6 +27,7 @@ garden-deploy.tar.gz
 .env
 .env.*
 !.env.example
+!.env.acceptance.example
 
 # Prisma generated client
 prisma/generated
