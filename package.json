@@ -47,5 +47,6 @@
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.3.11"
-  }
+  },
+  "version": "1.0.0"
 }
