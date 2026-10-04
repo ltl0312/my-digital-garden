@@ -57,6 +57,18 @@ const newNoteParent = ref('')
 const newNoteSubmitting = ref(false)
 const toast = useToast()
 
+// 跨页面请求新建笔记：图谱页的命令「新建笔记并在图谱中定位」把请求投到这里；
+// 创建成功后按 createNoteReturn 决定是回到图谱（/graph?focus=<slug>）还是打开笔记正文。
+const createNoteRequest = useState<'note' | 'graph' | null>('shell-create-note', () => null)
+const createNoteReturn = ref<'note' | 'graph'>('note')
+watch(createNoteRequest, (v) => {
+  if (!v) return
+  createNoteReturn.value = v
+  createNoteRequest.value = null
+  newNoteParent.value = ''
+  startCreateRoot()
+})
+
 // 侧栏开关与宽度（跨页面保留）
 const SIDEBAR_KEY = 'garden-sidebar-width'
 const sidebarOpen = useState<boolean>('shell-sidebar-open', () => true)
@@ -156,6 +168,12 @@ const submitCreateRoot = async () => {
     await refreshNuxtData('vault-tree')
     newNoteOpen.value = false
     toast.success(`已创建「${title}」`)
+    if (createNoteReturn.value === 'graph') {
+      // 图谱页发起的新建：留在图谱里并定位到这篇新笔记
+      createNoteReturn.value = 'note'
+      await navigateTo(`/graph?focus=${encodeURIComponent(slug)}`)
+      return
+    }
     await navigateTo(`/notes/${slug.split('/').map(encodeURIComponent).join('/')}`)
   } catch (e: any) {
     toast.error(e?.data?.message || '创建失败')

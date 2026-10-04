@@ -1,342 +1,809 @@
-<script setup lang="ts">
-// 知识图谱（spec 5.5）：通栏画布 + 四角浮层
-// 左上「定位笔记」/ 右上工具条 / 左下分组图例 / 右下统计；设置改为浮层，不再挤占画布
-import { Network, Maximize2, Zap, Settings2, ZoomIn, ZoomOut, Search, Locate, ChevronUp } from 'lucide-vue-next'
-import { DOMAIN_HUE_DEG, domainColor, domainOfSlug } from '~/composables/useFacets'
-// 显式引入组件：脚本里的 InstanceType<typeof GraphView> 取不到模板层的自动导入绑定
-import GraphView from '~/components/GraphView.vue'
-
-interface GraphSettings {
-  groupBy: 'domain' | 'maturity' | 'tag'
-  colors: Record<string, string>
-  sizeMode: 'fixed' | 'degree'
-  nodeSize: number
-}
-
-// v2：默认着色口径从「成熟度」改为「领域」（spec 5.5），旧键不作数以免沿用旧默认
-const SETTINGS_KEY = 'garden-graph-settings-v2'
-
-const MATURITY_COLORS: Record<string, string> = {
-  SEEDLING: 'hsl(38 62% 46%)',
-  GROWING: 'hsl(198 60% 44%)',
-  EVERGREEN: 'hsl(160 56% 40%)'
-}
-const MATURITY_LABEL: Record<string, string> = { SEEDLING: '幼苗', GROWING: '成长', EVERGREEN: '常青' }
-const TAG_PALETTE = ['#16a34a', '#0284c7', '#9333ea', '#8C6D46', '#B87A8C', '#7A8CB8', '#8CB05B', '#B8A05B']
-
-const requestFetch = useRequestFetch()
-const { data: graph } = await useAsyncData('graph-data', () => requestFetch('/api/notes/graph'))
-
-/** 节点补上领域（由 slug 派生，与列表页同一套规则） */
-const nodes = computed(() => (graph.value?.nodes || []).map((n: any) => ({
-  ...n,
-  domain: domainOfSlug(n.slug).domain || '其他'
-})))
-
-const domainNames = computed(() => [...new Set(nodes.value.map((n: any) => n.domain))].sort())
-
-const defaultDomainColors = () => {
-  const out: Record<string, string> = {}
-  for (const d of Object.keys(DOMAIN_HUE_DEG)) out[d] = domainColor(d)
-  return out
-}
-
-const emptySettings = (): GraphSettings => ({
-  groupBy: 'domain',
-  colors: { ...MATURITY_COLORS, ...defaultDomainColors() },
-  sizeMode: 'degree',
-  nodeSize: 18
-})
-
-const loadSettings = (): GraphSettings => {
-  try {
-    return { ...emptySettings(), ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }
-  } catch {
-    return emptySettings()
-  }
-}
-
-const settings = ref<GraphSettings>(loadSettings())
-watch(settings, s => localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)), { deep: true })
-
-// AppSelect 选项（替代原生 select：其弹层首帧黑底由 UA 决定，CSS 修不掉）
-const groupByOptions = [
-  { value: 'domain', label: '按领域' },
-  { value: 'maturity', label: '按成熟度' },
-  { value: 'tag', label: '按标签' }
-]
-const sizeModeOptions = [
-  { value: 'degree', label: '按链接数' },
-  { value: 'fixed', label: '固定' }
-]
-
-const showSettings = ref(false)
-const graphRef = ref<InstanceType<typeof GraphView> | null>(null)
-const physicsActive = ref(true)
-
-const resetLayout = () => graphRef.value?.resetLayout()
-const togglePhysics = () => graphRef.value?.togglePhysics()
-const zoomIn = () => graphRef.value?.zoomBy(1.35)
-const zoomOut = () => graphRef.value?.zoomBy(1 / 1.35)
-const fitView = () => graphRef.value?.fitView()
-
-// 孤立度（度数为 0）：统计与图例都要用
-const degreeMap = computed(() => {
-  const m = new Map<string, number>()
-  for (const e of graph.value?.edges || []) {
-    m.set(e.source, (m.get(e.source) || 0) + 1)
-    m.set(e.target, (m.get(e.target) || 0) + 1)
-  }
-  return m
-})
-const isolatedCount = computed(() => nodes.value.filter((n: any) => !degreeMap.value.has(n.id)).length)
-
-/** 标签模式下为新出现的标签分配色板色 */
-watchEffect(() => {
-  if (settings.value.groupBy !== 'tag') return
-  const tags = [...new Set(nodes.value.map((n: any) => n.primaryTag).filter(Boolean))] as string[]
-  let idx = 0
-  for (const t of tags) {
-    if (!settings.value.colors[t]) {
-      // 取下标后判空（noUncheckedIndexedAccess）；idx 同样只在真正需要分配时才自增
-      const pal = TAG_PALETTE[idx++ % TAG_PALETTE.length]
-      if (pal) settings.value.colors[t] = pal
-    }
-  }
-})
-
-/** 图例：随着色口径变化，含组内计数（真实统计） */
-const legend = computed(() => {
-  if (settings.value.groupBy === 'domain') {
-    return domainNames.value.map(d => ({
-      key: d,
-      label: d,
-      color: settings.value.colors[d] || domainColor(d),
-      count: nodes.value.filter((n: any) => n.domain === d).length
-    }))
-  }
-  if (settings.value.groupBy === 'maturity') {
-    return ['EVERGREEN', 'GROWING', 'SEEDLING'].map(k => ({
-      key: k,
-      label: MATURITY_LABEL[k],
-      color: settings.value.colors[k] || MATURITY_COLORS[k],
-      count: nodes.value.filter((n: any) => (n.maturity || 'SEEDLING') === k).length
-    }))
-  }
-  return [...new Set(nodes.value.map((n: any) => n.primaryTag || '未分类'))].map((t: any) => ({
-    key: t,
-    label: t,
-    color: settings.value.colors[t] || '#8C6D46',
-    count: nodes.value.filter((n: any) => (n.primaryTag || '未分类') === t).length
-  }))
-})
-
-// 手机端底部面板开合（交付物第 06 屏）：<640 时图例与统计收进可折叠面板，
-// 信息一项不少，只是从「两个常驻浮层」变成「一个收起时只占一行摘要的面板」。
-const mobilePanelOpen = ref(false)
-
-// 左上「定位笔记」
-const locateQuery = ref('')
-const matches = computed(() => {
-  const q = locateQuery.value.trim().toLowerCase()
-  if (!q) return []
-  return nodes.value
-    .filter((n: any) => n.title.toLowerCase().includes(q) || String(n.slug).toLowerCase().includes(q))
-    .slice(0, 8)
-})
-const locate = (slug: string) => {
-  const ok = graphRef.value?.focusNode(slug)
-  if (ok) locateQuery.value = ''
-}
-
-useHead({ title: '知识图谱 · 拾光' })
-</script>
-
 <template>
-  <div class="relative h-full min-h-[560px] w-full">
+  <div ref="pageEl" class="h-full w-full min-h-[560px]" data-testid="graph-page">
     <ClientOnly>
-      <GraphView
-        v-if="graph"
-        ref="graphRef"
-        :nodes="nodes"
-        :edges="graph.edges"
-        :settings="settings"
-        v-model:physics-active="physicsActive"
-      />
-      <template #fallback>
-        <div class="h-full flex items-center justify-center text-ink-3 text-ds-sm">图谱加载中…</div>
-      </template>
-    </ClientOnly>
+      <!-- ① 加载中（骨架屏，T1.4） -->
+      <GraphSkeleton v-if="loading" />
 
-    <!-- 左上：定位笔记（窄屏收窄，避免与右上工具条重叠） -->
-    <div class="absolute left-3 sm:left-4 top-3 sm:top-4 z-20 w-[176px] sm:w-[236px] max-w-[calc(100%-1.5rem)]">
-      <div class="relative">
-        <Search class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
-        <input
-          v-model="locateQuery"
-          placeholder="定位笔记…"
-          class="w-full pl-9 pr-3 py-2 rounded-ctl border border-line bg-surface/95 backdrop-blur shadow-ds1 text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
-        />
-      </div>
-      <ul
-        v-if="matches.length"
-        class="mt-1.5 rounded-ctl border border-line bg-surface shadow-ds2 p-1 max-h-[240px] overflow-y-auto"
-      >
-        <li v-for="m in matches" :key="m.id">
-          <button
-            class="w-full text-left px-2.5 py-1.5 rounded-[6px] text-ds-sm text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro flex items-center gap-2"
-            @click="locate(m.slug)"
-          >
-            <Locate class="w-3.5 h-3.5 text-ink-3 shrink-0" />
-            <span class="truncate">{{ m.title }}</span>
-          </button>
-        </li>
-      </ul>
-    </div>
-
-    <!-- 右上：工具条 -->
-    <div class="absolute right-3 sm:right-4 top-3 sm:top-4 z-20 flex items-center gap-0.5 rounded-ctl border border-line bg-surface/95 backdrop-blur shadow-ds1 p-1">
-      <button class="w-8 h-8 rounded-[6px] flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro" title="放大" aria-label="放大" @click="zoomIn">
-        <ZoomIn class="w-4 h-4" />
-      </button>
-      <button class="w-8 h-8 rounded-[6px] flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro" title="缩小" aria-label="缩小" @click="zoomOut">
-        <ZoomOut class="w-4 h-4" />
-      </button>
-      <button class="w-8 h-8 rounded-[6px] flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro" title="适配全图" aria-label="适配全图" @click="fitView">
-        <Maximize2 class="w-4 h-4" />
-      </button>
-      <button
-        class="w-8 h-8 rounded-[6px] flex items-center justify-center transition-colors duration-micro"
-        :class="physicsActive ? 'text-accent bg-[var(--accent-soft)]' : 'text-ink-3 hover:bg-surface-3'"
-        :title="physicsActive ? '物理引擎运行中（点击停止）' : '启动物理引擎（重新点火）'"
-        :aria-pressed="physicsActive"
-        @click="togglePhysics"
-      >
-        <Zap class="w-4 h-4" />
-      </button>
-      <button
-        class="w-8 h-8 rounded-[6px] flex items-center justify-center transition-colors duration-micro"
-        :class="showSettings ? 'text-accent bg-[var(--accent-soft)]' : 'text-ink-2 hover:bg-surface-3'"
-        title="图谱设置"
-        aria-label="图谱设置"
-        :aria-expanded="showSettings"
-        @click="showSettings = !showSettings"
-      >
-        <Settings2 class="w-4 h-4" />
-      </button>
-    </div>
-
-    <!-- 设置浮层（不再挤占画布） -->
-    <div
-      v-if="showSettings"
-      class="absolute right-3 sm:right-4 top-[3.75rem] z-20 w-[262px] rounded-card border border-line bg-surface/95 backdrop-blur shadow-ds3 p-3.5 space-y-3"
-    >
-      <div class="flex items-center justify-between">
-        <p class="text-[12px] font-semibold text-ink-3">图谱设置</p>
-        <button class="text-[12px] text-accent hover:underline" @click="resetLayout">重置布局</button>
-      </div>
-
-      <label class="block">
-        <span class="block text-[12px] text-ink-3 mb-1">着色</span>
-        <AppSelect v-model="settings.groupBy" size="sm" :options="groupByOptions" />
-      </label>
-
-      <label class="block">
-        <span class="block text-[12px] text-ink-3 mb-1">大小</span>
-        <AppSelect v-model="settings.sizeMode" size="sm" :options="sizeModeOptions" />
-      </label>
-
-      <label v-if="settings.sizeMode === 'fixed'" class="block">
-        <span class="block text-[12px] text-ink-3 mb-1">节点大小 {{ settings.nodeSize }}</span>
-        <input v-model.number="settings.nodeSize" type="range" min="10" max="40" class="w-full" />
-      </label>
-
-      <div v-if="settings.groupBy === 'domain'" class="pt-1 space-y-1.5 max-h-[180px] overflow-y-auto">
-        <label v-for="g in legend" :key="g.key" class="flex items-center gap-2 text-[12px] text-ink-2">
-          <input v-model="settings.colors[g.key]" type="color" class="w-5 h-5 rounded cursor-pointer border border-line bg-transparent" :title="g.label" />
-          {{ g.label }}
-        </label>
-      </div>
-    </div>
-
-    <!-- 左下：分组图例（色块 + 名称 + 数量）。<640 收进底部面板 -->
-    <div v-if="graph" class="hidden sm:block absolute left-3 sm:left-4 bottom-3 sm:bottom-4 z-20 w-[136px] sm:w-auto sm:max-w-[240px] rounded-card border border-line bg-surface/95 backdrop-blur shadow-ds1 p-2 sm:p-3" data-testid="graph-legend">
-      <p class="text-[12px] font-semibold text-ink-3 mb-2 flex items-center gap-1.5">
-        <Network class="w-3.5 h-3.5" />{{ settings.groupBy === 'domain' ? '按领域' : settings.groupBy === 'maturity' ? '按成熟度' : '按标签' }}
-      </p>
-      <ul class="space-y-1 max-h-[26vh] overflow-y-auto">
-        <li v-for="g in legend" :key="g.key" class="flex items-center gap-2 text-[12px] text-ink-2">
-          <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: g.color }"></span>
-          <span class="flex-1 truncate">{{ g.label }}</span>
-          <span class="font-mono text-ink-3 tabular-nums">{{ g.count }}</span>
-        </li>
-      </ul>
-    </div>
-
-    <!-- 右下：统计（窄屏纵向堆叠，避免与图例重叠）。<640 收进底部面板 -->
-    <div v-if="graph" class="hidden sm:flex absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-20 rounded-card border border-line bg-surface/95 backdrop-blur shadow-ds1 px-3 py-2 flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3 text-[12px] font-mono text-ink-2" data-testid="graph-stats">
-      <span><b class="text-ink">{{ nodes.length }}</b> 节点</span>
-      <span class="text-line hidden sm:inline">|</span>
-      <span><b class="text-ink">{{ graph?.edges?.length || 0 }}</b> 连接</span>
-      <span class="text-line hidden sm:inline">|</span>
-      <span><b class="text-ink">{{ isolatedCount }}</b> 孤立</span>
-    </div>
-
-    <!-- 底部折叠面板（<640，交付物第 06 屏）：图例 + 统计的拇指可达载体。
-         收起时只占一行摘要（分组口径 + 节点/连接/孤立），展开后是完整图例与统计 ——
-         原左下「图例」与右下「统计」在此宽度下会互相挤压，现在信息一项不减。 -->
-    <div v-if="graph" class="sm:hidden absolute inset-x-0 bottom-0 z-20">
-      <div class="rounded-t-[20px] border-t border-line bg-surface/95 backdrop-blur shadow-ds3">
-        <button
-          type="button"
-          class="w-full px-4 py-3 flex items-center gap-2 text-left"
-          :aria-expanded="mobilePanelOpen"
-          aria-label="图例与统计"
-          data-testid="graph-panel-toggle"
-          @click="mobilePanelOpen = !mobilePanelOpen"
-        >
-          <Network class="w-3.5 h-3.5 text-ink-3 shrink-0" />
-          <span class="text-ds-sm font-semibold text-ink truncate">
-            {{ settings.groupBy === 'domain' ? '按领域' : settings.groupBy === 'maturity' ? '按成熟度' : '按标签' }}
-          </span>
-          <span class="ml-auto shrink-0 font-mono text-[12px] text-ink-3 tabular-nums">
-            {{ nodes.length }} · {{ graph?.edges?.length || 0 }} · {{ isolatedCount }}
-          </span>
-          <ChevronUp
-            class="w-4 h-4 shrink-0 text-ink-3 transition-transform duration-base ease-dawn"
-            :class="mobilePanelOpen ? 'rotate-180' : ''"
-          />
-        </button>
-
-        <div v-if="mobilePanelOpen" class="px-4 pb-4 max-h-[44vh] overflow-y-auto">
-          <p class="text-[12px] font-semibold text-ink-3 mb-2">图例</p>
-          <ul class="space-y-1.5">
-            <li v-for="g in legend" :key="g.key" class="flex items-center gap-2 text-[12px] text-ink-2">
-              <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: g.color }"></span>
-              <span class="flex-1 truncate">{{ g.label }}</span>
-              <span class="font-mono text-ink-3 tabular-nums">{{ g.count }}</span>
-            </li>
-          </ul>
-
-          <div class="mt-3 pt-3 border-t border-line">
-            <p class="text-[12px] font-semibold text-ink-3 mb-2">统计</p>
-            <dl class="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ nodes.length }}</dd>
-                <dt class="text-[12px] text-ink-3">节点</dt>
-              </div>
-              <div>
-                <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ graph?.edges?.length || 0 }}</dd>
-                <dt class="text-[12px] text-ink-3">连接</dt>
-              </div>
-              <div>
-                <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ isolatedCount }}</dd>
-                <dt class="text-[12px] text-ink-3">孤立</dt>
-              </div>
-            </dl>
+      <!-- ② 错误态（T4.1：网络失败 / 无权限 / 解析失败；与「筛选无结果」「真空态」互不复用） -->
+      <div v-else-if="loadError" class="h-full w-full flex items-center justify-center p-6" data-testid="graph-error">
+        <div class="w-full max-w-[420px] rounded-card border border-dashed border-line bg-surface p-6 text-center">
+          <AlertTriangle class="w-6 h-6 mx-auto text-[var(--hue-32)]" />
+          <h2 class="mt-3 text-ds-base font-semibold text-ink">图谱加载失败</h2>
+          <p class="mt-1.5 text-ds-sm text-ink-2 leading-relaxed">{{ errorText }}</p>
+          <div class="mt-4 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              class="h-9 px-3 rounded-ctl bg-[var(--accent)] text-[var(--accent-ink)] text-ds-sm font-medium hover:opacity-90 transition-opacity duration-micro inline-flex items-center gap-1.5"
+              @click="retryLoad"
+            >
+              <RefreshCw class="w-3.5 h-3.5" /> 重试
+            </button>
+            <NuxtLink
+              to="/"
+              class="h-9 px-3 rounded-ctl border border-line text-ds-sm text-ink-2 hover:bg-surface-3 transition-colors duration-micro inline-flex items-center"
+            >
+              回到首页
+            </NuxtLink>
           </div>
         </div>
       </div>
-    </div>
+
+      <!-- ③ 图谱真空态（T4.1：vault 里还没有笔记 → 引导 + 预置 MOC 一键导入） -->
+      <div v-else-if="graphIsEmpty" class="h-full w-full overflow-y-auto p-6" data-testid="graph-empty">
+        <div class="mx-auto w-full max-w-[560px] rounded-card border border-line bg-surface p-6">
+          <Sparkles class="w-6 h-6 text-[var(--accent)]" />
+          <h2 class="mt-3 text-ds-xl font-semibold text-ink">图谱还是空的</h2>
+          <p class="mt-2 text-ds-sm text-ink-2 leading-relaxed">
+            vault 里还没有可发布的笔记，所以画布上没有任何节点。可以先用三篇预置的 MOC
+            模板起步 —— 它们互相用 <code class="font-mono text-[12px] text-ink-2">[[双向链接]]</code> 连好，导入后立刻能看到一张小图谱。
+          </p>
+          <button
+            type="button"
+            class="mt-4 h-9 px-3 rounded-ctl bg-[var(--accent)] text-[var(--accent-ink)] text-ds-sm font-medium hover:opacity-90 transition-opacity duration-micro disabled:opacity-60 inline-flex items-center gap-1.5"
+            :disabled="importingMoc"
+            @click="importMocTemplates"
+          >
+            <Plus class="w-3.5 h-3.5" />
+            {{ importingMoc ? '导入中…' : '导入 3 篇 MOC 模板' }}
+          </button>
+          <ul class="mt-4 space-y-1.5">
+            <li v-for="t in MOC_TEMPLATES" :key="t.title" class="text-[12px] text-ink-3">
+              · {{ t.title }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ④ 三区骨架（A1：272 / flex / 320） -->
+      <div v-else class="relative flex h-full w-full overflow-hidden bg-canvas">
+        <!-- ================= 左栏 ================= -->
+        <aside
+          v-show="leftVisible"
+          class="h-full shrink-0 border-r border-line bg-surface overflow-y-auto"
+          :class="threePane ? 'relative w-[240px] xl:w-[272px]' : 'absolute inset-y-0 left-0 z-40 shadow-ds3'"
+          :style="threePane ? undefined : { width: drawerW + 'px' }"
+          data-testid="graph-left-panel"
+          aria-label="图谱筛选"
+        >
+          <FilterPanel
+            :filter="filter"
+            :stats="stats"
+            :domains="domains"
+            :maturity-buckets="maturityBuckets"
+            :has-selection="!!selectedId"
+            :physics="physicsActive"
+            :converged="renderStatus.converged"
+            :render-status="renderStatus"
+            @toggle-physics="togglePhysics"
+          />
+        </aside>
+
+        <!-- 抽屉遮罩（非三区模式） -->
+        <div
+          v-if="!threePane && (leftOpen || rightOpen)"
+          class="absolute inset-0 z-30 bg-[rgba(10,13,19,0.45)]"
+          @click="closeOverlays"
+        ></div>
+
+        <!-- ================= 画布 ================= -->
+        <div class="relative flex-1 min-w-0 h-full overflow-hidden">
+          <GraphView
+            ref="graphRef"
+            v-model:physics-active="physicsActive"
+            :nodes="viewNodes"
+            :edges="viewEdges"
+            :selected-id="selectedId"
+            :focus-ids="activeFocusIds"
+            :layout="layout"
+            :show-labels="filterState.showLabels"
+            :picking-path="pickingPath"
+            @update:selected-id="onSelect"
+            @open="openNote"
+            @pick="onPick"
+          />
+
+          <!-- 顶部贴边工具栏（计划 ASCII 图允许「画布 + 贴边浮层」） -->
+          <div class="absolute left-2 right-2 top-2 z-20 flex items-start gap-2 pointer-events-none">
+            <div class="pointer-events-auto flex-1 min-w-0 max-w-[420px]">
+              <GraphSearchPanel
+                ref="searchRef"
+                :nodes="allNodes"
+                :domains="domains"
+                :tags="tags"
+                @select-note="onSearchSelect"
+                @only-domain="onOnlyDomain"
+                @tag="onTag"
+                @command="onCommand"
+              />
+            </div>
+
+            <div class="pointer-events-auto hidden sm:block w-[124px] shrink-0">
+              <AppSelect v-model="layoutModel" :options="layoutOptions" size="sm" />
+            </div>
+
+            <div class="flex-1"></div>
+
+            <button
+              v-if="!threePane"
+              type="button"
+              class="pointer-events-auto shrink-0 h-9 px-2.5 rounded-ctl border border-line bg-surface/95 backdrop-blur shadow-ds1 text-[12px] text-ink-2 inline-flex items-center gap-1"
+              data-testid="graph-open-filters"
+              @click="leftOpen = !leftOpen"
+            >
+              <SlidersHorizontal class="w-3.5 h-3.5" /> 筛选
+            </button>
+            <button
+              v-if="!threePane"
+              type="button"
+              class="pointer-events-auto shrink-0 h-9 px-2.5 rounded-ctl border border-line bg-surface/95 backdrop-blur shadow-ds1 text-[12px] text-ink-2 inline-flex items-center gap-1"
+              data-testid="graph-open-detail"
+              @click="rightOpen = !rightOpen"
+            >
+              详情
+            </button>
+          </div>
+
+          <!-- 布局提示（切换布局时短暂说明） -->
+          <p
+            v-if="layoutHint && layout !== 'force'"
+            class="absolute left-2 top-[52px] z-10 max-w-[min(320px,60%)] rounded-ctl border border-line bg-surface/90 backdrop-blur px-2 py-1 text-[11px] text-ink-3"
+          >
+            {{ layoutHint }}
+          </p>
+
+          <!-- 筛选空态提示条（T2.3 / T4.1：不清空画布，保留上次视图） -->
+          <div
+            v-if="isEmpty"
+            class="absolute left-1/2 -translate-x-1/2 top-14 z-20 w-[min(560px,calc(100%-1rem))] rounded-ctl border border-[var(--hue-32)]/45 bg-surface/95 backdrop-blur shadow-ds2 px-3 py-2"
+            data-testid="graph-filter-empty"
+            role="status"
+          >
+            <p class="text-[12px] text-ink-2 leading-relaxed">{{ conflictHint }}</p>
+            <div class="mt-1.5 flex items-center gap-2">
+              <button type="button" class="text-[11px] text-accent hover:underline" @click="clearAll">清除全部筛选</button>
+              <button
+                v-if="conflictShortcut"
+                type="button"
+                class="text-[11px] text-ink-3 hover:text-ink hover:underline"
+                @click="onlyDomain(conflictShortcut)"
+              >
+                只看「{{ conflictShortcut }}」
+              </button>
+            </div>
+          </div>
+
+          <!-- 关系类型全关提示（T2.3：提示而非空图） -->
+          <p
+            v-if="edgeKindHint"
+            class="absolute left-1/2 -translate-x-1/2 top-14 z-20 rounded-ctl border border-line bg-surface/95 backdrop-blur shadow-ds1 px-3 py-1.5 text-[12px] text-ink-2"
+            role="status"
+          >
+            {{ edgeKindHint }}
+          </p>
+
+          <!-- 缩略图（T3.3） -->
+          <div v-if="!isPhone" class="absolute right-2 top-14 z-20" data-testid="graph-minimap-host">
+            <Minimap
+              v-if="minimap.nodes.length"
+              :nodes="minimap.nodes"
+              :canvas="minimap.canvas"
+              :view="minimap.view"
+              @center="onMinimapCenter"
+              @zoom="onMinimapZoom"
+            />
+          </div>
+
+          <!-- 缩放条（T3.4：−/百分比/+/适配全图/重置布局） -->
+          <div
+            class="absolute right-2 bottom-3 z-20 flex items-center gap-1 rounded-ctl border border-line bg-surface/95 backdrop-blur shadow-ds1 px-1 py-1 max-[639px]:bottom-[60px]"
+          >
+            <button
+              type="button"
+              class="w-8 h-8 rounded-[6px] flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+              aria-label="缩小"
+              title="缩小"
+              @click="zoomBy(1 / ZOOM.buttonStep)"
+            >
+              <Minus class="w-4 h-4" />
+            </button>
+            <span class="w-[46px] text-center font-mono text-[11px] text-ink-3 tabular-nums" data-testid="graph-zoom-level">
+              {{ zoomPercent }}%
+            </span>
+            <button
+              type="button"
+              class="w-8 h-8 rounded-[6px] flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+              aria-label="放大"
+              title="放大"
+              @click="zoomBy(ZOOM.buttonStep)"
+            >
+              <ZoomIn class="w-4 h-4" />
+            </button>
+            <span class="w-px h-5 bg-line mx-0.5"></span>
+            <button
+              type="button"
+              class="w-8 h-8 rounded-[6px] flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+              aria-label="适配全图"
+              title="适配全图（G 然后 F）"
+              @click="fitView"
+            >
+              <Maximize2 class="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              class="w-8 h-8 rounded-[6px] flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+              aria-label="重置布局"
+              title="重置布局"
+              @click="resetLayout"
+            >
+              <RotateCcw class="w-4 h-4" />
+            </button>
+          </div>
+
+          <!-- <640 底部折叠面板（计划硬性提醒 6：沿用既有实现，只做适配） -->
+          <div class="sm:hidden absolute inset-x-0 bottom-0 z-20">
+            <div class="rounded-t-[20px] border-t border-line bg-surface/95 backdrop-blur shadow-ds3">
+              <button
+                type="button"
+                class="w-full flex items-center gap-2 px-4 py-2.5 text-left"
+                data-testid="graph-panel-toggle"
+                :aria-expanded="mobilePanelOpen"
+                aria-label="图例与统计"
+                @click="mobilePanelOpen = !mobilePanelOpen"
+              >
+                <Network class="w-4 h-4 text-ink-3 shrink-0" />
+                <span class="flex-1 text-ds-sm font-medium text-ink">图例与统计</span>
+                <span class="font-mono text-[11px] text-ink-3 tabular-nums">{{ stats.nodeCount }} · {{ stats.edgeCount }} · {{ stats.isolatedCount }}</span>
+                <ChevronUp
+                  class="w-4 h-4 text-ink-3 transition-transform duration-base ease-dawn"
+                  :class="mobilePanelOpen ? 'rotate-180' : ''"
+                />
+              </button>
+              <div v-if="mobilePanelOpen" class="px-4 pb-4 max-h-[44vh] overflow-y-auto">
+                <h3 class="text-[12px] font-semibold text-ink-3 mb-2">图例</h3>
+                <ul class="space-y-1">
+                  <li v-for="d in domains" :key="d.name" class="flex items-center gap-2 text-[12px] text-ink-2">
+                    <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: d.color }"></span>
+                    <span class="flex-1 truncate">{{ d.name }}</span>
+                    <span class="font-mono text-ink-3 tabular-nums shrink-0">{{ d.count }}</span>
+                  </li>
+                  <li v-if="!domains.length" class="text-[12px] text-ink-3">暂无领域数据</li>
+                </ul>
+                <h3 class="text-[12px] font-semibold text-ink-3 mt-3 mb-2">统计</h3>
+                <dl class="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ stats.nodeCount }}</dd>
+                    <dt class="text-[11px] text-ink-3">节点</dt>
+                  </div>
+                  <div>
+                    <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ stats.edgeCount }}</dd>
+                    <dt class="text-[11px] text-ink-3">连接</dt>
+                  </div>
+                  <div>
+                    <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ stats.isolatedCount }}</dd>
+                    <dt class="text-[11px] text-ink-3">孤立</dt>
+                  </div>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= 右栏 ================= -->
+        <aside
+          v-show="rightVisible"
+          class="h-full shrink-0 border-l border-line bg-surface overflow-y-auto"
+          :class="threePane ? 'relative w-[288px] xl:w-[320px]' : 'absolute inset-x-0 bottom-0 z-40 max-h-[64vh] rounded-t-[20px] border-t shadow-ds3'"
+          data-testid="graph-right-panel"
+          aria-label="节点详情与图谱概览"
+        >
+          <NodeDetail
+            v-if="selectedNode"
+            :node="selectedNode"
+            :in-links="inLinks"
+            :out-links="outLinks"
+            @open="openNote"
+            @select="onSelect"
+            @locate="locateNode"
+            @focus-neighbors="focusNeighbors"
+            @only-domain="onOnlyDomain"
+            @tag="onTag"
+          />
+
+          <!-- 默认空态：图谱概览（统计 + 孤立清单） -->
+          <div v-else class="p-3 space-y-3">
+            <div class="rounded-ctl border border-line bg-surface-2 p-2.5" data-testid="graph-stats">
+              <h3 class="text-[12px] font-semibold text-ink-3 mb-2">图谱概览</h3>
+              <dl class="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ stats.nodeCount }}</dd>
+                  <dt class="text-[11px] text-ink-3">节点</dt>
+                </div>
+                <div>
+                  <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ stats.edgeCount }}</dd>
+                  <dt class="text-[11px] text-ink-3">连接</dt>
+                </div>
+                <div>
+                  <dd class="font-mono text-ds-base font-bold text-ink tabular-nums">{{ stats.isolatedCount }}</dd>
+                  <dt class="text-[11px] text-ink-3">孤立</dt>
+                </div>
+              </dl>
+              <dl class="mt-2 pt-2 border-t border-line grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[11px] text-ink-3 tabular-nums">
+                <div class="flex justify-between"><dt>显式链接</dt><dd class="text-ink-2">{{ stats.linkCount }}</dd></div>
+                <div class="flex justify-between"><dt>标签共有</dt><dd class="text-ink-2">{{ stats.tagEdgeCount }}</dd></div>
+                <div class="flex justify-between"><dt>领域</dt><dd class="text-ink-2">{{ stats.domainCount }}</dd></div>
+                <div class="flex justify-between"><dt>标签</dt><dd class="text-ink-2">{{ stats.tagCount }}</dd></div>
+              </dl>
+            </div>
+
+            <p class="text-[12px] text-ink-3 leading-relaxed">
+              单击节点查看详情，双击进入正文。按 <kbd class="font-mono">⌘K</kbd> 搜索，<kbd class="font-mono">G</kbd> 然后 <kbd class="font-mono">F</kbd> 适配全图。
+            </p>
+
+            <section>
+              <h3 class="text-[12px] font-semibold text-ink-3 mb-1.5">孤立笔记（{{ isolatedNodes.length }}）</h3>
+              <ul v-if="isolatedNodes.length" class="space-y-0.5">
+                <li v-for="n in isolatedNodes.slice(0, 12)" :key="n.id">
+                  <button
+                    type="button"
+                    class="w-full text-left h-7 px-2 rounded-[6px] text-[12px] text-ink-2 hover:text-ink hover:bg-surface-3 transition-colors duration-micro truncate"
+                    @click="locateNode(n.id)"
+                  >
+                    {{ n.title }}
+                  </button>
+                </li>
+              </ul>
+              <p v-else class="text-[12px] text-ink-3">没有孤立节点</p>
+              <p v-if="isolatedNodes.length > 12" class="mt-1 text-[11px] text-ink-3">
+                还有 {{ isolatedNodes.length - 12 }} 篇未列出
+              </p>
+            </section>
+          </div>
+        </aside>
+      </div>
+
+      <template #fallback>
+        <GraphSkeleton />
+      </template>
+    </ClientOnly>
   </div>
 </template>
+
+<script setup lang="ts">
+import {
+  AlertTriangle, ChevronUp, Maximize2, Minus, Network, Plus, RefreshCw,
+  RotateCcw, SlidersHorizontal, Sparkles, ZoomIn
+} from 'lucide-vue-next'
+import type { GraphEdge, LayoutName } from '~/lib/graph-types'
+import { LAYOUT_OPTIONS, MIN_THREE_PANE_WIDTH, ZOOM } from '~/lib/graph-constants'
+import { patchGraphState, readGraphState } from '~/lib/graphState'
+import { useGraphData } from '~/composables/useGraphData'
+import { useGraphFilter } from '~/composables/useGraphFilter'
+import { useConfirm } from '~/composables/useConfirm'
+import { useToast } from '~/composables/useToast'
+import { useViewport } from '~/composables/useViewport'
+import GraphView from '~/components/GraphView.vue'
+import type { GraphNodeProp } from '~/components/GraphView.vue'
+import GraphSkeleton from '~/components/graph/GraphSkeleton.vue'
+import FilterPanel from '~/components/graph/FilterPanel.vue'
+import NodeDetail from '~/components/graph/NodeDetail.vue'
+import GraphSearchPanel from '~/components/graph/GraphSearchPanel.vue'
+import Minimap from '~/components/graph/Minimap.vue'
+import AppSelect from '~/components/AppSelect.vue'
+
+const route = useRoute()
+const toast = useToast()
+const { confirm } = useConfirm()
+const { isDesktop, isPhone, drawerW } = useViewport()
+
+// 三区布局需**同时**满足：视口 ≥ BP.lg(1024)（计划书 T2.1）且容器足够宽。
+// 为什么还要看容器：外壳「导航栏 + 上下文侧边栏」吃掉约 384px，视口 1024 时
+// 图谱页可用宽度只剩 ~640px，若仍强上三区，画布只有百余像素，
+// 缩略图（164px）与缩放条会被 overflow-hidden 裁掉。
+// 初值 1440 = SSR/首帧按宽屏渲染，挂载后由 ResizeObserver 校正（与 useViewport 的约定一致）。
+const pageEl = ref<HTMLElement | null>(null)
+const pageWidth = ref(1440)
+const threePane = computed(() => isDesktop.value && pageWidth.value >= MIN_THREE_PANE_WIDTH)
+let pageObserver: ResizeObserver | null = null
+
+// graph 是普通对象（内部全是 ref），模板里必须解构出来才能自动解包。
+const graph = useGraphData()
+const {
+  nodes: allNodes,
+  edges: allEdges,
+  domains,
+  tags,
+  maturityBuckets,
+  stats,
+  nodeById,
+  incoming,
+  outgoing,
+  isolatedIds,
+  pending,
+  error: loadError,
+  refresh: refreshGraph,
+  degreeOf,
+  neighborsOf
+} = graph
+
+const selectedId = ref<string | null>(null)
+const filter = useGraphFilter(graph, selectedId)
+const {
+  state: filterState,
+  edgeKindHint,
+  visibleNodes,
+  visibleEdges,
+  isEmpty,
+  conflictHint,
+  conflictShortcut,
+  pathNodeIds,
+  pickingPath,
+  onlyDomain,
+  clearAll
+} = filter
+
+// ---------- 视图状态 ----------
+interface MinimapSnapshot {
+  nodes: { id: string; x: number; y: number; r: number; degree: number }[]
+  canvas: { w: number; h: number }
+  view: { x: number; y: number; k: number }
+}
+interface RenderStatus {
+  fps: number
+  firstPaintMs: number
+  nodeCount: number
+  edgeCount: number
+  drawnCount: number
+  tier: 'svg' | 'canvas'
+  converged: boolean
+  zoomK: number
+}
+/** GraphView / GraphSearchPanel 通过 defineExpose 暴露的方法（只列本页用到的） */
+interface GraphViewApi {
+  resetLayout: () => void
+  togglePhysics: () => void
+  zoomBy: (factor: number) => void
+  fitView: () => void
+  focusNode: (key: string) => boolean
+  centerOn: (gx: number, gy: number) => void
+  zoomTo: (k: number) => void
+  minimap: () => MinimapSnapshot
+  renderStatus: () => RenderStatus
+}
+interface SearchPanelApi {
+  focus: () => void
+  close: () => void
+}
+
+const graphRef = ref<GraphViewApi | null>(null)
+const searchRef = ref<SearchPanelApi | null>(null)
+
+const physicsActive = ref(true)
+const layout = ref<LayoutName>('force')
+const layoutOptions = LAYOUT_OPTIONS.map(o => ({ value: o.value, label: o.label }))
+const layoutHint = computed(() => LAYOUT_OPTIONS.find(o => o.value === layout.value)?.hint ?? '')
+const layoutModel = computed({
+  get: () => layout.value,
+  set: (v: string) => { layout.value = v as LayoutName }
+})
+
+const leftOpen = ref(false)
+const rightOpen = ref(false)
+const mobilePanelOpen = ref(false)
+const leftVisible = computed(() => threePane.value || leftOpen.value)
+const rightVisible = computed(() => threePane.value || rightOpen.value)
+
+function closeOverlays() {
+  leftOpen.value = false
+  rightOpen.value = false
+}
+
+// ---------- 渲染状态（A12 常驻可见） ----------
+const renderStatus = ref<RenderStatus>({
+  fps: 0, firstPaintMs: 0, nodeCount: 0, edgeCount: 0, drawnCount: 0, tier: 'svg', converged: false, zoomK: 1
+})
+const zoomPercent = computed(() => Math.round((renderStatus.value.zoomK || 1) * 100))
+
+const minimap = ref<MinimapSnapshot>({ nodes: [], canvas: { w: 800, h: 500 }, view: { x: 0, y: 0, k: 1 } })
+
+let statusTimer: ReturnType<typeof setInterval> | null = null
+function syncStatus() {
+  const api = graphRef.value
+  if (!api) return
+  renderStatus.value = api.renderStatus()
+  minimap.value = api.minimap()
+}
+
+// ---------- 派生 ----------
+const viewNodes = computed<GraphNodeProp[]>(() =>
+  visibleNodes.value.map(n => ({ ...n, degree: degreeOf(n.id), isolated: isolatedIds.value.has(n.id) }))
+)
+const viewEdges = computed<GraphEdge[]>(() => visibleEdges.value)
+
+const loading = computed(() => pending.value && allNodes.value.length === 0)
+const graphIsEmpty = computed(() => !pending.value && !loadError.value && allNodes.value.length === 0)
+const errorText = computed(() => {
+  const e: any = loadError.value
+  const status = e?.statusCode || e?.status
+  if (status === 401 || status === 403) return '当前账号没有查看图谱的权限，请重新登录后再试。'
+  if (status === 500) return '服务端解析图谱数据失败，稍后重试；若持续失败请检查 vault 文件。'
+  return e?.data?.message || e?.message || '网络请求失败，请检查网络或本地服务是否在运行。'
+})
+
+const selectedNode = computed<GraphNodeProp | null>(() => {
+  const id = selectedId.value
+  if (!id) return null
+  return nodeById.value.get(id) ?? null
+})
+
+function resolveNodes(ids: string[] | undefined): GraphNodeProp[] {
+  const out: GraphNodeProp[] = []
+  if (!ids) return out
+  for (const id of ids) {
+    const n = nodeById.value.get(id)
+    if (n) out.push(n)
+  }
+  return out
+}
+const inLinks = computed(() => resolveNodes(incoming.value.get(selectedId.value || '')))
+const outLinks = computed(() => resolveNodes(outgoing.value.get(selectedId.value || '')))
+const isolatedNodes = computed<GraphNodeProp[]>(() => resolveNodes([...isolatedIds.value]))
+
+/** 「聚焦邻居」/ 路径模式共用的高亮集合 */
+const focusIds = ref<string[] | null>(null)
+const activeFocusIds = computed<string[] | null>(() => {
+  if (filterState.scope === 'path') {
+    const ids = pathNodeIds.value
+    return ids && ids.length ? ids : null
+  }
+  return focusIds.value
+})
+
+// ---------- 交互 ----------
+function onSelect(id: string | null) {
+  selectedId.value = id
+  if (!id) focusIds.value = null
+}
+
+function openNote(slug: string) {
+  navigateTo(`/notes/${slug.split('/').map(encodeURIComponent).join('/')}`)
+}
+
+function onPick(id: string) {
+  filter.setPathPoint(id)
+}
+
+function onSearchSelect(id: string) {
+  selectedId.value = id
+  focusIds.value = null
+  nextTick(() => graphRef.value?.focusNode(id))
+}
+
+function onOnlyDomain(name: string) {
+  onlyDomain(name)
+  closeOverlays()
+}
+
+function onTag(name: string) {
+  filter.toggleTag(name)
+  closeOverlays()
+}
+
+function locateNode(id: string) {
+  selectedId.value = id
+  nextTick(() => graphRef.value?.focusNode(id))
+}
+
+function focusNeighbors(id: string) {
+  const set = neighborsOf(id, 2)
+  focusIds.value = [...set]
+  selectedId.value = id
+  toast.success(`已聚焦 ${focusIds.value.length} 个 2 跳邻居`)
+}
+
+function onCommand(name: 'sort-degree' | 'find-path' | 'new-note') {
+  if (name === 'sort-degree') {
+    const top = [...allNodes.value].sort((a, b) => degreeOf(b.id) - degreeOf(a.id))[0]
+    if (!top) return
+    selectedId.value = top.id
+    focusIds.value = null
+    nextTick(() => graphRef.value?.focusNode(top.id))
+    toast.success(`已定位度数最高的节点「${top.title}」`)
+    return
+  }
+  if (name === 'find-path') {
+    filter.setScope('path')
+    filter.clearPath()
+    toast.success('选点模式：依次点两个节点查找最短路径')
+    return
+  }
+  // new-note：把请求投给外壳布局，创建成功后回到 /graph?focus=<slug>
+  createNoteRequest.value = 'graph'
+}
+
+// ---------- 缩放 / 布局 ----------
+function zoomBy(factor: number) { graphRef.value?.zoomBy(factor) }
+function fitView() { graphRef.value?.fitView() }
+function resetLayout() {
+  graphRef.value?.resetLayout()
+  toast.success('布局已重置')
+}
+function togglePhysics() { graphRef.value?.togglePhysics() }
+function onMinimapCenter(gx: number, gy: number) { graphRef.value?.centerOn(gx, gy) }
+function onMinimapZoom(k: number) { graphRef.value?.zoomTo(k) }
+
+// ---------- 断开全部关系（T4.2 Delete，二次确认） ----------
+async function unlinkSelected() {
+  const node = selectedNode.value
+  if (!node) return
+  if (!node.outDegree) {
+    toast.warn('这篇笔记没有出链，无需断开')
+    return
+  }
+  const ok = await confirm({
+    title: '断开全部关系',
+    message: `将移除「${node.title}」正文中的全部 [[双向链接]] 语法，正文文字保留。`,
+    detail: node.slug,
+    confirmText: '断开',
+    danger: true
+  })
+  if (!ok) return
+  const path = node.slug.split('/').map(encodeURIComponent).join('/')
+  try {
+    const note = await $fetch<{ content?: string }>(`/api/notes/${path}`)
+    const content = note?.content || ''
+    const next = content.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target: string, alias?: string) => (alias || target).trim())
+    if (next === content) {
+      toast.warn('正文中没有可断开的链接')
+      return
+    }
+    await $fetch(`/api/vault/notes/${path}`, { method: 'PUT', body: { content: next } })
+    await refreshGraph()
+    toast.success('已断开全部关系')
+  } catch (e: any) {
+    toast.error(e?.data?.message || '断开失败')
+  }
+}
+
+// ---------- 真空态：导入 3 篇 MOC 模板 ----------
+const MOC_TEMPLATES = [
+  {
+    title: 'MOC · 知识地图',
+    body: [
+      '# MOC · 知识地图',
+      '',
+      '这片花园的总入口，从下面两张地图开始：',
+      '',
+      '- [[MOC · 阅读清单]]',
+      '- [[MOC · 项目索引]]',
+      '',
+      '> 由图谱空状态一键导入，可以自由改写或删除。'
+    ].join('\n')
+  },
+  {
+    title: 'MOC · 阅读清单',
+    body: [
+      '# MOC · 阅读清单',
+      '',
+      '在读与读完的书、文章：',
+      '',
+      '- [[MOC · 知识地图]]',
+      '',
+      '## 待读',
+      '',
+      '- '
+    ].join('\n')
+  },
+  {
+    title: 'MOC · 项目索引',
+    body: [
+      '# MOC · 项目索引',
+      '',
+      '进行中的项目与复盘：',
+      '',
+      '- [[MOC · 知识地图]]',
+      '- [[MOC · 阅读清单]]'
+    ].join('\n')
+  }
+]
+const importingMoc = ref(false)
+
+async function importMocTemplates() {
+  importingMoc.value = true
+  try {
+    for (const t of MOC_TEMPLATES) {
+      const { slug } = await $fetch<{ slug: string }>('/api/vault/notes', {
+        method: 'POST',
+        body: { path: '', title: t.title }
+      })
+      const path = slug.split('/').map(encodeURIComponent).join('/')
+      await $fetch(`/api/vault/notes/${path}`, { method: 'PUT', body: { content: t.body } })
+    }
+    await refreshNuxtData('vault-tree')
+    // 等 watcher 把新文件同步进库，再拉一次图谱
+    await new Promise(r => setTimeout(r, 900))
+    await refreshGraph()
+    toast.success('已导入 3 篇 MOC 模板')
+  } catch (e: any) {
+    toast.error(e?.data?.message || '导入失败')
+  } finally {
+    importingMoc.value = false
+  }
+}
+
+// ---------- 加载 / 重试 ----------
+async function retryLoad() {
+  await refreshGraph()
+}
+
+// ---------- ?focus=<slug>（新建笔记后回到图谱定位） ----------
+function applyFocusQuery() {
+  const q = route.query.focus
+  if (typeof q !== 'string' || !q) return
+  const n = graph.nodeBySlug.value.get(q)
+  if (!n) return
+  selectedId.value = n.id
+  focusIds.value = null
+  nextTick(() => graphRef.value?.focusNode(n.id))
+}
+watch(() => route.query.focus, () => applyFocusQuery())
+watch(allNodes, (list) => { if (list.length) applyFocusQuery() })
+
+// ---------- 键盘快捷键（T4.2） ----------
+const commandOpen = useState('shell-command-open', () => false)
+const createNoteRequest = useState<'note' | 'graph' | null>('shell-create-note', () => null)
+let gPressedAt = 0
+
+function isTypingTarget(t: EventTarget | null) {
+  const el = t as HTMLElement | null
+  if (!el || !el.tagName) return false
+  const tag = el.tagName.toLowerCase()
+  return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable === true
+}
+
+function onWindowKeydown(e: KeyboardEvent) {
+  const mod = e.metaKey || e.ctrlKey
+  const key = e.key.toLowerCase()
+  // 不受输入焦点限制的两条
+  if (mod && key === 'f') { e.preventDefault(); searchRef.value?.focus(); return }
+  if (mod && key === 'l') { e.preventDefault(); togglePhysics(); return }
+  if (isTypingTarget(e.target)) return
+
+  if (e.key === 'Escape') {
+    if (leftOpen.value || rightOpen.value) { e.preventDefault(); closeOverlays(); return }
+    if (mobilePanelOpen.value) { e.preventDefault(); mobilePanelOpen.value = false; return }
+    if (focusIds.value) { e.preventDefault(); focusIds.value = null }
+    return
+  }
+  if (e.key === '/') { e.preventDefault(); commandOpen.value = true; return }
+  if (e.key === 'Delete' && selectedId.value) { e.preventDefault(); unlinkSelected(); return }
+  if (key === 'g' && !mod) { gPressedAt = Date.now(); return }
+  if (key === 'f' && !mod && Date.now() - gPressedAt < 1200) {
+    e.preventDefault()
+    gPressedAt = 0
+    fitView()
+  }
+}
+
+onMounted(() => {
+  const saved = readGraphState().layout
+  if (saved) layout.value = saved
+  statusTimer = setInterval(syncStatus, 700)
+  window.addEventListener('keydown', onWindowKeydown)
+
+  if (pageEl.value && typeof ResizeObserver !== 'undefined') {
+    pageObserver = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width
+      if (typeof w === 'number') pageWidth.value = w
+    })
+    pageObserver.observe(pageEl.value)
+  }
+})
+onBeforeUnmount(() => {
+  if (statusTimer) clearInterval(statusTimer)
+  window.removeEventListener('keydown', onWindowKeydown)
+  pageObserver?.disconnect()
+  pageObserver = null
+})
+watch(layout, (v) => patchGraphState({ layout: v }))
+watch(selectedId, (v) => { if (!v) focusIds.value = null })
+</script>
