@@ -37,15 +37,18 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v1.4.0` | `f41e416de9b6` | 图谱：控制面板批量上色（按路径/名称/正文圈选）、自定义颜色按用户同步（**当前**） |
+| `latest` / `v1.5.0` | `45d7d52720d4` | 图谱：拖拽与布局持久化修复、固定只由右键触发、上色改成可排序的颜色规则系统（**当前**） |
+| `v1.4.0` | `f41e416de9b6` | 图谱：控制面板批量上色（按路径/名称/正文圈选）、自定义颜色按用户同步 |
 | `v1.3.0` | `b8a194bd4f43` | 图谱：缩略图重绘并着色、连线加深、节点自定义颜色、左栏可收起、右键菜单 |
 | `v1.2.0` | `ec68377534dd` | 图谱：MOC 标签策略、聚焦斥力、控制面板、页面标题 |
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar`、`/opt/garden-image-v1.3.0.tar`、`/opt/garden-image-v1.4.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar`、`/opt/garden-image-v1.3.0.tar`、`/opt/garden-image-v1.4.0.tar`、`/opt/garden-image-v1.5.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
+
+> **v1.5.0 又加了一张表**：`GraphColorRules`（迁移 `20261015000000_graph_color_rules`，单行 jsonb 存有序规则数组）。同样是纯新增，升降级语义与 `GraphColor` 一致——回滚到 v1.4.0 时表保留、旧代码不读，用户已配好的规则不会丢。
 
 ---
 
