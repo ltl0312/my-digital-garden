@@ -41,12 +41,25 @@ my-digital-garden/
 │   ├── assets/css/main.css     # Tailwind + Lumina 设计语言 + 护眼 CSS 变量
 │   ├── components/
 │   │   ├── ArticleReader.vue   # 沉浸式阅读器（进度条/TOC/backlinks）
-│   │   ├── GraphView.vue       # d3 力导向图谱（拖拽固定/状态持久化）
+│   │   ├── GraphView.vue       # d3 图谱画布（SVG/Canvas 分级、四布局、拖拽固定、状态持久化）
+│   │   ├── graph/              # 图谱专用组件
+│   │   │   ├── FilterPanel.vue     # 左栏筛选（可见范围/领域/成熟度/标签/关系类型/显示）
+│   │   │   ├── NodeDetail.vue      # 右栏节点详情（入链/出链/在图中定位/聚焦邻居）
+│   │   │   ├── GraphSearchPanel.vue# 画布内搜索（笔记/标签/领域/命令 四组）
+│   │   │   ├── Minimap.vue         # 缩略图（可拖拽平移/滚轮缩放）
+│   │   │   └── GraphSkeleton.vue   # 加载骨架屏（SSR 安全的伪随机点阵）
 │   │   ├── FileTree.vue        # 递归文件树（含目录内新建笔记）
 │   │   └── CommandPalette.vue  # ⌘K 命令面板（全局搜索跳转）
 │   ├── composables/
 │   │   ├── useAuth.ts          # 认证状态（useAsyncData('auth-me') + isAdmin）
+│   │   ├── useGraphData.ts     # 图谱数据派生（度数/邻接/入出链/领域/标签/最短路径）
+│   │   ├── useGraphFilter.ts   # 图谱筛选状态（范围/领域/成熟度/标签/关系类型）
 │   │   └── useTheme.ts         # 暗黑主题切换（localStorage + 双 rAF 过渡）
+│   ├── lib/                    # 图谱纯逻辑与常量（无 Vue 依赖）
+│   │   ├── graph-types.ts      # GraphNode/GraphEdge/GraphFilterState 等类型
+│   │   ├── graph-constants.ts  # RENDER_TIERS/缩放/边样式/布局选项等集中常量
+│   │   ├── graphLayouts.ts     # 四种布局纯函数 computeLayout()
+│   │   └── graphState.ts       # localStorage 状态读写（字段级合并）
 │   ├── layouts/
 │   │   ├── default.vue         # 主布局：顶栏 + 可拖侧边栏 + 内容区 + ⌘K
 │   │   └── auth.vue            # 登录页布局（居中卡片）
@@ -55,7 +68,7 @@ my-digital-garden/
 │       ├── index.vue           # 首页「最近更新」（pageSize=8）
 │       ├── notes/index.vue     # 笔记列表（分页/搜索/标签筛选）
 │       ├── notes/[...slug].vue # 笔记阅读 + 管理员在线编辑/删除
-│       ├── graph.vue           # 知识图谱页（设置面板/图例/物理开关）
+│       ├── graph.vue           # 知识图谱页（三区布局：筛选栏 / 画布 / 详情栏）
 │       ├── login.vue           # 密钥登录
 │       └── admin.vue           # 管理后台（生成/禁用/删除访问密钥）
 ├── server/                     # Nitro 后端
@@ -137,7 +150,7 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 |---|---|---|
 | GET `/api/notes` | 登录 | 分页（page/pageSize≤100）+ 标题/正文模糊搜索 + 标签筛选；返回 notes/total/totalPages |
 | GET `/api/notes/[...slug]` | 登录 | 单篇详情（含 tags、incoming backlinks）；未发布 404 |
-| GET `/api/notes/graph` | 登录 | 全站图谱：nodes（id/title/slug/maturity/primaryTag）+ edges |
+| GET `/api/notes/graph` | 登录 | 全站图谱：nodes（id/title/slug/maturity/primaryTag/tags/domain/dirPath/inDegree/outDegree/updatedAt/readingTime/summary）+ edges（source/target/kind: link\|tag）；进程内缓存 60s |
 | GET `/api/tags` | 登录 | 标签及计数（按使用量降序） |
 | POST `/api/auth/verify` | 公开 | 密钥登录，签发 30 天 httpOnly cookie |
 | GET `/api/auth/me` | 公开 | 当前身份（role/label），未登录返回 null |
@@ -167,7 +180,7 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 
 - **首页**：最近 8 篇 + maturity 徽章（🌱 琥珀 SEEDLING / 🌿 天蓝 GROWING / 🌳 翠绿 EVERGREEN）。
 - **阅读器**：滚动进度条、面包屑、TOC（正则提取 h2/h3 + scrollIntoView）、阅读时长估算（字数/400）、标签可点击筛选、backlinks 玻璃卡片网格。
-- **图谱**：d3 forceSimulation（link 120 / charge -300 / collide 40）；**拖拽后节点固定**（Obsidian 行为）；位置 + 缩放持久化到 localStorage（`garden-graph-state`）；按成熟度/标签着色（`garden-graph-settings`，标签色板 8 色自动分配）；大小按度数或固定；物理开关；重置布局；点击节点跳转笔记。
+- **图谱**：三区布局（左筛选栏 240/272 · 中画布 flex · 右详情栏 288/320；<1024 左栏改抽屉、右栏改底部弹层；<640 保留底部「图例与统计」折叠面板）。d3 forceSimulation（link 120 / charge -320 / collide r+10 / alphaDecay 0.032 / velocityDecay 0.42）；**渲染分级** `RENDER_TIERS`（≤150 SVG / >150 Canvas / >600 只画度数 Top 200，devicePixelRatio 适配）；**四种布局**（力导向/层次树/径向/时间轴，切换 400ms 补间，`computeLayout()` 纯函数在 `app/lib/graphLayouts.ts`）；**单击选中**（右栏详情）、**双击进正文**、拖拽后固定（Obsidian 行为，钉标 + 「双击解除」提示）；可见范围三选一（全图 / 2 跳邻居 / 最短路径）；领域·成熟度·标签多选 + 关系类型开关（显式链接 / 标签共有，至少保留一种）；hover 信息卡 + 邻域高亮（邻域内 2.5px 描边、邻域外 0.12 不透明度、邻域内连线 2.4px）；缩略图（可拖拽平移 / 滚轮缩放）；四态互不复用（骨架屏 / 筛选空态 / 图谱真空态 / 错误态）；快捷键 ⌘K 搜索、⌘F 聚焦搜索、⌘L 锁物理、`G` then `F` 适配全图、`/` 命令面板、`Delete` 断开关系、Esc 逐层退出。位置 + 缩放 + 固定 + 布局 + 筛选持久化到 localStorage（`garden-graph-state`；设置 `garden-graph-settings-v3`）。
 - **侧边栏**：可拖宽度（240–480px，localStorage `garden-sidebar-width`，pointerdown 记录 dragOffset 消除居中偏移）；始终挂载 + 宽度过渡实现丝滑收起；文件树（递归、目录计数、过滤）；标签云（前 20）；Vault Synced 状态栏；管理员可新建笔记。
 - **命令面板**：⌘K/⌃K 全局唤起，输入即搜（pageSize=8），Enter 直达首条。
 - **主题**：`useTheme`（localStorage 'theme' + prefers-color-scheme 兜底）；nuxt.config 内联脚本 FOUC 防护；`theme-switching` 类 + 双 rAF 统一 0.2s 过渡。
@@ -266,5 +279,7 @@ https://liutianle.cn
 
 - vault 双向同步（Obsidian ↔ 服务器，如 Syncthing，受内存限制）
 - 密钥哈希存储升级
-- 图谱 >500 节点时改 Canvas 渲染
+- 图谱搜索覆盖正文全文（当前仅前端本地过滤 title/tags/dirPath/summary；要做须后端 `tsvector` 或 Meilisearch，**不得前端全文扫描**）
 - www 子域名证书、内存监控告警
+
+> 注：「图谱 >500 节点时改 Canvas 渲染」已于知识图谱重构中落地（`RENDER_TIERS`：>150 Canvas、>600 只画 Top 200）。

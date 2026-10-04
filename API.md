@@ -225,22 +225,44 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 | 项 | 说明 |
 |---|---|
 | 权限 | 登录 |
+| 缓存 | 进程内 60s（`createCache(60_000)`），写库后由 `invalidateGardenCache()` 失效 |
 
 **成功响应 `200`**
 
 ```json
 {
   "nodes": [
-    { "id": "uuid", "title": "…", "slug": "…", "maturity": "SEEDLING", "primaryTag": "前端" }
+    {
+      "id": "uuid",
+      "title": "…",
+      "slug": "KnowledgeBase/03_Knowledge/…",
+      "maturity": "SEEDLING",
+      "primaryTag": "前端",
+      "tags": ["前端", "Vue"],
+      "domain": "前端",
+      "dirPath": "KnowledgeBase / 03_Knowledge / 前端",
+      "inDegree": 3,
+      "outDegree": 7,
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "readingTime": 6,
+      "summary": "…"
+    }
   ],
   "edges": [
-    { "source": "源笔记id", "target": "目标笔记id" }
+    { "source": "源笔记id", "target": "目标笔记id", "kind": "link" },
+    { "source": "源笔记id", "target": "目标笔记id", "kind": "tag" }
   ]
 }
 ```
 
 - 仅含已发布笔记；`primaryTag` 为笔记第一个标签（可能为 `null`）
-- 边为有向（WikiLink 方向），供 d3 力导向图渲染
+- `domain` / `dirPath` 由 `shared/graph-domain.ts` 的 `domainOfSlug()` 派生（`/^\d{2}_Knowledge$/i` 段的下一级目录即领域），未知领域统一归为 `"其他"`
+- `edges[].kind` 有两种：
+  - `link`：显式 WikiLink（有向，方向即链接书写方向）
+  - `tag`：**标签共有**（无向，同标签且**无显式链接**的两篇笔记之间补一条）
+- `inDegree` / `outDegree` **只统计 `kind: "link"`**，不含标签共有边
+- 标签共有边按标签分组两两相连，**同标签组节点数 > `MAX_TAG_GROUP_SIZE`(40) 时整组跳过**，避免泛用标签产生 O(n²) 边拖垮首帧
+- 前端按 `RENDER_TIERS`（`app/lib/graph-constants.ts`）分级渲染：≤150 节点走 SVG，>150 走 Canvas，>600 只绘制度数 Top 200
 
 ---
 
