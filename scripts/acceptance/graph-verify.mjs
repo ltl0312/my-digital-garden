@@ -37,6 +37,29 @@ page.on('console', (m) => {
 })
 await page.setViewport({ width: 1440, height: 900 })
 
+// ---------- Canvas 绘制探针 ----------
+// 主画布的分级渲染不走 DOM，无法用选择器断言「连线到底画了没有」。
+// 这里劫持 stroke/fill，按 (strokeStyle, alpha, lineWidth, lineDash) 计数，
+// 每次导航都会重置 window.__draw —— 读之前必须重新 goto 并等首帧。
+await page.evaluateOnNewDocument(() => {
+  const D = { stroke: {}, fill: {}, strokeTotal: 0, fillTotal: 0 }
+  window.__draw = D
+  const PS = CanvasRenderingContext2D.prototype
+  const os = PS.stroke, of = PS.fill
+  PS.stroke = function (...a) {
+    const key = `${this.strokeStyle}|a=${this.globalAlpha}|w=${Number(this.lineWidth).toFixed(2)}|dash=${this.getLineDash().join(',')}`
+    D.stroke[key] = (D.stroke[key] || 0) + 1
+    D.strokeTotal++
+    return os.apply(this, a)
+  }
+  PS.fill = function (...a) {
+    const key = `${this.fillStyle}|a=${this.globalAlpha}`
+    D.fill[key] = (D.fill[key] || 0) + 1
+    D.fillTotal++
+    return of.apply(this, a)
+  }
+})
+
 // ---------- 登录 ----------
 await page.goto(BASE + '/login', { waitUntil: 'networkidle2', timeout: 90000 })
 await page.waitForSelector('input[type="password"]', { timeout: 60000 })
@@ -123,7 +146,26 @@ log('G08 FPS 打点格式正确', !!perf && /^\d+ FPS$/.test(perf.fps), perf?.fp
 log('G09 分级标签存在（SVG/Canvas）', !!perf && /(SVG|Canvas)/.test(perf.text), perf?.text)
 log('G10 首帧耗时已打点', !!perf && /首帧 \d+ms/.test(perf.text))
 
+/**
+ * 等力导向收敛：连续两次采样（间隔 400ms）的节点屏幕坐标几乎不动。
+ * G11–G13 拿的是坐标快照，收敛前节点一直漂移，双击就会打在空白处（真实发生过的 flake）。
+ */
+const waitGraphStable = async (maxMs = 12000) => {
+  const snap = () => page.evaluate(() => Array.from(document.querySelectorAll('g.gnode'))
+    .map((g) => { const r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2] }))
+  let prev = await snap()
+  for (let t = 0; t < maxMs; t += 400) {
+    await sleep(400)
+    const cur = await snap()
+    if (cur.length === prev.length && cur.length > 0
+      && cur.every((p, i) => Math.abs(p[0] - prev[i][0]) < 1.5 && Math.abs(p[1] - prev[i][1]) < 1.5)) return true
+    prev = cur
+  }
+  return false
+}
+
 // ================= A1/A2 交互语义 =================
+await waitGraphStable()
 const hits = await nodeHits()
 log('G11 SVG 命中层已就绪', hits.length > 50, `hits=${hits.length}`)
 
@@ -146,6 +188,24 @@ log('G12 单击节点 → 右栏节点详情', detailShown, picked ? picked.titl
 // 双击 = 进正文
 let navigated = ''
 if (picked) {
+  // 力导向收敛前节点会一直漂移，而 picked 的坐标是几秒前取的快照。
+  // 先把「按标题定位到当前坐标 + 该点确实落在节点命中圈里」做踏实，再发双击。
+  for (let i = 0; i < 8; i++) {
+    const hit = await page.evaluate((title) => {
+      const g = Array.from(document.querySelectorAll('g.gnode'))
+        .find(el => el.__data__ && el.__data__.title === title)
+      if (!g) return null
+      const r = g.getBoundingClientRect()
+      const x = r.left + r.width / 2
+      const y = r.top + r.height / 2
+      const el = document.elementFromPoint(x, y)
+      const onNode = !!(el && el.closest && el.closest('g.gnode'))
+      return { x, y, onNode }
+    }, picked.title)
+    if (hit && hit.onNode) { picked = { ...picked, x: hit.x, y: hit.y }; break }
+    if (hit) picked = { ...picked, x: hit.x, y: hit.y }
+    await sleep(450)
+  }
   // 双击必须走「规范 CDP 序列」：move → down/up(clickCount:1) → down/up(clickCount:2)。
   // page.mouse.click(x, y, { clickCount: 2 }) 只发一次 press/release，Chrome 不会派发 dblclick；
   // 两次普通 click() 的 detail 都是 1，也不会派发。只有第二次 press/release 带 clickCount:2 才行。
@@ -623,10 +683,78 @@ const contrast = (a, b) => {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
 }
 const linkContrast = contrast(edgeTokens.link, edgeTokens.canvas)
+const tagContrast = contrast(edgeTokens.tag, edgeTokens.canvas)
 const lineContrast = contrast(edgeTokens.line, edgeTokens.canvas)
-log('G62 连线颜色对比度高于旧值（肉眼可见）',
-  Number.isFinite(linkContrast) && linkContrast > 1.8 && linkContrast > lineContrast * 1.5,
-  `--edge-link=${edgeTokens.link} 对比 ${linkContrast.toFixed(2)} vs --line 对比 ${lineContrast.toFixed(2)}`)
+log('G62 连线颜色对比度足够（肉眼可见）',
+  Number.isFinite(linkContrast) && linkContrast >= 3 && tagContrast >= 2.5 && linkContrast > lineContrast * 1.5,
+  `--edge-link=${edgeTokens.link} 对比 ${linkContrast.toFixed(2)} · --edge-tag=${edgeTokens.tag} 对比 ${tagContrast.toFixed(2)} · --line 对比 ${lineContrast.toFixed(2)}`)
+
+// ---- 主画布连线：Canvas 分级下不看 DOM，直接看绘制调用与像素 ----
+// 回归背景（需求 m04206）：d3 的 forceLink 会把 linkData 的 source/target 就地改成节点对象，
+// 而 drawCanvas 当年写的是 nodeMap.get(l.source) → 每条边都被 continue 掉，
+// 525 节点走 Canvas 分级时**一条连线都画不出来**，缩略图（读未改写的 props.edges）却有线，
+// 于是「缩略图有线、主画布没线」这个错误状态被 G61 的缩略图断言放过去了。
+const drawStats = await page.evaluate(() => {
+  const d = window.__draw || { stroke: {}, fill: {}, strokeTotal: 0, fillTotal: 0 }
+  const canon = (s) => {
+    const t = String(s || '').trim().toLowerCase()
+    let m = /^#([0-9a-f]{6})$/.exec(t); if (m) return m[1]
+    m = /^#([0-9a-f]{3})$/.exec(t); if (m) return m[1].split('').map(c => c + c).join('')
+    m = /^rgba?\(([^)]+)\)$/.exec(t)
+    if (m) {
+      const p = m[1].split(/[,\s/]+/).filter(Boolean).map(Number)
+      return p.slice(0, 3).map(n => Math.round(n).toString(16).padStart(2, '0')).join('')
+    }
+    return t
+  }
+  const cs = getComputedStyle(document.documentElement)
+  const link = canon(cs.getPropertyValue('--edge-link'))
+  const tag = canon(cs.getPropertyValue('--edge-tag'))
+  let linkStrokes = 0, tagStrokes = 0, other = 0
+  for (const [k, n] of Object.entries(d.stroke)) {
+    const style = canon(String(k).split('|')[0])
+    if (style === link) linkStrokes += n
+    else if (style === tag) tagStrokes += n
+    else other += n
+  }
+  return { linkStrokes, tagStrokes, other, strokeTotal: d.strokeTotal, fillTotal: d.fillTotal, link, tag, kinds: Object.keys(d.stroke).length }
+})
+log('G62a 主画布真的描了连线（不是只画节点）',
+  drawStats.linkStrokes >= 50 && drawStats.tagStrokes >= 50,
+  `显式链接描边 ${drawStats.linkStrokes} 次 · 标签共有描边 ${drawStats.tagStrokes} 次 · 其他描边 ${drawStats.other} 次 · 共 ${drawStats.strokeTotal} 次`)
+const edgePixels = await page.evaluate(() => {
+  const cvs = document.querySelector('canvas')
+  if (!cvs) return null
+  const w = cvs.width, h = cvs.height
+  const data = cvs.getContext('2d').getImageData(0, 0, w, h).data
+  const cs = getComputedStyle(document.documentElement)
+  const parse = (s) => {
+    const t = String(s || '').trim().toLowerCase()
+    let m = /^#([0-9a-f]{6})$/.exec(t)
+    if (m) { const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255] }
+    m = /^rgba?\(([^)]+)\)$/.exec(t)
+    if (m) { const p = m[1].split(/[,\s/]+/).filter(Boolean).map(Number); return [p[0] | 0, p[1] | 0, p[2] | 0] }
+    return null
+  }
+  const bg = parse(cs.getPropertyValue('--canvas'))
+  const link = parse(cs.getPropertyValue('--edge-link'))
+  const tag = parse(cs.getPropertyValue('--edge-tag'))
+  if (!bg || !link || !tag) return null
+  const over = (fg, a) => fg.map((c, i) => Math.round(c * a + bg[i] * (1 - a)))
+  const near = (px, ref, tol) => Math.abs(px[0] - ref[0]) <= tol && Math.abs(px[1] - ref[1]) <= tol && Math.abs(px[2] - ref[2]) <= tol
+  const targets = [0.9, 1, 0.7, 0.5].flatMap(a => [over(link, a), over(tag, a)])
+  let inked = 0, edge = 0
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 8) continue
+    inked++
+    const px = [data[i], data[i + 1], data[i + 2]]
+    if (targets.some(t => near(px, t, 12))) edge++
+  }
+  return { inked, edge, ratio: inked ? edge / inked : 0, w, h }
+})
+log('G62b 连线像素占已着色面积的比例达标（像素级证据）',
+  !!edgePixels && edgePixels.edge >= 2000 && edgePixels.ratio >= 0.05,
+  edgePixels ? `连线像素 ${edgePixels.edge} / 已着色 ${edgePixels.inked} = ${(edgePixels.ratio * 100).toFixed(1)}%（画布 ${edgePixels.w}×${edgePixels.h}）` : 'n/a')
 
 const canvasBox = await page.evaluate(() => {
   const el = document.querySelector('[data-testid="graph-canvas"]')

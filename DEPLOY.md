@@ -192,7 +192,7 @@ docker exec garden-app sh -c "grep -rl graph-minimap /app/.output/public/_nuxt/"
 ```bash
 # Windows PowerShell
 $env:GARDEN_BASE='https://liutianle.cn'
-pnpm acceptance:graph     # 图谱重构 118 项，配色部分会自动快照并还原
+pnpm acceptance:graph     # 图谱重构 120 项，配色部分会自动快照并还原
 pnpm acceptance:shell     # 外壳 47 项，只开对话框不提交
 pnpm acceptance:ui        # UI 51 项，只开对话框不提交
 ```

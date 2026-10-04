@@ -154,8 +154,13 @@ interface VNode {
 }
 
 interface VLink {
-  source: string
-  target: string
+  /**
+   * **注意：d3 的 forceLink 会把这两个字段就地替换成节点对象**
+   * （`linkForce.links(linkData)` → `initialize()` 内部改写 source/target）。
+   * 所以拿到 linkData 之后两端都可能是 id 字符串或 VNode，一律用 `linkEndpoint()` 归一化。
+   */
+  source: string | VNode
+  target: string | VNode
   kind: string
 }
 
@@ -273,8 +278,8 @@ type GraphCssVar = 'line' | 'edgeLink' | 'edgeTag' | 'surface' | 'ink2' | 'ink3'
 // 每次取值都是 `string | undefined`，无法直接赋给 canvas 的 fillStyle/strokeStyle。
 let cssVars: Record<GraphCssVar, string> = {
   line: '#E6E3D9',
-  edgeLink: '#94A0AF',
-  edgeTag: '#C2AF90',
+  edgeLink: '#6E7987',
+  edgeTag: '#A08A66',
   surface: '#FFFFFF',
   ink2: '#4C545F',
   ink3: '#7B838F',
@@ -326,8 +331,8 @@ function refreshCssVars() {
   const pick = (name: string, fallback: string) => (cs.getPropertyValue(name).trim() || fallback)
   cssVars = {
     line: pick('--line', '#E6E3D9'),
-    edgeLink: pick('--edge-link', '#94A0AF'),
-    edgeTag: pick('--edge-tag', '#C2AF90'),
+    edgeLink: pick('--edge-link', '#6E7987'),
+    edgeTag: pick('--edge-tag', '#A08A66'),
     surface: pick('--surface', '#FFFFFF'),
     ink2: pick('--ink-2', '#4C545F'),
     ink3: pick('--ink-3', '#7B838F'),
@@ -360,11 +365,32 @@ function persist() {
 /**
  * 一条连线的两端坐标。
  */
-function edgeGeometry(s: VNode, t: VNode): [number, number, number, number] | null {
-  // 力导向 initialize 之前 source/target 可能还是 id 字符串，坐标缺失时返回 null，
-  // 由调用方移除属性 —— 等价于 d3.attr(name, null) 的语义（否则 setAttribute 会写入 "undefined" 并报 console 错）
-  if (!Number.isFinite(s?.x) || !Number.isFinite(s?.y) || !Number.isFinite(t?.x) || !Number.isFinite(t?.y)) return null
+function edgeGeometry(a: string | VNode, b: string | VNode): [number, number, number, number] | null {
+  // 端点可能是 id 字符串（力导向 initialize 之前）也可能是节点对象（之后），统一归一化。
+  // 坐标缺失时返回 null，由调用方移除属性 —— 等价于 d3.attr(name, null) 的语义
+  // （否则 setAttribute 会写入 "undefined" 并报 console 错）
+  const s = linkEndpoint(a)
+  const t = linkEndpoint(b)
+  if (!s || !t) return null
+  if (!Number.isFinite(s.x) || !Number.isFinite(s.y) || !Number.isFinite(t.x) || !Number.isFinite(t.y)) return null
   return [s.x, s.y, t.x, t.y]
+}
+
+/**
+ * 归一化连线端点：d3 的 forceLink 会把 `linkData` 里的 source/target
+ * **就地改成节点对象**（见 VLink 注释），所以这里两种形态都要认。
+ *
+ * 曾经这里直接写 `nodeMap.get(l.source)`：力导向 `initialize()` 之后
+ * `l.source` 已是对象，`Map.get(对象)` 必然 undefined → 每条边都被 `continue` 掉，
+ * Canvas 分级下**一条连线都画不出来**（缩略图读的是未改写的 props.edges，所以它一直有线）。
+ */
+function linkEndpoint(v: string | VNode): VNode | undefined {
+  return v && typeof v === 'object' ? v : nodeMap.get(v as string)
+}
+
+/** 同上，只要 id（缩略图快照与邻接表用） */
+function linkEndpointId(v: string | VNode): string {
+  return v && typeof v === 'object' ? v.id : (v as string)
 }
 
 function render() {
@@ -426,8 +452,8 @@ function drawCanvas() {
   // 连线
   ctx.lineWidth = (EDGE_STYLE.baseWidth * ew) / k
   for (const l of linkData) {
-    const s = nodeMap.get(l.source)
-    const t = nodeMap.get(l.target)
+    const s = linkEndpoint(l.source)
+    const t = linkEndpoint(l.target)
     if (!s || !t || !inDraw(s.id) || !inDraw(t.id)) continue
     const hot = !focus || (focus.has(s.id) && focus.has(t.id))
     ctx.globalAlpha = hot ? 0.9 : EDGE_STYLE.dimOpacity
@@ -558,7 +584,9 @@ function buildLayers() {
   if (tier.value === 'svg') {
     linkSel = d3.select(linkLayerRef.value)
       .selectAll('line')
-      .data(linkData, (d: any) => `${d.source}|${d.target}`)
+      // key 必须取到稳定 id：forceLink 改写端点后 `d.source` 是对象，
+      // 直接拼接会变成 "[object Object]|[object Object]"，全部边撞成同一个 key。
+      .data(linkData, (d: any) => `${linkEndpointId(d.source)}|${linkEndpointId(d.target)}`)
       .join('line')
       .attr('stroke', (d: VLink) => (d.kind === 'tag' ? 'var(--edge-tag)' : 'var(--edge-link)'))
       .attr('stroke-width', EDGE_STYLE.baseWidth * props.tuning.edgeWidth)
@@ -899,8 +927,8 @@ function freezeRestoredLayout() {
 // ---------- 力导向参数（控制面板可调） ----------
 /** 连接力：沿用「两端度数越大、连接越松」的既有曲线，再乘控制面板系数 */
 function linkStrengthOf(l: any) {
-  const s = nodeMap.get(typeof l.source === 'object' ? l.source.id : l.source)?.degree || 1
-  const t = nodeMap.get(typeof l.target === 'object' ? l.target.id : l.target)?.degree || 1
+  const s = nodeMap.get(linkEndpointId(l.source))?.degree || 1
+  const t = nodeMap.get(linkEndpointId(l.target))?.degree || 1
   return (1 / Math.min(6, Math.max(1, Math.min(s, t)))) * props.tuning.linkStrength
 }
 
@@ -1021,7 +1049,7 @@ function applyLayout(name: LayoutName) {
       inDegree: n.inDegree,
       degree: n.degree
     })),
-    edges: linkData.map(l => ({ source: l.source, target: l.target })),
+    edges: linkData.map(l => ({ source: linkEndpointId(l.source), target: linkEndpointId(l.target) })),
     width: size.w,
     height: size.h,
     prev,
@@ -1080,9 +1108,13 @@ const selectNode = (id: string) => emit('update:selectedId', id)
 const clearSelection = () => emit('update:selectedId', null)
 const getNeighbors = (id: string) => {
   const out: string[] = []
+  // 端点可能已被 forceLink 改成对象，必须走 linkEndpointId 归一化，
+  // 否则 `l.source === id` 永远为 false、邻域聚焦与最短路径都会返回空。
   for (const l of linkData) {
-    if (l.source === id) out.push(l.target)
-    else if (l.target === id) out.push(l.source)
+    const s = linkEndpointId(l.source)
+    const t = linkEndpointId(l.target)
+    if (s === id) out.push(t)
+    else if (t === id) out.push(s)
   }
   return out
 }

@@ -54,8 +54,8 @@ export const EDGE_KIND_LABEL: Record<string, string> = { link: '显式链接', t
 
 /** 连线样式：常态 / 邻域内加粗 / 邻域外降透明度 */
 export const EDGE_STYLE = {
-  baseWidth: 1.2,
-  focusWidth: 2.4,
+  baseWidth: 1.5,
+  focusWidth: 2.6,
   dimOpacity: 0.12,
   dimTransitionMs: 120
 } as const
