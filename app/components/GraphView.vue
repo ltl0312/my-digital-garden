@@ -11,6 +11,7 @@
     :data-zoom="zoomK"
     @keydown="onKeydown"
     @pointerdown="onPointerDownCapture"
+    @contextmenu.prevent="onCanvasContextMenu"
   >
     <!-- Canvas 分级（>150 节点）：连线与节点画在 canvas 上 -->
     <canvas v-show="tier === 'canvas'" ref="canvasRef" class="absolute inset-0 w-full h-full" aria-hidden="true"></canvas>
@@ -102,11 +103,28 @@ import {
   isMocTitle
 } from '~/lib/graph-constants'
 import { FORCE_PARAMS, computeLayout } from '~/lib/graphLayouts'
-import { patchGraphState, readGraphState } from '~/lib/graphState'
+import {
+  clearNodeColors,
+  patchGraphState,
+  readGraphState,
+  readNodeColors,
+  setNodeColor as persistNodeColor
+} from '~/lib/graphState'
 import { domainColor } from '#shared/graph-domain'
 
 /** 页面可附带 degree / isolated（缺省时由边就地推算） */
 export type GraphNodeProp = GraphNode & { degree?: number; isolated?: boolean }
+
+/**
+ * 右键菜单载荷（需求 m01104 后续第 6 条）。
+ * `id === null` 表示在画布空白处右键；x/y 是**相对画布左上角**的像素坐标，
+ * 页面拿到后自己按视口边界做避让，GraphView 不关心菜单长什么样。
+ */
+export interface GraphContextPayload {
+  id: string | null
+  x: number
+  y: number
+}
 
 interface VNode {
   id: string
@@ -156,6 +174,7 @@ const emit = defineEmits<{
   (e: 'open', slug: string): void
   (e: 'pick', id: string): void
   (e: 'ready'): void
+  (e: 'contextmenu', payload: GraphContextPayload): void
 }>()
 
 const physicsActive = defineModel<boolean>('physicsActive', { default: true })
@@ -226,11 +245,13 @@ let resizeObserver: ResizeObserver | null = null
 let themeObserver: MutationObserver | null = null
 let mountAt = 0
 let painted = false
-type GraphCssVar = 'line' | 'surface' | 'ink2' | 'ink3' | 'accent' | 'canvas'
+type GraphCssVar = 'line' | 'edgeLink' | 'edgeTag' | 'surface' | 'ink2' | 'ink3' | 'accent' | 'canvas'
 // 用有限键的映射类型而非 Record<string,string>：后者在 noUncheckedIndexedAccess 下
 // 每次取值都是 `string | undefined`，无法直接赋给 canvas 的 fillStyle/strokeStyle。
 let cssVars: Record<GraphCssVar, string> = {
   line: '#E6E3D9',
+  edgeLink: '#94A0AF',
+  edgeTag: '#C2AF90',
   surface: '#FFFFFF',
   ink2: '#4C545F',
   ink3: '#7B838F',
@@ -251,8 +272,17 @@ const radiusOf = (degree: number, isolated: boolean) => {
   return Math.min(36, Math.max(11, 11 + degree * 2)) * scale
 }
 
-const colorOf = (n: { domain: string; maturity: string }) =>
-  n.domain ? domainColor(n.domain) : (MATURITY_COLORS[n.maturity] || '#8C6D46')
+/**
+ * 节点填充色：**自定义色优先**，否则按领域取色（无领域时回落到成熟度色）。
+ * 自定义色由右键菜单写入 `garden-graph-node-colors`（见 setNodeColor）。
+ */
+const nodeColors = ref<Record<string, string>>({})
+
+const colorOf = (n: { id: string; domain: string; maturity: string }) => {
+  const custom = nodeColors.value[n.id]
+  if (custom) return custom
+  return n.domain ? domainColor(n.domain) : (MATURITY_COLORS[n.maturity] || '#8C6D46')
+}
 
 const hitRadiusOf = (n: VNode) => (isTouchNow() ? TOUCH_HIT_RADIUS : Math.max(14, n.r + 6))
 
@@ -263,6 +293,8 @@ function refreshCssVars() {
   const pick = (name: string, fallback: string) => (cs.getPropertyValue(name).trim() || fallback)
   cssVars = {
     line: pick('--line', '#E6E3D9'),
+    edgeLink: pick('--edge-link', '#94A0AF'),
+    edgeTag: pick('--edge-tag', '#C2AF90'),
     surface: pick('--surface', '#FFFFFF'),
     ink2: pick('--ink-2', '#4C545F'),
     ink3: pick('--ink-3', '#7B838F'),
@@ -292,14 +324,35 @@ function persist() {
 }
 
 // ---------- 渲染 ----------
+/**
+ * 一条连线的两端坐标。
+ */
+function edgeGeometry(s: VNode, t: VNode): [number, number, number, number] | null {
+  // 力导向 initialize 之前 source/target 可能还是 id 字符串，坐标缺失时返回 null，
+  // 由调用方移除属性 —— 等价于 d3.attr(name, null) 的语义（否则 setAttribute 会写入 "undefined" 并报 console 错）
+  if (!Number.isFinite(s?.x) || !Number.isFinite(s?.y) || !Number.isFinite(t?.x) || !Number.isFinite(t?.y)) return null
+  return [s.x, s.y, t.x, t.y]
+}
+
 function render() {
   if (!nodeSel) return
   if (tier.value === 'svg' && linkSel) {
-    linkSel
-      .attr('x1', (d: any) => d.source.x)
-      .attr('y1', (d: any) => d.source.y)
-      .attr('x2', (d: any) => d.target.x)
-      .attr('y2', (d: any) => d.target.y)
+    // 用 each 一次算完四个坐标：attr 链会让 edgeGeometry 每条线被调用四遍
+    linkSel.each(function (this: SVGLineElement, d: any) {
+      const g = edgeGeometry(d.source, d.target)
+      if (!g) {
+        this.removeAttribute('x1')
+        this.removeAttribute('y1')
+        this.removeAttribute('x2')
+        this.removeAttribute('y2')
+        return
+      }
+      const [x1, y1, x2, y2] = g
+      this.setAttribute('x1', String(x1))
+      this.setAttribute('y1', String(y1))
+      this.setAttribute('x2', String(x2))
+      this.setAttribute('y2', String(y2))
+    })
   }
   nodeSel.attr('transform', (d: VNode) => `translate(${d.x},${d.y})`)
   if (tier.value === 'canvas') {
@@ -345,7 +398,7 @@ function drawCanvas() {
     if (!s || !t || !inDraw(s.id) || !inDraw(t.id)) continue
     const hot = !focus || (focus.has(s.id) && focus.has(t.id))
     ctx.globalAlpha = hot ? 0.9 : EDGE_STYLE.dimOpacity
-    ctx.strokeStyle = l.kind === 'tag' ? cssVars.ink3 : cssVars.line
+    ctx.strokeStyle = l.kind === 'tag' ? cssVars.edgeTag : cssVars.edgeLink
     ctx.lineWidth = ((hot && focus ? EDGE_STYLE.focusWidth : EDGE_STYLE.baseWidth) * ew) / k
     if (l.kind === 'tag') ctx.setLineDash([4 / k, 4 / k])
     else ctx.setLineDash([])
@@ -472,7 +525,7 @@ function buildLayers() {
       .selectAll('line')
       .data(linkData, (d: any) => `${d.source}|${d.target}`)
       .join('line')
-      .attr('stroke', (d: VLink) => (d.kind === 'tag' ? 'var(--ink-3)' : 'var(--line)'))
+      .attr('stroke', (d: VLink) => (d.kind === 'tag' ? 'var(--edge-tag)' : 'var(--edge-link)'))
       .attr('stroke-width', EDGE_STYLE.baseWidth * props.tuning.edgeWidth)
       .attr('stroke-dasharray', (d: VLink) => (d.kind === 'tag' ? '4 4' : null))
       .style('transition', `opacity ${EDGE_STYLE.dimTransitionMs}ms ease`)
@@ -642,6 +695,30 @@ function attachInteraction() {
           .attr('opacity', labelVisible(d) ? 1 : 0)
       }
     })
+    .on('contextmenu', (event: any, d: VNode) => {
+      // 阻止默认菜单 + 掐掉待触发的单击定时器：
+      // 否则右键之后紧跟的 click 会把菜单打开时选中的节点又改一遍。
+      event.preventDefault()
+      event.stopPropagation()
+      if (clickTimer) {
+        clearTimeout(clickTimer)
+        clickTimer = null
+      }
+      hoverCard.value = null
+      emit('contextmenu', { id: d.id, ...localPoint(event) })
+    })
+}
+
+/** 鼠标事件 → 相对画布左上角的坐标（右键菜单贴边避让用） */
+function localPoint(event: { clientX?: number; clientY?: number }) {
+  const rect = hostRef.value?.getBoundingClientRect()
+  if (!rect || event.clientX == null || event.clientY == null) return { x: size.w / 2, y: size.h / 2 }
+  return { x: event.clientX - rect.left, y: event.clientY - rect.top }
+}
+
+/** 画布空白处右键：交给页面弹「画布菜单」 */
+function onCanvasContextMenu(e: MouseEvent) {
+  emit('contextmenu', { id: null, ...localPoint(e) })
 }
 
 /** 信息卡自动避让边界：右侧/下方放不下就翻到另一侧 */
@@ -1018,7 +1095,7 @@ const minimap = () => {
   return {
     nodes: nodeData
       .filter(n => (!drawn || drawn.has(n.id)) && Number.isFinite(n.x) && Number.isFinite(n.y))
-      .map(n => ({ id: n.id, x: n.x, y: n.y, r: n.r, degree: n.degree })),
+      .map(n => ({ id: n.id, x: n.x, y: n.y, r: n.r, degree: n.degree, domain: n.domain, color: n.color })),
     canvas: { w: size.w, h: size.h },
     view: { x: currentZoom.x, y: currentZoom.y, k: currentZoom.k }
   }
@@ -1044,6 +1121,52 @@ const zoomTo = (k: number) => {
 
 const relayout = () => applyLayout(props.layout)
 const pinnedIds = () => nodeData.filter(n => n.fx != null && n.fy != null).map(n => n.id)
+
+/** 右键菜单用：切换单个节点的固定状态，返回切换后是否处于固定 */
+function togglePin(id: string): boolean {
+  const n = nodeData.find(d => d.id === id)
+  if (!n) return false
+  if (n.fx != null && n.fy != null) {
+    n.fx = null
+    n.fy = null
+    n.pinned = false
+  } else {
+    n.fx = n.x
+    n.fy = n.y
+    n.pinned = true
+  }
+  redraw()
+  persist()
+  return n.pinned
+}
+
+const isPinned = (id: string) => pinnedIds().includes(id)
+
+// ---------- 节点自定义颜色（右键菜单 / 控制面板） ----------
+/** 重算全部节点填充色并就地刷新：只改颜色，不碰坐标，所以不重新点火 */
+function recolor() {
+  for (const n of nodeData) n.color = colorOf(n)
+  if (tier.value === 'svg' && nodeSel) {
+    nodeSel.select('circle.gnode-dot').attr('fill', (d: VNode) => d.color)
+  }
+  render()
+}
+
+/** 设置 / 清除单个节点的自定义颜色（color 传 null = 恢复领域色） */
+const setNodeColor = (id: string, color: string | null) => {
+  nodeColors.value = persistNodeColor(id, color)
+}
+
+/** 清除全部节点的自定义颜色 */
+const resetNodeColors = () => {
+  clearNodeColors()
+  nodeColors.value = {}
+}
+
+/** 该节点是否被改过颜色（右键菜单据此显示「恢复领域色」） */
+const nodeColorOf = (id: string): string | null => nodeColors.value[id] || null
+
+const customColorCount = computed(() => Object.keys(nodeColors.value).length)
 
 // ---------- 键盘 ----------
 const onKeydown = (e: KeyboardEvent) => {
@@ -1132,6 +1255,8 @@ onMounted(() => {
   if (!hostRef.value || !svgRef.value) return
   mountAt = performance.now()
   refreshCssVars()
+  // 自定义颜色必须在首次 syncGraph 之前读进来，否则首帧会先按领域色画一遍再跳色
+  nodeColors.value = readNodeColors()
   measure()
 
   const svg = d3.select(svgRef.value)
@@ -1233,6 +1358,9 @@ function redraw() {
 
 watch([() => props.selectedId, () => props.labelMode], () => redraw())
 
+// 自定义颜色变化：只重算颜色并重画，不动仿真（改色不该让图重新跑一遍）
+watch(nodeColors, () => recolor(), { deep: true })
+
 // 聚焦变化：被聚焦节点的排斥力要变大，所以除了重画还得把仿真重新点着
 watch(() => props.focusIds, () => {
   refreshForces()
@@ -1278,6 +1406,11 @@ defineExpose({
   minimap,
   centerOn,
   zoomTo,
+  setNodeColor,
+  resetNodeColors,
+  nodeColorOf,
+  togglePin,
+  isPinned,
   renderStatus: () => ({
     fps: fps.value,
     firstPaintMs: firstPaintMs.value,
@@ -1291,6 +1424,7 @@ defineExpose({
     labelCount: labelsToShow().length,
     mocCount: nodeData.filter(n => n.isMoc).length,
     focusedCount: focusSet.value ? focusSet.value.size : 0,
+    customColorCount: customColorCount.value,
     tuning: { ...props.tuning }
   })
 })

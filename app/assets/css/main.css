@@ -19,6 +19,10 @@
     --surface-3: #F1EFE8;   /* 三级面 */
     --line: #E6E3D9;        /* 描边 */
 
+    /* 图谱连线：刻意比 --line 深一档，否则细线在画布上几乎看不见 */
+    --edge-link: #94A0AF;   /* 显式链接 */
+    --edge-tag: #C2AF90;    /* 标签共有 */
+
     /* 墨 */
     --ink: #191C22;         /* 主文字 */
     --ink-2: #4C545F;       /* 正文 */
@@ -95,6 +99,9 @@
     --surface-2: #151A24;
     --surface-3: #1C222E;
     --line: #222A37;
+
+    --edge-link: #5A6578;
+    --edge-tag: #7A6A52;
 
     --ink: #E9ECF2;
     --ink-2: #A8B1C1;

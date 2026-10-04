@@ -454,10 +454,13 @@ await sleep(800)
 const rReset = await radiusOfFirst()
 log('G57 「恢复默认」把参数复原', Math.abs(rReset - rBefore) < 0.01, `${rAfter} → ${rReset}`)
 
+
 // 聚焦：只显示聚焦节点名 + 聚焦节点之间被推开
 // 先清掉上一轮持久化的坐标/钉住状态，让布局从确定性播种重新开始，基线才可比
 await page.evaluate(() => localStorage.removeItem('garden-graph-state'))
 await goto('/graph')
+// 必须等力导向跑稳再取坐标：刚 goto 完节点还在飞，点下去时目标已经飘走（实测会偶发选不中）
+await sleep(2600)
 const hits2 = await nodeHits()
 const box2 = await page.evaluate(() => {
   const el = document.querySelector('[data-testid="graph-canvas"]')
@@ -466,13 +469,26 @@ const box2 = await page.evaluate(() => {
 })
 // 聚焦测试要选一个**有邻居**的节点（孤立节点 2 跳集合只有自己，量不出斥力）
 const centerHits = hits2.filter(n => n.x > box2.x + box2.w * 0.25 && n.x < box2.x + box2.w * 0.7 && n.y > box2.y + box2.h * 0.3 && n.y < box2.y + box2.h * 0.7)
-const pick2 = centerHits.find(n => n.degree >= 3 && !n.isolated) || centerHits[0] || hits2.find(n => n.degree >= 3) || hits2[0]
-if (pick2) {
-  await page.mouse.click(pick2.x, pick2.y)
-  await sleep(500)
+const candidates = [
+  ...centerHits.filter(n => n.degree >= 3 && !n.isolated),
+  ...centerHits.filter(n => n.degree >= 1 && !n.isolated),
+  ...hits2.filter(n => n.degree >= 3 && !n.isolated),
+  ...centerHits,
+  ...hits2
+]
+// 逐个试：命中不了就换下一个，避免因为叠层遮挡 / 节点飘移让整段断言连锁失败
+let pick2 = null
+let focusBtn = false
+for (const cand of candidates.slice(0, 12)) {
+  await page.mouse.click(cand.x, cand.y)
+  await sleep(420)
+  if (await vis('[data-testid="graph-focus-neighbors"]')) {
+    pick2 = cand
+    focusBtn = true
+    break
+  }
 }
-const focusBtn = await vis('[data-testid="graph-focus-neighbors"]')
-log('G50 节点详情含「聚焦邻居」按钮', focusBtn)
+log('G50 节点详情含「聚焦邻居」按钮', focusBtn, pick2 ? pick2.title : 'no-hit')
 
 let spreadBefore = null
 let spreadAfter = null
@@ -544,6 +560,208 @@ if (focusBtn) {
 
 const pageTitle = await page.title()
 log('G54 标签标题为「知识图谱 · 拾光」', /知识图谱 · 拾光/.test(pageTitle), pageTitle)
+
+// ============ 缩略图 / 连线颜色 / 右键菜单 / 左栏收起（需求 m01569 第 1–6 条） ============
+await setVp(1440, 900)
+await goto('/graph')
+await page.evaluate(() => {
+  localStorage.removeItem('garden-graph-node-colors')
+  localStorage.removeItem('garden-graph-state')
+})
+await goto('/graph')
+await sleep(2600)
+
+const mm = await page.evaluate(() => {
+  const el = document.querySelector('[data-testid="graph-minimap"]')
+  if (!el) return null
+  const g = el.querySelector('g')
+  const m = /scale\(([\d.eE+-]+)\)/.exec((g && g.getAttribute('transform')) || '')
+  const scale = m ? Number(m[1]) : 1
+  const dots = [...el.querySelectorAll('circle.mm-dot')]
+  const rs = dots.map(c => Number(c.getAttribute('r')) * scale).filter(Number.isFinite)
+  const fills = new Set(dots.map(c => (c.getAttribute('fill') || '').toUpperCase()))
+  return {
+    dots: dots.length,
+    edges: el.querySelectorAll('line.mm-edge').length,
+    colors: fills.size,
+    maxR: rs.length ? Math.max(...rs) : 0,
+    minR: rs.length ? Math.min(...rs) : 0,
+    scale
+  }
+})
+log('G59 缩略图点径为屏幕像素量级（不再糊成一片灰）',
+  !!mm && mm.dots > 100 && mm.maxR <= 6 && mm.minR >= 0.4,
+  mm ? `dots=${mm.dots} r=${mm.minR.toFixed(2)}–${mm.maxR.toFixed(2)}px scale=${mm.scale.toFixed(4)}` : 'no-minimap')
+log('G60 缩略图按领域着色', !!mm && mm.colors >= 3, mm ? `${mm.colors} 种颜色` : 'n/a')
+log('G61 缩略图画出了连线', !!mm && mm.edges > 50, mm ? `${mm.edges} 条` : 'n/a')
+
+const edgeTokens = await page.evaluate(() => {
+  const cs = getComputedStyle(document.documentElement)
+  const v = (n) => cs.getPropertyValue(n).trim()
+  return { link: v('--edge-link'), tag: v('--edge-tag'), line: v('--line'), canvas: v('--canvas') }
+})
+const luminance = (hex) => {
+  const h = String(hex || '').replace('#', '')
+  if (h.length !== 3 && h.length !== 6) return NaN
+  const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h
+  const rgb = [0, 2, 4].map(i => parseInt(full.slice(i, i + 2), 16) / 255)
+    .map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+}
+const contrast = (a, b) => {
+  const la = luminance(a)
+  const lb = luminance(b)
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+}
+const linkContrast = contrast(edgeTokens.link, edgeTokens.canvas)
+const lineContrast = contrast(edgeTokens.line, edgeTokens.canvas)
+log('G62 连线颜色对比度高于旧值（肉眼可见）',
+  Number.isFinite(linkContrast) && linkContrast > 1.8 && linkContrast > lineContrast * 1.5,
+  `--edge-link=${edgeTokens.link} 对比 ${linkContrast.toFixed(2)} vs --line 对比 ${lineContrast.toFixed(2)}`)
+
+const canvasBox = await page.evaluate(() => {
+  const el = document.querySelector('[data-testid="graph-canvas"]')
+  const r = el.getBoundingClientRect()
+  return { x: r.left, y: r.top, w: r.width, h: r.height }
+})
+const hits3 = await nodeHits()
+const pickMenu = hits3.filter(n => n.x > canvasBox.x + 24 && n.x < canvasBox.x + canvasBox.w - 24
+  && n.y > canvasBox.y + 96 && n.y < canvasBox.y + canvasBox.h - 80)
+const menuCands = [
+  ...pickMenu.filter(n => n.degree >= 3),
+  ...pickMenu,
+  ...hits3
+]
+const readMenuKind = () => page.evaluate(() => {
+  const el = document.querySelector('[data-testid="graph-context-menu"]')
+  return el ? el.getAttribute('data-menu-kind') : null
+})
+let menuNode = null
+let menuKind = null
+for (const cand of menuCands.slice(0, 10)) {
+  await page.mouse.click(cand.x, cand.y, { button: 'right' })
+  await sleep(420)
+  if (await readMenuKind() === 'node') {
+    menuNode = cand
+    menuKind = 'node'
+    break
+  }
+}
+log('G63 节点右键弹出节点菜单', menuKind === 'node', `kind=${menuKind} node=${menuNode ? menuNode.title : 'no-hit'}`)
+
+const menuIds = () => page.evaluate(() =>
+  [...document.querySelectorAll('[data-testid^="graph-menu-"]')].map(e => e.getAttribute('data-testid')))
+const nodeMenuItems = await menuIds()
+const wantNode = ['graph-menu-open', 'graph-menu-focus', 'graph-menu-path-start', 'graph-menu-path-end',
+  'graph-menu-pin', 'graph-menu-copy-link', 'graph-menu-copy-title', 'graph-menu-detach', 'graph-menu-color-reset']
+log('G64 节点菜单项齐全', wantNode.every(id => nodeMenuItems.includes(id)),
+  `缺 ${wantNode.filter(id => !nodeMenuItems.includes(id)).join(',') || '无'} · 共 ${nodeMenuItems.length} 项`)
+
+await page.evaluate(() => document.querySelector('[data-testid="graph-menu-color-E5484D"]') && document.querySelector('[data-testid="graph-menu-color-E5484D"]').click())
+await sleep(1100)
+const colorState = await page.evaluate(() => {
+  let saved = {}
+  try { saved = JSON.parse(localStorage.getItem('garden-graph-node-colors') || '{}') } catch { /* ignore */ }
+  return {
+    n: Object.keys(saved).length,
+    value: Object.values(saved)[0] || null,
+    count: (document.querySelector('[data-testid="graph-color-count"]') || {}).textContent || null,
+    menuOpen: !!document.querySelector('[data-testid="graph-context-menu"]')
+  }
+})
+log('G65 设置颜色后写回存档并计数',
+  colorState.n === 1 && String(colorState.count || '').trim() === '1' && !colorState.menuOpen,
+  `saved=${colorState.n}(${colorState.value}) count=${String(colorState.count || '').trim()} menuOpen=${colorState.menuOpen}`)
+
+const mmCustom = await page.evaluate(() =>
+  [...document.querySelectorAll('[data-testid="graph-minimap"] circle.mm-dot')]
+    .filter(c => (c.getAttribute('fill') || '').toUpperCase() === '#E5484D').length)
+log('G66 缩略图同步显示自定义颜色', mmCustom >= 1, `${mmCustom} 个点用了自定义色`)
+
+await page.evaluate(() => {
+  const b = document.querySelector('[data-testid="graph-tuning-clear-colors"]')
+  if (b) b.click()
+})
+await sleep(900)
+const colorCleared = await page.evaluate(() => {
+  let saved = {}
+  try { saved = JSON.parse(localStorage.getItem('garden-graph-node-colors') || '{}') } catch { /* ignore */ }
+  return { n: Object.keys(saved).length, btn: !!document.querySelector('[data-testid="graph-tuning-clear-colors"]') }
+})
+log('G67 「清除全部自定义颜色」生效', colorCleared.n === 0 && !colorCleared.btn,
+  `saved=${colorCleared.n} 按钮残留=${colorCleared.btn}`)
+
+// 画布空白处右键：挑一个离所有节点最远的候选点，避免误中节点
+const hits4 = await nodeHits()
+const blank = await page.evaluate((hits) => {
+  const el = document.querySelector('[data-testid="graph-canvas"]')
+  const r = el.getBoundingClientRect()
+  const cands = []
+  for (let gx = 0.1; gx <= 0.9; gx += 0.1) {
+    for (let gy = 0.18; gy <= 0.84; gy += 0.1) cands.push({ x: r.left + r.width * gx, y: r.top + r.height * gy })
+  }
+  let best = null
+  let bestD = -1
+  for (const c of cands) {
+    let d = Infinity
+    for (const n of hits) d = Math.min(d, Math.hypot(n.x - c.x, n.y - c.y))
+    if (d > bestD) { bestD = d; best = c }
+  }
+  return best
+}, hits4)
+if (blank) {
+  await page.mouse.click(blank.x, blank.y, { button: 'right' })
+  await sleep(450)
+}
+const canvasKind = await page.evaluate(() => {
+  const el = document.querySelector('[data-testid="graph-context-menu"]')
+  return el ? el.getAttribute('data-menu-kind') : null
+})
+const canvasMenuItems = await menuIds()
+const wantCanvas = ['graph-menu-fit', 'graph-menu-reset-layout', 'graph-menu-reheat', 'graph-menu-clear-filters']
+log('G68 空白处右键弹出画布菜单', canvasKind === 'canvas', `kind=${canvasKind}`)
+log('G69 画布菜单项齐全', wantCanvas.every(id => canvasMenuItems.includes(id)),
+  `缺 ${wantCanvas.filter(id => !canvasMenuItems.includes(id)).join(',') || '无'} · 共 ${canvasMenuItems.length} 项`)
+
+await page.keyboard.press('Escape')
+await sleep(320)
+const menuGone = await page.evaluate(() => !document.querySelector('[data-testid="graph-context-menu"]'))
+log('G70 Esc 关闭右键菜单', menuGone)
+
+// 左栏收起 / 展开（需求第 3 条）
+await setVp(1440, 900)
+await goto('/graph')
+await sleep(1300)
+const leftBefore = await vis('[data-testid="graph-left-panel"]')
+await page.click('[data-testid="graph-toggle-left"]')
+await sleep(500)
+const leftAfter = await vis('[data-testid="graph-left-panel"]')
+await page.click('[data-testid="graph-toggle-left"]')
+await sleep(500)
+const leftBack = await vis('[data-testid="graph-left-panel"]')
+log('G71 左栏可收起 / 展开', !!leftBefore && !leftAfter && !!leftBack, `${leftBefore} → ${leftAfter} → ${leftBack}`)
+
+// 滑杆范围放宽（需求第 5 条）
+const ranges = await page.evaluate(() => {
+  const get = (k) => {
+    const el = document.querySelector(`[data-testid="graph-tuning-${k}"]`)
+    return el ? { min: Number(el.min), max: Number(el.max) } : null
+  }
+  return {
+    nodeScale: get('nodeScale'),
+    edgeWidth: get('edgeWidth'),
+    chargeStrength: get('chargeStrength'),
+    linkDistance: get('linkDistance'),
+    focusRepel: get('focusRepel')
+  }
+})
+log('G72 节点与连线滑杆范围已放宽',
+  !!ranges.nodeScale && ranges.nodeScale.max >= 3 && ranges.nodeScale.min <= 0.3
+  && !!ranges.edgeWidth && ranges.edgeWidth.max >= 5
+  && !!ranges.chargeStrength && ranges.chargeStrength.max >= 6
+  && !!ranges.linkDistance && ranges.linkDistance.max >= 5
+  && !!ranges.focusRepel && ranges.focusRepel.max >= 10,
+  JSON.stringify(ranges))
 
 // ================= 控制台洁净 =================
 const benign = /ResizeObserver loop|favicon|Download the Vue Devtools/i

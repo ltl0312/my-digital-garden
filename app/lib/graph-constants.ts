@@ -128,19 +128,48 @@ export const GRAPH_TUNING_DEFAULTS: GraphTuning = {
   focusRepel: 2.4
 }
 
-/** 滑杆范围（渲染控制面板用） */
+/**
+ * 滑杆范围（渲染控制面板用）。
+ * 范围刻意留宽：既要能压到几乎看不见（排查用），也要能拉到很夸张（小屏/演示用）。
+ */
 export const TUNING_RANGES = {
-  nodeScale: { min: 0.6, max: 1.8, step: 0.05 },
-  edgeWidth: { min: 0.4, max: 2.4, step: 0.1 },
-  centerStrength: { min: 0, max: 1, step: 0.05 },
-  chargeStrength: { min: 0.2, max: 3, step: 0.1 },
-  linkStrength: { min: 0, max: 2, step: 0.1 },
-  linkDistance: { min: 0.4, max: 2.5, step: 0.1 },
-  focusRepel: { min: 1, max: 5, step: 0.1 }
+  nodeScale: { min: 0.3, max: 3, step: 0.05 },
+  edgeWidth: { min: 0.2, max: 5, step: 0.1 },
+  centerStrength: { min: 0, max: 2, step: 0.05 },
+  chargeStrength: { min: 0.1, max: 6, step: 0.1 },
+  linkStrength: { min: 0, max: 4, step: 0.1 },
+  linkDistance: { min: 0.2, max: 5, step: 0.1 },
+  focusRepel: { min: 1, max: 10, step: 0.1 }
 } as const
 
-/** 中心力滑杆值（0–1）→ d3 forceX/forceY strength 的换算系数（d3 默认 0.1） */
+/** 中心力滑杆值 → d3 forceX/forceY strength 的换算系数（d3 默认 0.1） */
 export const CENTER_FORCE_SCALE = 0.25
 
-/** 标签最多同时标注多少个（防止小屏糊成一片） */
+/** 标签最多同时标注多少个（防止小屏糊成一片；聚焦时不受此限） */
 export const MAX_LABELS = 160
+
+/** localStorage：节点自定义颜色（节点 id → CSS 颜色），与领域配色互不干扰 */
+export const NODE_COLOR_KEY = 'garden-graph-node-colors'
+
+/** 右键「设置颜色」色板：按色相排布，亮暗两套主题下都有足够对比度 */
+export const NODE_COLOR_PALETTE = [
+  '#E5484D', '#E8730C', '#D4A017', '#46A758', '#12A594',
+  '#0090FF', '#3E63DD', '#8E4EC6', '#D6409F', '#8B8D98'
+]
+
+/**
+ * 缩略图几何（A11）。点径按**屏幕像素**给，绘制时再除以 fit.scale，
+ * 否则会拿主画布的图坐标半径当屏幕半径用，200 个点直接把 164×112 糊成一片灰。
+ */
+export const MINIMAP = {
+  width: 164,
+  height: 112,
+  pad: 6,
+  dotMin: 1.4,
+  dotMax: 3.4,
+  edgeOpacity: 0.3,
+  maxEdges: 700
+} as const
+
+/** 右键菜单估算尺寸（用于贴边避让） */
+export const CONTEXT_MENU = { width: 208, height: 320 } as const

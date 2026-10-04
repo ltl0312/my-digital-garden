@@ -1,7 +1,7 @@
 // garden-graph-state 的读写（计划书 T3.4 第 6 条）
 // 同一份状态由两处写入：GraphView（pos / zoom / pinned / layout）与 useGraphFilter（filter）。
 // 因此统一走 patchGraphState 做**字段级合并**，避免任一方整对象覆写把对方的字段清掉。
-import { GRAPH_SETTINGS_KEY, GRAPH_STATE_KEY, GRAPH_TUNING_DEFAULTS } from './graph-constants'
+import { GRAPH_SETTINGS_KEY, GRAPH_STATE_KEY, GRAPH_TUNING_DEFAULTS, NODE_COLOR_KEY } from './graph-constants'
 import type { GraphFilterState, GraphTuning, LayoutName } from './graph-types'
 
 /** 节点坐标：[x, y, fx, fy]；fx/fy 为 NaN 表示未固定 */
@@ -83,6 +83,66 @@ export function clearGraphSettings(): void {
   if (typeof localStorage === 'undefined') return
   try {
     localStorage.removeItem(GRAPH_SETTINGS_KEY)
+  } catch {
+    /* 同上 */
+  }
+}
+
+// ---------- 节点自定义颜色 ----------
+
+/**
+ * 只接受能直接喂给 canvas `fillStyle` / SVG `fill` 的颜色字面量。
+ * 存进去的值最终会被 d3 当作属性写进 DOM，因此不接受 `var(--x)` 之外的任意字符串，
+ * 避免手改 localStorage 注入脏值。
+ */
+const CSS_COLOR_RE = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%]+\)|var\(--[\w-]+\))$/i
+
+/**
+ * 节点自定义颜色（`garden-graph-node-colors`）。
+ * 与领域配色是叠加关系：命中这里就用这里的，否则回落到 `domainColor(domain)`。
+ */
+export function readNodeColors(): Record<string, string> {
+  if (typeof localStorage === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(NODE_COLOR_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return {}
+    const out: Record<string, string> = {}
+    for (const [id, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof v !== 'string') continue
+      const c = v.trim()
+      if (CSS_COLOR_RE.test(c)) out[id] = c
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+export function writeNodeColors(map: Record<string, string>): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(NODE_COLOR_KEY, JSON.stringify(map))
+  } catch {
+    /* 隐私模式 / 配额满：忽略 */
+  }
+}
+
+/** 设置单个节点的自定义颜色；`color` 传 null 表示清除该节点的自定义色 */
+export function setNodeColor(id: string, color: string | null): Record<string, string> {
+  const map = readNodeColors()
+  if (color) map[id] = color
+  else delete map[id]
+  writeNodeColors(map)
+  return map
+}
+
+/** 清除全部节点自定义颜色 */
+export function clearNodeColors(): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.removeItem(NODE_COLOR_KEY)
   } catch {
     /* 同上 */
   }

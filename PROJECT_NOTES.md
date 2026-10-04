@@ -47,7 +47,8 @@ my-digital-garden/
 │   │   │   ├── NodeDetail.vue      # 右栏节点详情（入链/出链/在图中定位/聚焦邻居）
 │   │   │   ├── GraphSearchPanel.vue# 画布内搜索（笔记/标签/领域/命令 四组）
 │   │   │   ├── Minimap.vue         # 缩略图（可拖拽平移/滚轮缩放）
-│   │   │   ├── GraphTuningPanel.vue# 图谱控制（标签模式/节点与连线/力导向参数，仿 Obsidian）
+│   │   │   ├── GraphTuningPanel.vue# 图谱控制（标签模式/节点与连线/力导向参数/自定义颜色，仿 Obsidian）
+│   │   │   ├── GraphContextMenu.vue# 右键菜单（节点菜单 / 画布空白菜单）
 │   │   │   └── GraphSkeleton.vue   # 加载骨架屏（SSR 安全的伪随机点阵）
 │   │   ├── FileTree.vue        # 递归文件树（含目录内新建笔记）
 │   │   └── CommandPalette.vue  # ⌘K 命令面板（全局搜索跳转）
@@ -184,6 +185,11 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 - **图谱**：三区布局（左筛选栏 240/272 · 中画布 flex · 右详情栏 288/320；<1024 左栏改抽屉、右栏改底部弹层；<640 保留底部「图例与统计」折叠面板）。d3 forceSimulation（link 120 / charge -320 / collide r+10 / alphaDecay 0.032 / velocityDecay 0.42）；**渲染分级** `RENDER_TIERS`（≤150 SVG / >150 Canvas / >600 只画度数 Top 200，devicePixelRatio 适配）；**四种布局**（力导向/层次树/径向/时间轴，切换 400ms 补间，`computeLayout()` 纯函数在 `app/lib/graphLayouts.ts`）；**单击选中**（右栏详情）、**双击进正文**、拖拽后固定（Obsidian 行为，钉标 + 「双击解除」提示）；可见范围三选一（全图 / 2 跳邻居 / 最短路径）；领域·成熟度·标签多选 + 关系类型开关（显式链接 / 标签共有，至少保留一种）；hover 信息卡 + 邻域高亮（邻域内 2.5px 描边、邻域外 0.12 不透明度、邻域内连线 2.4px）；缩略图（可拖拽平移 / 滚轮缩放）；四态互不复用（骨架屏 / 筛选空态 / 图谱真空态 / 错误态）；快捷键 ⌘K 搜索、⌘F 聚焦搜索、⌘L 锁物理、`G` then `F` 适配全图、`/` 命令面板、`Delete` 断开关系、Esc 逐层退出。位置 + 缩放 + 固定 + 布局 + 筛选持久化到 localStorage（`garden-graph-state`；设置 `garden-graph-settings-v3`）。
 - **标签策略**（`labelMode`，默认 `moc`）：常态只标注 **MOC 节点**（标题匹配 `/^MOC\b/i`，约 36 个），其余节点名字全部隐藏；**聚焦（邻域聚焦）时改为只标注被聚焦的节点**，且不受 `MAX_LABELS`(160) 上限约束；选中 / 悬停始终标注。可切 `all`（上限 160）或 `off`。
 - **图谱控制面板**（左栏 `GraphTuningPanel.vue`，仿 Obsidian 图谱设置）：标签模式三选一；节点大小 / 连线粗细；中心力 / 排斥力 / 连接力 / 连接距离 / **聚焦斥力**（默认 2.4）。参数持久化在 `garden-graph-settings-v3`（`readGraphSettings()` 逐字段校验，防止 NaN 流进 d3）。改任一参数即 `refreshForces()` + `reheat()`。**聚焦时被聚焦节点的电荷力额外乘 `focusRepel`**，邻域自动散开。
+- **连线配色**：`--edge-link` / `--edge-tag`（亮色 `#94A0AF` / `#C2AF90`，暗色 `#5A6578` / `#7A6A52`）。刻意比 `--line` 深一档——`--line` 画在 `--canvas` 上对比度只有 1.17，细线肉眼看不见。
+- **缩略图**（`Minimap.vue`）：点半径按**屏幕像素**归一到 1.4–3.4px（按 `sqrt(degree)` 插值，绘制时再除以 `fit.scale`），点按节点色着色，并按 `MINIMAP.maxEdges`(700) 步长抽样画连线。根因备忘：老实现直接拿主画布的图坐标半径当屏幕半径，525 个点把 164×112 糊成一片灰。
+- **节点自定义颜色**：在节点上右键 → 设置颜色（`NODE_COLOR_PALETTE` 10 色 + 恢复领域色），持久化在 `garden-graph-node-colors`（`readNodeColors()` 用 `CSS_COLOR_RE` 白名单过滤，防止手改 localStorage 注入脏值）。自定义色优先于领域色；左栏「自定义颜色」区显示计数并可一键清除。
+- **右键菜单**（`GraphContextMenu.vue`）：节点菜单 = 打开笔记 / 聚焦邻居 / 设为路径起点·终点 / 固定·解除固定 / 设置颜色 / 复制 `[[标题]]` / 复制标题 / 断开全部关系；画布空白菜单 = 适配全图 / 重置布局 / 重新点火 / 标签模式 / 清除筛选。`CONTEXT_MENU` 尺寸用于贴边避让；Esc 或外部点击关闭。
+- **左栏可收起**：三区模式下画布左缘的竖直把手（`graph-toggle-left`）切换 `leftCollapsed`。
 - 页面标题 `知识图谱 · 拾光`（`useHead`）。
 - **侧边栏**：可拖宽度（240–480px，localStorage `garden-sidebar-width`，pointerdown 记录 dragOffset 消除居中偏移）；始终挂载 + 宽度过渡实现丝滑收起；文件树（递归、目录计数、过滤）；标签云（前 20）；Vault Synced 状态栏；管理员可新建笔记。
 - **命令面板**：⌘K/⌃K 全局唤起，输入即搜（pageSize=8），Enter 直达首条。

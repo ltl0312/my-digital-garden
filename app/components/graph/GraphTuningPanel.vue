@@ -58,6 +58,24 @@
       />
     </div>
 
+    <!-- 自定义颜色（需求 m01569 第 2 条） -->
+    <div>
+      <h3 class="text-[12px] font-semibold text-ink-3 mb-2">自定义颜色</h3>
+      <p class="text-[11px] text-ink-3 leading-relaxed" data-testid="graph-color-hint">
+        在节点上<strong class="font-medium text-ink-2">右键</strong>可单独指定颜色，已自定义
+        <span class="font-mono tabular-nums" data-testid="graph-color-count">{{ customColorCount }}</span> 个。
+      </p>
+      <button
+        v-if="customColorCount > 0"
+        type="button"
+        class="mt-2 w-full h-8 rounded-[6px] border border-line text-[12px] text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+        data-testid="graph-tuning-clear-colors"
+        @click="emit('clearColors')"
+      >
+        清除全部自定义颜色
+      </button>
+    </div>
+
     <!-- 力导向 -->
     <div>
       <h3 class="text-[12px] font-semibold text-ink-3 mb-2">力导向</h3>
@@ -143,6 +161,8 @@ defineProps<{
   tuning: GraphTuning
   labelMode: LabelMode
   physics: boolean
+  /** 已自定义颜色的节点数（0 时隐藏清除按钮） */
+  customColorCount: number
 }>()
 
 const emit = defineEmits<{
@@ -150,6 +170,7 @@ const emit = defineEmits<{
   (e: 'labelMode', v: LabelMode): void
   (e: 'reheat'): void
   (e: 'reset'): void
+  (e: 'clearColors'): void
 }>()
 
 const DISPLAY_SLIDERS: SliderDef[] = [

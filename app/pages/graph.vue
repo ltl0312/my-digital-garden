@@ -80,10 +80,12 @@
             :tuning="tuning"
             :label-mode="filterState.labelMode"
             :physics="physicsActive"
+            :custom-color-count="renderStatus.customColorCount"
             @change="onTuningChange"
             @label-mode="setLabelMode"
             @reheat="reheatGraph"
             @reset="resetTuning"
+            @clear-colors="clearNodeColors"
           />
         </aside>
 
@@ -110,7 +112,23 @@
             @update:selected-id="onSelect"
             @open="openNote"
             @pick="onPick"
+            @contextmenu="onGraphContextMenu"
           />
+
+          <!-- 左栏收起 / 展开把手（需求 m01569 第 3 条）：只在三区模式下有意义 -->
+          <button
+            v-if="threePane"
+            type="button"
+            class="absolute left-0 top-1/2 -translate-y-1/2 z-30 h-16 w-4 rounded-r-[6px] border border-l-0 border-line bg-surface/95 backdrop-blur shadow-ds1 text-ink-3 hover:text-ink hover:bg-surface transition-colors duration-micro flex items-center justify-center"
+            data-testid="graph-toggle-left"
+            :data-collapsed="leftCollapsed ? '1' : '0'"
+            :aria-label="leftCollapsed ? '展开图谱设置' : '收起图谱设置'"
+            :title="leftCollapsed ? '展开图谱设置' : '收起图谱设置'"
+            @click="leftCollapsed = !leftCollapsed"
+          >
+            <ChevronRight v-if="leftCollapsed" class="w-3 h-3" />
+            <ChevronLeft v-else class="w-3 h-3" />
+          </button>
 
           <!-- 顶部贴边工具栏（计划 ASCII 图允许「画布 + 贴边浮层」） -->
           <div class="absolute left-2 right-2 top-2 z-20 flex items-start gap-2 pointer-events-none">
@@ -198,6 +216,7 @@
               :nodes="minimap.nodes"
               :canvas="minimap.canvas"
               :view="minimap.view"
+              :edges="viewEdges"
               @center="onMinimapCenter"
               @zoom="onMinimapZoom"
             />
@@ -296,6 +315,33 @@
               </div>
             </div>
           </div>
+
+          <!-- 右键菜单（需求 m01569 第 6 条）：节点菜单与画布菜单共用同一组件 -->
+          <GraphContextMenu
+            v-if="menu"
+            :x="menu.x"
+            :y="menu.y"
+            :container-w="menuBox.w"
+            :container-h="menuBox.h"
+            :target="menuTarget"
+            :label-mode="filterState.labelMode"
+            :is-path-start="!!menu.id && filter.pathFrom.value === menu.id"
+            :is-path-end="!!menu.id && filter.pathTo.value === menu.id"
+            @close="closeMenu"
+            @open-note="openNote"
+            @focus-neighbors="focusNeighbors"
+            @path-start="onMenuPathStart"
+            @path-end="onMenuPathEnd"
+            @toggle-pin="onMenuTogglePin"
+            @set-color="onMenuSetColor"
+            @copy="onMenuCopy"
+            @detach="onMenuDetach"
+            @fit="fitView"
+            @reset-layout="resetLayout"
+            @reheat="reheatGraph"
+            @label-mode="setLabelMode"
+            @clear-filters="onMenuClearFilters"
+          />
         </div>
 
         <!-- ================= 右栏 ================= -->
@@ -380,8 +426,8 @@
 
 <script setup lang="ts">
 import {
-  AlertTriangle, ChevronUp, Maximize2, Minus, Network, Plus, RefreshCw,
-  RotateCcw, SlidersHorizontal, Sparkles, ZoomIn
+  AlertTriangle, ChevronLeft, ChevronRight, ChevronUp, Maximize2, Minus, Network, Plus,
+  RefreshCw, RotateCcw, SlidersHorizontal, Sparkles, ZoomIn
 } from 'lucide-vue-next'
 import type { GraphEdge, GraphTuning, LabelMode, LayoutName } from '~/lib/graph-types'
 import { GRAPH_TUNING_DEFAULTS, LAYOUT_OPTIONS, MIN_THREE_PANE_WIDTH, ZOOM } from '~/lib/graph-constants'
@@ -399,6 +445,7 @@ import GraphTuningPanel from '~/components/graph/GraphTuningPanel.vue'
 import NodeDetail from '~/components/graph/NodeDetail.vue'
 import GraphSearchPanel from '~/components/graph/GraphSearchPanel.vue'
 import Minimap from '~/components/graph/Minimap.vue'
+import GraphContextMenu from '~/components/graph/GraphContextMenu.vue'
 import AppSelect from '~/components/AppSelect.vue'
 
 const route = useRoute()
@@ -454,7 +501,7 @@ const {
 
 // ---------- 视图状态 ----------
 interface MinimapSnapshot {
-  nodes: { id: string; x: number; y: number; r: number; degree: number }[]
+  nodes: { id: string; x: number; y: number; r: number; degree: number; domain?: string; color?: string }[]
   canvas: { w: number; h: number }
   view: { x: number; y: number; k: number }
 }
@@ -471,6 +518,7 @@ interface RenderStatus {
   labelCount: number
   mocCount: number
   focusedCount: number
+  customColorCount: number
   tuning: GraphTuning
 }
 /** GraphView / GraphSearchPanel 通过 defineExpose 暴露的方法（只列本页用到的） */
@@ -483,6 +531,11 @@ interface GraphViewApi {
   focusNode: (key: string) => boolean
   centerOn: (gx: number, gy: number) => void
   zoomTo: (k: number) => void
+  setNodeColor: (id: string, color: string | null) => void
+  resetNodeColors: () => void
+  nodeColorOf: (id: string) => string | null
+  togglePin: (id: string) => boolean
+  isPinned: (id: string) => boolean
   minimap: () => MinimapSnapshot
   renderStatus: () => RenderStatus
 }
@@ -524,7 +577,12 @@ useHead({ title: '知识图谱 · 拾光' })
 const leftOpen = ref(false)
 const rightOpen = ref(false)
 const mobilePanelOpen = ref(false)
-const leftVisible = computed(() => threePane.value || leftOpen.value)
+/**
+ * 左栏是否被手动收起（需求 m01569 第 3 条）。
+ * 只在三区模式下有意义——窄屏左栏本来就是抽屉，收起等同于关闭。
+ */
+const leftCollapsed = ref(false)
+const leftVisible = computed(() => (threePane.value && !leftCollapsed.value) || leftOpen.value)
 const rightVisible = computed(() => threePane.value || rightOpen.value)
 
 function closeOverlays() {
@@ -546,6 +604,7 @@ const renderStatus = ref<RenderStatus>({
   labelCount: 0,
   mocCount: 0,
   focusedCount: 0,
+  customColorCount: 0,
   tuning: { ...GRAPH_TUNING_DEFAULTS }
 })
 const zoomPercent = computed(() => Math.round((renderStatus.value.zoomK || 1) * 100))
@@ -677,6 +736,85 @@ function resetLayout() {
 function togglePhysics() { graphRef.value?.togglePhysics() }
 function onMinimapCenter(gx: number, gy: number) { graphRef.value?.centerOn(gx, gy) }
 function onMinimapZoom(k: number) { graphRef.value?.zoomTo(k) }
+
+// ---------- 右键菜单（需求 m01569 第 6 条） ----------
+type GraphContextPayload = { id: string | null; x: number; y: number }
+
+const menu = ref<GraphContextPayload | null>(null)
+
+/** 右键目标：节点菜单需要标题 / slug / 固定状态 / 当前自定义色；空白处右键则为 null */
+const menuTarget = computed(() => {
+  const m = menu.value
+  if (!m || !m.id) return null
+  const n = nodeById.value.get(m.id)
+  if (!n) return null
+  return {
+    id: n.id,
+    title: n.title,
+    slug: n.slug,
+    pinned: !!graphRef.value?.isPinned(n.id),
+    color: graphRef.value?.nodeColorOf(n.id) ?? null
+  }
+})
+
+/** 菜单贴边避让用的容器尺寸（取最近一次同步到的画布尺寸） */
+const menuBox = computed(() => ({
+  w: minimap.value.canvas.w || 800,
+  h: minimap.value.canvas.h || 500
+}))
+
+function onGraphContextMenu(p: GraphContextPayload) {
+  menu.value = { ...p }
+}
+function closeMenu() { menu.value = null }
+
+function onMenuSetColor(id: string, color: string | null) {
+  graphRef.value?.setNodeColor(id, color)
+  toast.success(color ? '已设置节点颜色' : '已恢复领域色')
+}
+function clearNodeColors() {
+  graphRef.value?.resetNodeColors()
+  toast.success('已清除全部自定义颜色')
+}
+function onMenuCopy(text: string, label: string) {
+  const p = navigator.clipboard?.writeText(text)
+  if (!p) {
+    toast.error('当前环境不支持剪贴板')
+    return
+  }
+  p.then(
+    () => toast.success(`已复制${label}`),
+    () => toast.error('复制失败，浏览器未授权剪贴板')
+  )
+}
+function onMenuPathStart(id: string) {
+  filter.setScope('path')
+  filter.pathFrom.value = id
+  filter.pathTo.value = null
+  toast.success('已设为路径起点，再右键另一个节点选终点')
+}
+function onMenuPathEnd(id: string) {
+  filter.setScope('path')
+  if (!filter.pathFrom.value || filter.pathFrom.value === id) {
+    filter.pathFrom.value = id
+    filter.pathTo.value = null
+    toast.success('已设为路径起点')
+  } else {
+    filter.pathTo.value = id
+  }
+}
+function onMenuTogglePin(id: string) {
+  const on = graphRef.value?.togglePin(id)
+  toast.success(on ? '已固定该节点' : '已解除固定')
+}
+function onMenuDetach(id: string) {
+  selectedId.value = id
+  nextTick(() => { unlinkSelected() })
+}
+function onMenuClearFilters() {
+  clearAll()
+  closeMenu()
+}
 
 // ---------- 断开全部关系（T4.2 Delete，二次确认） ----------
 async function unlinkSelected() {
