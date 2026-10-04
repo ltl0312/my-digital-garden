@@ -143,14 +143,10 @@
       </p>
     </section>
 
-    <!-- 显示 -->
+    <!-- 显示（标签模式 / 节点大小 / 连线粗细已移到左栏的「图谱控制」面板） -->
     <section>
       <h3 class="text-[12px] font-semibold text-ink-3 mb-2">显示</h3>
       <div class="space-y-0.5">
-        <label class="flex items-center gap-2 h-8 px-2 rounded-[6px] cursor-pointer text-[12px] text-ink-2 hover:bg-surface-3 transition-colors duration-micro">
-          <input v-model="filter.state.showLabels" type="checkbox" class="accent-[var(--accent)] shrink-0" />
-          <span>常显标签</span>
-        </label>
         <label class="flex items-center gap-2 h-8 px-2 rounded-[6px] cursor-pointer text-[12px] text-ink-2 hover:bg-surface-3 transition-colors duration-micro">
           <input v-model="filter.state.showIsolated" type="checkbox" class="accent-[var(--accent)] shrink-0" />
           <span>孤立节点</span>

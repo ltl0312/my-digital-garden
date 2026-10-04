@@ -86,17 +86,20 @@
 // · 邻域聚焦：邻域内描边 2.5px、邻域外 0.12 不透明度、邻域内连线 2.4px
 // · 布局：force 由 d3 力仿真接手，tree/radial/timeline 由 computeLayout 纯函数算完再 400ms 补间
 import * as d3 from 'd3'
-import type { GraphEdge, GraphNode, LayoutName } from '~/lib/graph-types'
+import type { GraphEdge, GraphNode, GraphTuning, LabelMode, LayoutName } from '~/lib/graph-types'
 import {
+  CENTER_FORCE_SCALE,
   DRAG_CLICK_THRESHOLD_PX,
   EDGE_STYLE,
   FOCUS_STYLE,
   LAYOUT_TRANSITION_MS,
   MATURITY_COLORS,
+  MAX_LABELS,
   PIN_DOT_RADIUS,
   RENDER_TIERS,
   TOUCH_HIT_RADIUS,
-  ZOOM
+  ZOOM,
+  isMocTitle
 } from '~/lib/graph-constants'
 import { FORCE_PARAMS, computeLayout } from '~/lib/graphLayouts'
 import { patchGraphState, readGraphState } from '~/lib/graphState'
@@ -117,6 +120,8 @@ interface VNode {
   inDegree: number
   degree: number
   isolated: boolean
+  /** 标题以 MOC 开头：常态下只有这些节点标注名称 */
+  isMoc: boolean
   x: number
   y: number
   fx: number | null
@@ -139,7 +144,10 @@ const props = defineProps<{
   /** 邻域聚焦集合（含自身）；null = 不聚焦 */
   focusIds: string[] | null
   layout: LayoutName
-  showLabels: boolean
+  /** 标签显示模式：moc = 常态只标注 MOC 节点（默认）/ all = 全部 / off = 关闭 */
+  labelMode: LabelMode
+  /** 控制面板参数（显示 + 力导向） */
+  tuning: GraphTuning
   pickingPath: boolean
 }>()
 
@@ -238,8 +246,9 @@ const minScale = () => (size.w < ZOOM.narrowCanvasWidth ? ZOOM.minNarrow : ZOOM.
 const focusSet = computed(() => (props.focusIds && props.focusIds.length ? new Set(props.focusIds) : null))
 
 const radiusOf = (degree: number, isolated: boolean) => {
-  if (isolated) return 9
-  return Math.min(36, Math.max(11, 11 + degree * 2))
+  const scale = props.tuning.nodeScale
+  if (isolated) return 9 * scale
+  return Math.min(36, Math.max(11, 11 + degree * 2)) * scale
 }
 
 const colorOf = (n: { domain: string; maturity: string }) =>
@@ -326,9 +335,10 @@ function drawCanvas() {
   const focus = focusSet.value
   const drawn = drawnIds.value
   const inDraw = (id: string) => !drawn || drawn.has(id)
+  const ew = props.tuning.edgeWidth
 
   // 连线
-  ctx.lineWidth = EDGE_STYLE.baseWidth / k
+  ctx.lineWidth = (EDGE_STYLE.baseWidth * ew) / k
   for (const l of linkData) {
     const s = nodeMap.get(l.source)
     const t = nodeMap.get(l.target)
@@ -336,7 +346,7 @@ function drawCanvas() {
     const hot = !focus || (focus.has(s.id) && focus.has(t.id))
     ctx.globalAlpha = hot ? 0.9 : EDGE_STYLE.dimOpacity
     ctx.strokeStyle = l.kind === 'tag' ? cssVars.ink3 : cssVars.line
-    ctx.lineWidth = (hot && focus ? EDGE_STYLE.focusWidth : EDGE_STYLE.baseWidth) / k
+    ctx.lineWidth = ((hot && focus ? EDGE_STYLE.focusWidth : EDGE_STYLE.baseWidth) * ew) / k
     if (l.kind === 'tag') ctx.setLineDash([4 / k, 4 / k])
     else ctx.setLineDash([])
     ctx.beginPath()
@@ -393,17 +403,30 @@ function drawCanvas() {
 
 type LabelNode = VNode & { labelText: string }
 
+/**
+ * 单个节点当前是否显示名称。
+ * · 选中 / 悬停：始终显示（交互反馈优先）
+ * · 聚焦态：只显示被聚焦的节点——常态被隐藏的普通节点，聚焦时会全部露出来
+ * · 常态：按 labelMode —— moc 只显示 MOC 节点（默认），all 全部显示，off 全部隐藏
+ */
+function labelVisible(n: VNode): boolean {
+  if (n.id === props.selectedId) return true
+  if (hoverCard.value?.title === n.title) return true
+  const focus = focusSet.value
+  if (focus) return focus.has(n.id)
+  if (props.labelMode === 'off') return false
+  if (props.labelMode === 'all') return true
+  return n.isMoc
+}
+
 function labelsToShow(): LabelNode[] {
   const focus = focusSet.value
   const out: LabelNode[] = []
   for (const n of nodeData) {
-    const hot = !focus || focus.has(n.id)
-    if (!hot) continue
-    const isSelected = n.id === props.selectedId
-    const isHovered = hoverCard.value?.title === n.title
-    if (!(props.showLabels && n.degree >= 4) && !isSelected && !isHovered) continue
+    if (!labelVisible(n)) continue
     out.push(Object.assign(n, { labelText: n.title.length > 14 ? `${n.title.slice(0, 14)}…` : n.title }))
-    if (out.length >= 160) break
+    // 聚焦时用户要看到**全部**被聚焦节点的名字，所以上限只在常态下生效
+    if (!focus && out.length >= MAX_LABELS) break
   }
   return out
 }
@@ -450,7 +473,7 @@ function buildLayers() {
       .data(linkData, (d: any) => `${d.source}|${d.target}`)
       .join('line')
       .attr('stroke', (d: VLink) => (d.kind === 'tag' ? 'var(--ink-3)' : 'var(--line)'))
-      .attr('stroke-width', EDGE_STYLE.baseWidth)
+      .attr('stroke-width', EDGE_STYLE.baseWidth * props.tuning.edgeWidth)
       .attr('stroke-dasharray', (d: VLink) => (d.kind === 'tag' ? '4 4' : null))
       .style('transition', `opacity ${EDGE_STYLE.dimTransitionMs}ms ease`)
   } else {
@@ -504,12 +527,7 @@ function buildLayers() {
       .attr('stroke', 'var(--surface)')
       .attr('stroke-width', 3)
       .attr('stroke-linejoin', 'round')
-      .attr('opacity', (d: VNode) => {
-        const hot = !focus || focus.has(d.id)
-        if (!hot) return 0
-        if (d.id === props.selectedId) return 1
-        return props.showLabels && d.degree >= 4 ? 1 : 0
-      })
+      .attr('opacity', (d: VNode) => (labelVisible(d) ? 1 : 0))
       .style('pointer-events', 'none')
       .text((d: VNode) => (d.title.length > 14 ? `${d.title.slice(0, 14)}…` : d.title))
 
@@ -618,11 +636,10 @@ function attachInteraction() {
     .on('mouseleave', (event: any, d: VNode) => {
       hoverCard.value = null
       if (tier.value === 'svg') {
-        const focus = focusSet.value
         d3.select(event.currentTarget).select('circle.gnode-dot')
           .attr('stroke-width', d.isolated ? FOCUS_STYLE.isolatedStrokeWidth : FOCUS_STYLE.nodeBaseStrokeWidth)
         d3.select(event.currentTarget).select('text.gnode-label')
-          .attr('opacity', props.showLabels && d.degree >= 4 && (!focus || focus.has(d.id)) ? 1 : 0)
+          .attr('opacity', labelVisible(d) ? 1 : 0)
       }
     })
 }
@@ -668,6 +685,7 @@ function syncGraph() {
       old.inDegree = p.inDegree
       old.degree = degree
       old.isolated = isolated
+      old.isMoc = isMocTitle(p.title)
       old.r = r
       old.color = color
       next.push(old)
@@ -688,6 +706,7 @@ function syncGraph() {
       inDegree: p.inDegree ?? 0,
       degree,
       isolated,
+      isMoc: isMocTitle(p.title),
       x,
       y,
       fx: pinned ? pin![2] : null,
@@ -706,6 +725,60 @@ function syncGraph() {
   render()
 }
 
+// ---------- 力导向参数（控制面板可调） ----------
+/** 连接力：沿用「两端度数越大、连接越松」的既有曲线，再乘控制面板系数 */
+function linkStrengthOf(l: any) {
+  const s = nodeMap.get(typeof l.source === 'object' ? l.source.id : l.source)?.degree || 1
+  const t = nodeMap.get(typeof l.target === 'object' ? l.target.id : l.target)?.degree || 1
+  return (1 / Math.min(6, Math.max(1, Math.min(s, t)))) * props.tuning.linkStrength
+}
+
+/**
+ * 排斥力：聚焦时**被聚焦的节点**额外放大 focusRepel 倍（需求 m01104 第 2 条），
+ * 让聚焦邻域自动散开、名字不叠在一起。
+ */
+function chargeStrengthOf(d: any) {
+  const base = FORCE_PARAMS.chargeStrength * props.tuning.chargeStrength
+  const focus = focusSet.value
+  return focus && focus.has(d.id) ? base * props.tuning.focusRepel : base
+}
+
+/**
+ * 把当前 tuning 与画布尺寸同步进 d3 的各个力。
+ * d3 的 `.strength()` / `.distance()` setter 内部会调用 `initialize()`，
+ * 所以改完 accessor 之后必须再 restart 才生效（见 reheat）。
+ */
+function refreshForces() {
+  if (!simulation) return
+  const t = props.tuning
+  const cx = size.w / 2
+  const cy = size.h / 2
+  const linkForce = simulation.force('link')
+  if (linkForce) {
+    linkForce.distance(FORCE_PARAMS.linkDistance * t.linkDistance)
+    linkForce.strength(linkStrengthOf)
+  }
+  const charge = simulation.force('charge')
+  if (charge) charge.strength(chargeStrengthOf)
+  // forceCenter 只做刚性平移（不改变相对布局），可调的那一份中心力由 forceX/forceY 承担
+  const center = simulation.force('center')
+  if (center) center.x(cx).y(cy)
+  const fx = simulation.force('x')
+  if (fx) fx.x(cx).strength(t.centerStrength * CENTER_FORCE_SCALE)
+  const fy = simulation.force('y')
+  if (fy) fy.y(cy).strength(t.centerStrength * CENTER_FORCE_SCALE)
+  const collide = simulation.force('collide')
+  if (collide) collide.radius((d: any) => (d.r || 12) + FORCE_PARAMS.collidePadding)
+}
+
+/** 重新点火：把仿真从收敛状态拉起来（alpha 越大抖得越厉害） */
+function reheat(alpha = 0.5) {
+  if (!simulation) return
+  converged.value = false
+  simulation.alpha(alpha).restart()
+  if (!physicsActive.value) physicsActive.value = true
+}
+
 function restartSimulation() {
   if (!simulation) return
   simulation.nodes(nodeData)
@@ -714,8 +787,7 @@ function restartSimulation() {
     linkForce.links(linkData)
     linkForce.id((d: any) => d.id)
   }
-  const center = simulation.force('center')
-  if (center) center.x(size.w / 2).y(size.h / 2)
+  refreshForces()
   converged.value = false
   simulation.alpha(1).restart()
   if (physicsActive.value) simulation.alphaTarget(0)
@@ -735,15 +807,14 @@ function ensureSimulation() {
   if (simulation) return
   const linkForce = d3.forceLink<any, any>([])
     .id((d: any) => d.id)
-    .distance(FORCE_PARAMS.linkDistance)
-    .strength((l: any) => 1 / Math.min(6, Math.max(1, Math.min(
-      nodeMap.get(typeof l.source === 'object' ? l.source.id : l.source)?.degree || 1,
-      nodeMap.get(typeof l.target === 'object' ? l.target.id : l.target)?.degree || 1
-    ))))
+    .distance(FORCE_PARAMS.linkDistance * props.tuning.linkDistance)
+    .strength(linkStrengthOf)
   simulation = d3.forceSimulation<any>([])
     .force('link', linkForce)
-    .force('charge', d3.forceManyBody().strength(FORCE_PARAMS.chargeStrength))
+    .force('charge', d3.forceManyBody().strength(chargeStrengthOf))
     .force('center', d3.forceCenter(size.w / 2, size.h / 2))
+    .force('x', d3.forceX(size.w / 2).strength(props.tuning.centerStrength * CENTER_FORCE_SCALE))
+    .force('y', d3.forceY(size.h / 2).strength(props.tuning.centerStrength * CENTER_FORCE_SCALE))
     .force('collide', d3.forceCollide((d: any) => (d.r || 12) + FORCE_PARAMS.collidePadding))
     .alphaDecay(FORCE_PARAMS.alphaDecay)
     .velocityDecay(FORCE_PARAMS.velocityDecay)
@@ -1048,8 +1119,7 @@ function onResize() {
     zoomBehavior.scaleExtent([minScale(), ZOOM.max])
     if (before !== minScale()) d3.select(svgRef.value).call(zoomBehavior)
   }
-  const center = simulation?.force('center')
-  if (center) center.x(size.w / 2).y(size.h / 2)
+  refreshForces()
   simulation?.alpha(0.3).restart()
   if (tier.value === 'canvas') {
     drawCanvas()
@@ -1151,14 +1221,38 @@ onBeforeUnmount(() => {
 watch(() => props.nodes, () => syncGraph())
 watch(() => props.edges, () => syncGraph())
 watch(() => props.layout, (v) => applyLayout(v))
-watch([() => props.selectedId, () => props.showLabels, () => props.focusIds], () => {
+/** 只重画、不碰仿真：选中项 / 标签模式变化时用 */
+function redraw() {
   if (tier.value === 'svg') buildLayers()
   else {
     drawCanvas()
     positionLabels()
   }
   render()
+}
+
+watch([() => props.selectedId, () => props.labelMode], () => redraw())
+
+// 聚焦变化：被聚焦节点的排斥力要变大，所以除了重画还得把仿真重新点着
+watch(() => props.focusIds, () => {
+  refreshForces()
+  reheat(0.5)
+  redraw()
 })
+
+// 控制面板参数：节点半径 / 连线粗细 / 各个力都要跟着变
+watch(() => props.tuning, () => {
+  for (const n of nodeData) n.r = radiusOf(n.degree, n.isolated)
+  if (tier.value === 'svg') buildLayers()
+  else {
+    nodeSel?.select('circle.gnode-hit').attr('r', (d: VNode) => hitRadiusOf(d))
+    drawCanvas()
+    positionLabels()
+  }
+  refreshForces()
+  reheat(0.6)
+  render()
+}, { deep: true })
 
 function onPointerDownCapture(e: PointerEvent) {
   const next = e.pointerType === 'touch'
@@ -1175,6 +1269,7 @@ defineExpose({
   shortestPath,
   resetLayout,
   togglePhysics,
+  reheat,
   zoomBy,
   fitView,
   focusNode,
@@ -1191,7 +1286,12 @@ defineExpose({
     drawnCount: drawnCount.value,
     tier: tier.value,
     converged: converged.value,
-    zoomK: Number(zoomK.value)
+    zoomK: Number(zoomK.value),
+    labelMode: props.labelMode,
+    labelCount: labelsToShow().length,
+    mocCount: nodeData.filter(n => n.isMoc).length,
+    focusedCount: focusSet.value ? focusSet.value.size : 0,
+    tuning: { ...props.tuning }
   })
 })
 </script>

@@ -76,6 +76,15 @@
             :render-status="renderStatus"
             @toggle-physics="togglePhysics"
           />
+          <GraphTuningPanel
+            :tuning="tuning"
+            :label-mode="filterState.labelMode"
+            :physics="physicsActive"
+            @change="onTuningChange"
+            @label-mode="setLabelMode"
+            @reheat="reheatGraph"
+            @reset="resetTuning"
+          />
         </aside>
 
         <!-- 抽屉遮罩（非三区模式） -->
@@ -95,7 +104,8 @@
             :selected-id="selectedId"
             :focus-ids="activeFocusIds"
             :layout="layout"
-            :show-labels="filterState.showLabels"
+            :label-mode="filterState.labelMode"
+            :tuning="tuning"
             :picking-path="pickingPath"
             @update:selected-id="onSelect"
             @open="openNote"
@@ -373,9 +383,9 @@ import {
   AlertTriangle, ChevronUp, Maximize2, Minus, Network, Plus, RefreshCw,
   RotateCcw, SlidersHorizontal, Sparkles, ZoomIn
 } from 'lucide-vue-next'
-import type { GraphEdge, LayoutName } from '~/lib/graph-types'
-import { LAYOUT_OPTIONS, MIN_THREE_PANE_WIDTH, ZOOM } from '~/lib/graph-constants'
-import { patchGraphState, readGraphState } from '~/lib/graphState'
+import type { GraphEdge, GraphTuning, LabelMode, LayoutName } from '~/lib/graph-types'
+import { GRAPH_TUNING_DEFAULTS, LAYOUT_OPTIONS, MIN_THREE_PANE_WIDTH, ZOOM } from '~/lib/graph-constants'
+import { patchGraphState, readGraphSettings, readGraphState, writeGraphSettings } from '~/lib/graphState'
 import { useGraphData } from '~/composables/useGraphData'
 import { useGraphFilter } from '~/composables/useGraphFilter'
 import { useConfirm } from '~/composables/useConfirm'
@@ -385,6 +395,7 @@ import GraphView from '~/components/GraphView.vue'
 import type { GraphNodeProp } from '~/components/GraphView.vue'
 import GraphSkeleton from '~/components/graph/GraphSkeleton.vue'
 import FilterPanel from '~/components/graph/FilterPanel.vue'
+import GraphTuningPanel from '~/components/graph/GraphTuningPanel.vue'
 import NodeDetail from '~/components/graph/NodeDetail.vue'
 import GraphSearchPanel from '~/components/graph/GraphSearchPanel.vue'
 import Minimap from '~/components/graph/Minimap.vue'
@@ -456,11 +467,17 @@ interface RenderStatus {
   tier: 'svg' | 'canvas'
   converged: boolean
   zoomK: number
+  labelMode: LabelMode
+  labelCount: number
+  mocCount: number
+  focusedCount: number
+  tuning: GraphTuning
 }
 /** GraphView / GraphSearchPanel 通过 defineExpose 暴露的方法（只列本页用到的） */
 interface GraphViewApi {
   resetLayout: () => void
   togglePhysics: () => void
+  reheat: (alpha?: number) => void
   zoomBy: (factor: number) => void
   fitView: () => void
   focusNode: (key: string) => boolean
@@ -486,6 +503,24 @@ const layoutModel = computed({
   set: (v: string) => { layout.value = v as LayoutName }
 })
 
+// ---------- 图谱控制面板（显示 + 力导向，仿 Obsidian；需求 m01104 第 3 条）----------
+// 参数单独持久化在 garden-graph-settings-v3：与 garden-graph-state（坐标 / 筛选）分开，
+// 清掉坐标或筛选不会连带把调好的力参数一起清掉。
+const tuning = reactive<GraphTuning>(readGraphSettings())
+const onTuningChange = (patch: Partial<GraphTuning>) => {
+  Object.assign(tuning, patch)
+  writeGraphSettings({ ...tuning })
+}
+const resetTuning = () => {
+  Object.assign(tuning, GRAPH_TUNING_DEFAULTS)
+  writeGraphSettings({ ...tuning })
+}
+const setLabelMode = (m: LabelMode) => { filterState.labelMode = m }
+const reheatGraph = () => graphRef.value?.reheat()
+
+// 浏览器标签标题（需求 m01104 第 4 条）：此前本页没有 useHead，标签显示的是 URL
+useHead({ title: '知识图谱 · 拾光' })
+
 const leftOpen = ref(false)
 const rightOpen = ref(false)
 const mobilePanelOpen = ref(false)
@@ -499,7 +534,19 @@ function closeOverlays() {
 
 // ---------- 渲染状态（A12 常驻可见） ----------
 const renderStatus = ref<RenderStatus>({
-  fps: 0, firstPaintMs: 0, nodeCount: 0, edgeCount: 0, drawnCount: 0, tier: 'svg', converged: false, zoomK: 1
+  fps: 0,
+  firstPaintMs: 0,
+  nodeCount: 0,
+  edgeCount: 0,
+  drawnCount: 0,
+  tier: 'svg',
+  converged: false,
+  zoomK: 1,
+  labelMode: 'moc',
+  labelCount: 0,
+  mocCount: 0,
+  focusedCount: 0,
+  tuning: { ...GRAPH_TUNING_DEFAULTS }
 })
 const zoomPercent = computed(() => Math.round((renderStatus.value.zoomK || 1) * 100))
 

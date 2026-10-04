@@ -72,7 +72,9 @@ const nodeHits = () => page.evaluate(() => {
         x: r.left + r.width / 2,
         y: r.top + r.height / 2,
         pinned: !!(d && d.fx != null && d.fy != null),
-        title: d ? d.title : ''
+        title: d ? d.title : '',
+        degree: d && typeof d.degree === 'number' ? d.degree : 0,
+        isolated: !!(d && d.isolated)
       }
     })
     .filter(n => Number.isFinite(n.x) && Number.isFinite(n.y) && n.x > 0 && n.y > 0 && !n.pinned)
@@ -339,6 +341,209 @@ await sleep(400)
 const zoomNarrow = await page.evaluate(() => document.querySelector('[data-testid="graph-canvas"]')?.getAttribute('data-zoom'))
 const k = zoomNarrow === null || zoomNarrow === undefined ? NaN : Number(zoomNarrow)
 log('G40 @390 缩放下限落在 0.335–0.40', Number.isFinite(k) && k >= 0.335 && k <= 0.40, `k=${zoomNarrow}`)
+
+// ================= A13/A14 标签策略 + 图谱控制面板 + 聚焦（需求 m01104）=================
+await setVp(1440, 900)
+await goto('/graph')
+
+log('G43 @1440 图谱控制面板可见', await vis('[data-testid="graph-tuning-panel"]'))
+const modeChecked = (m) => page.evaluate((mm) => document.querySelector(`[data-testid="graph-label-mode-${mm}"]`)?.getAttribute('aria-checked'), m)
+log('G44 默认标签模式 = 仅 MOC', (await modeChecked('moc')) === 'true')
+
+/**
+ * 当前真正显示出来的标签：{ text, x, y }。
+ * canvas 分级读 DOM 标签层 .graph-label，svg 分级读 text.gnode-label（opacity>=0.5）。
+ * 坐标取 d3 的 d.x/d.y（仿真坐标），不受 <g> 盒子包含隐形文字影响。
+ */
+const labelNodes = () => page.evaluate(() => {
+  const coords = {}
+  for (const g of document.querySelectorAll('g.gnode')) {
+    const d = g.__data__
+    if (!d || !d.title) continue
+    const t = d.title.length > 14 ? d.title.slice(0, 14) + '…' : d.title
+    coords[t] = { x: d.x, y: d.y }
+  }
+  const out = []
+  for (const el of document.querySelectorAll('.graph-label')) {
+    if (getComputedStyle(el).display === 'none') continue
+    const t = (el.textContent || '').trim()
+    if (t && coords[t]) out.push({ text: t, x: coords[t].x, y: coords[t].y })
+  }
+  for (const el of document.querySelectorAll('text.gnode-label')) {
+    if (Number(el.getAttribute('opacity') || 0) < 0.5) continue
+    const t = (el.textContent || '').trim()
+    if (t && coords[t]) out.push({ text: t, x: coords[t].x, y: coords[t].y })
+  }
+  return out
+})
+const visibleLabels = async () => [...new Set((await labelNodes()).map(n => n.text))]
+/** 当前可见标签对应节点的两两平均距离（聚焦斥力生效时应当变大） */
+const meanSpread = async () => {
+  const seen = new Set()
+  const pts = []
+  for (const n of await labelNodes()) {
+    if (seen.has(n.text)) continue
+    seen.add(n.text)
+    pts.push(n)
+  }
+  if (pts.length < 2) return null
+  let sum = 0
+  let cnt = 0
+  for (let i = 0; i < pts.length; i++) {
+    for (let j = i + 1; j < pts.length; j++) {
+      sum += Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y)
+      cnt++
+    }
+  }
+  return sum / cnt
+}
+const isMocLabel = (t) => /^MOC\b/i.test(t)
+
+const mocOnly = await visibleLabels()
+log('G45 常态只显示 MOC 节点名', mocOnly.length > 0 && mocOnly.every(isMocLabel), `${mocOnly.length} 个：${mocOnly.slice(0, 3).join(' / ')}`)
+
+await page.evaluate(() => document.querySelector('[data-testid="graph-label-mode-all"]')?.click())
+await sleep(900)
+const allLabels = await visibleLabels()
+log('G46 切「全部」后出现非 MOC 标签', allLabels.length > mocOnly.length && allLabels.some(t => !isMocLabel(t)), `${mocOnly.length} → ${allLabels.length}`)
+
+await page.evaluate(() => document.querySelector('[data-testid="graph-label-mode-moc"]')?.click())
+await sleep(900)
+const backMoc = await visibleLabels()
+log('G47 切回「仅 MOC」恢复', backMoc.length > 0 && backMoc.every(isMocLabel), `${backMoc.length} 个`)
+
+const sliderIds = await page.evaluate(() => ['nodeScale', 'edgeWidth', 'centerStrength', 'chargeStrength', 'linkStrength', 'linkDistance', 'focusRepel']
+  .map(k => !!document.querySelector(`[data-testid="graph-tuning-${k}"]`)))
+log('G48 控制面板含 7 个参数滑杆', sliderIds.every(Boolean), JSON.stringify(sliderIds))
+const focusRepelDefault = await page.evaluate(() => document.querySelector('[data-testid="graph-tuning-focusRepel"]')?.value)
+log('G49 聚焦斥力默认 2.4', Number(focusRepelDefault) === 2.4, `v=${focusRepelDefault}`)
+
+// 控制面板自身不能被挤出：逐元素查横向溢出
+const tuningOverflow = await page.evaluate(() => {
+  const root = document.querySelector('[data-testid="graph-tuning-panel"]')
+  if (!root) return ['no-panel']
+  const bad = []
+  for (const el of root.querySelectorAll('*')) {
+    if (el.offsetWidth === 0 && el.offsetHeight === 0) continue
+    if (el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0) bad.push(el.className || el.tagName)
+  }
+  return bad
+})
+log('G55 控制面板内部无横向溢出', tuningOverflow.length === 0, tuningOverflow.slice(0, 3).join(' | ') || 'ok')
+
+// 滑杆即时生效：拉大节点 → 半径变大，且写回 localStorage
+const radiusOfFirst = () => page.evaluate(() => {
+  const g = document.querySelector('g.gnode')
+  return g && g.__data__ && typeof g.__data__.r === 'number' ? g.__data__.r : 0
+})
+const rBefore = await radiusOfFirst()
+await page.evaluate(() => {
+  const el = document.querySelector('[data-testid="graph-tuning-nodeScale"]')
+  el.value = '1.8'
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+})
+await sleep(800)
+const rAfter = await radiusOfFirst()
+const savedScale = await page.evaluate(() => {
+  try { return JSON.parse(localStorage.getItem('garden-graph-settings-v3') || '{}').nodeScale } catch { return null }
+})
+log('G56 节点大小滑杆即时生效并写回存档', rAfter > rBefore && savedScale === 1.8, `${rBefore} → ${rAfter} / saved=${savedScale}`)
+
+await page.evaluate(() => document.querySelector('[data-testid="graph-tuning-reset"]')?.click())
+await sleep(800)
+const rReset = await radiusOfFirst()
+log('G57 「恢复默认」把参数复原', Math.abs(rReset - rBefore) < 0.01, `${rAfter} → ${rReset}`)
+
+// 聚焦：只显示聚焦节点名 + 聚焦节点之间被推开
+// 先清掉上一轮持久化的坐标/钉住状态，让布局从确定性播种重新开始，基线才可比
+await page.evaluate(() => localStorage.removeItem('garden-graph-state'))
+await goto('/graph')
+const hits2 = await nodeHits()
+const box2 = await page.evaluate(() => {
+  const el = document.querySelector('[data-testid="graph-canvas"]')
+  const r = el.getBoundingClientRect()
+  return { x: r.left, y: r.top, w: r.width, h: r.height }
+})
+// 聚焦测试要选一个**有邻居**的节点（孤立节点 2 跳集合只有自己，量不出斥力）
+const centerHits = hits2.filter(n => n.x > box2.x + box2.w * 0.25 && n.x < box2.x + box2.w * 0.7 && n.y > box2.y + box2.h * 0.3 && n.y < box2.y + box2.h * 0.7)
+const pick2 = centerHits.find(n => n.degree >= 3 && !n.isolated) || centerHits[0] || hits2.find(n => n.degree >= 3) || hits2[0]
+if (pick2) {
+  await page.mouse.click(pick2.x, pick2.y)
+  await sleep(500)
+}
+const focusBtn = await vis('[data-testid="graph-focus-neighbors"]')
+log('G50 节点详情含「聚焦邻居」按钮', focusBtn)
+
+let spreadBefore = null
+let spreadAfter = null
+let focusLabels = []
+if (focusBtn) {
+  await page.click('[data-testid="graph-focus-neighbors"]')
+  await sleep(60) // 只取一帧：此时标签已切到聚焦集合，仿真还没跑开
+  focusLabels = await visibleLabels()
+  spreadBefore = await meanSpread()
+  await sleep(4200) // 等聚焦后的力导向跑稳，再量最终间距
+  spreadAfter = await meanSpread()
+}
+log('G51 聚焦后显示非 MOC 的聚焦节点名', focusLabels.length > 0 && focusLabels.some(t => !isMocLabel(t)), `${focusLabels.length} 个：${focusLabels.slice(0, 3).join(' / ')}`)
+// 独立复算：从接口拉图，按选中节点做 2 跳 BFS，聚焦后可见的标签必须全部落在这个集合里
+const focusScope = pick2
+  ? await page.evaluate(async (selTitle) => {
+      const res = await fetch('/api/notes/graph')
+      const data = await res.json()
+      const byId = new Map(data.nodes.map(n => [n.id, n]))
+      const adj = new Map()
+      for (const e of data.edges) {
+        if (!adj.has(e.source)) adj.set(e.source, [])
+        if (!adj.has(e.target)) adj.set(e.target, [])
+        adj.get(e.source).push(e.target)
+        adj.get(e.target).push(e.source)
+      }
+      const start = data.nodes.find(n => n.title === selTitle)
+      if (!start) return null
+      const seen = new Set([start.id])
+      let frontier = [start.id]
+      for (let h = 0; h < 2; h++) {
+        const next = []
+        for (const id of frontier) {
+          for (const nb of (adj.get(id) || [])) if (!seen.has(nb)) { seen.add(nb); next.push(nb) }
+        }
+        frontier = next
+      }
+      return [...seen].map(id => byId.get(id)?.title).filter(Boolean)
+    }, pick2.title)
+  : null
+const truncLabel = (t) => (t.length > 14 ? t.slice(0, 14) + '…' : t)
+const scopeSet = new Set((focusScope || []).map(truncLabel))
+log('G52 聚焦后只显示聚焦集合内的节点名', !!focusScope && focusLabels.length > 0 && focusLabels.every(t => scopeSet.has(t)),
+  `集合 ${scopeSet.size} 个 · 可见 ${focusLabels.length} 个`)
+const grew = Number.isFinite(spreadBefore) && Number.isFinite(spreadAfter) && spreadAfter > spreadBefore * 1.02
+log('G53 聚焦斥力生效（聚焦节点被推开）', grew, `${spreadBefore === null ? 'n/a' : spreadBefore.toFixed(1)} → ${spreadAfter === null ? 'n/a' : spreadAfter.toFixed(1)}`)
+
+// 「聚焦斥力」这个倍数本身生效：1.0（等于不加成）与 5.0（强加成）分别跑到稳定态比间距
+const setTuning = (key, val) => page.evaluate(([k, v]) => {
+  const el = document.querySelector(`[data-testid="graph-tuning-${k}"]`)
+  if (!el) return false
+  el.value = String(v)
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+  return true
+}, [key, val])
+if (focusBtn) {
+  await setTuning('focusRepel', 1)
+  await sleep(4200)
+  const spreadLow = await meanSpread()
+  await setTuning('focusRepel', 5)
+  await sleep(4200)
+  const spreadHigh = await meanSpread()
+  log('G58 聚焦斥力倍数生效（1.0 → 5.0 聚焦节点被推得更开）',
+    spreadLow != null && spreadHigh != null && spreadHigh > spreadLow * 1.15,
+    `${spreadLow === null ? 'n/a' : spreadLow.toFixed(1)} → ${spreadHigh === null ? 'n/a' : spreadHigh.toFixed(1)}`)
+  await setTuning('focusRepel', 2.4)
+  await sleep(400)
+}
+
+const pageTitle = await page.title()
+log('G54 标签标题为「知识图谱 · 拾光」', /知识图谱 · 拾光/.test(pageTitle), pageTitle)
 
 // ================= 控制台洁净 =================
 const benign = /ResizeObserver loop|favicon|Download the Vue Devtools/i

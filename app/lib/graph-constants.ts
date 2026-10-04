@@ -1,6 +1,6 @@
 // 知识图谱的集中常量：渲染阈值 / 交互尺寸 / 动效时长 / 持久化键。
 // 计划书硬性提醒 5：阈值、边长、路径长度等一律集中定义，不要散落字面量。
-import type { LayoutName } from './graph-types'
+import type { GraphTuning, LabelMode, LayoutName } from './graph-types'
 
 /** 渲染分级阈值（计划书 T3.1 / A10） */
 export const RENDER_TIERS = { svg: 150, canvas: 600, topN: 200 } as const
@@ -93,3 +93,54 @@ export const SEARCH_GROUP_LABEL: Record<string, string> = {
   domains: '领域',
   commands: '命令'
 }
+
+/**
+ * MOC（Map of Content）节点判定：标题以 `MOC` 开头，如「MOC - 前端」「MOC」。
+ * `\b` 保证 `MOCA` 这类词不会被误判。vault 里现有 35 个 `MOC - XXX.md`。
+ */
+export const MOC_TITLE_RE = /^MOC\b/i
+export const isMocTitle = (title: string) => MOC_TITLE_RE.test(title.trim())
+
+/** 标签显示模式（控制面板「显示」区） */
+export const LABEL_MODES: LabelMode[] = ['moc', 'all', 'off']
+export const LABEL_MODE_LABEL: Record<LabelMode, string> = {
+  moc: '仅 MOC',
+  all: '全部',
+  off: '关闭'
+}
+export const LABEL_MODE_HINT: Record<LabelMode, string> = {
+  moc: '只标注 MOC 节点；聚焦时改为标注被聚焦的节点',
+  all: '尽量标注所有节点（上限 160 个，避免糊成一片）',
+  off: '只在选中或悬停时标注'
+}
+
+/**
+ * 控制面板默认值。刻意让所有系数 = 1、中心力 = 0，
+ * 这样默认观感与加入控制面板之前完全一致；只有聚焦斥力默认 > 1（聚焦时拉开距离）。
+ */
+export const GRAPH_TUNING_DEFAULTS: GraphTuning = {
+  nodeScale: 1,
+  edgeWidth: 1,
+  centerStrength: 0,
+  chargeStrength: 1,
+  linkStrength: 1,
+  linkDistance: 1,
+  focusRepel: 2.4
+}
+
+/** 滑杆范围（渲染控制面板用） */
+export const TUNING_RANGES = {
+  nodeScale: { min: 0.6, max: 1.8, step: 0.05 },
+  edgeWidth: { min: 0.4, max: 2.4, step: 0.1 },
+  centerStrength: { min: 0, max: 1, step: 0.05 },
+  chargeStrength: { min: 0.2, max: 3, step: 0.1 },
+  linkStrength: { min: 0, max: 2, step: 0.1 },
+  linkDistance: { min: 0.4, max: 2.5, step: 0.1 },
+  focusRepel: { min: 1, max: 5, step: 0.1 }
+} as const
+
+/** 中心力滑杆值（0–1）→ d3 forceX/forceY strength 的换算系数（d3 默认 0.1） */
+export const CENTER_FORCE_SCALE = 0.25
+
+/** 标签最多同时标注多少个（防止小屏糊成一片） */
+export const MAX_LABELS = 160

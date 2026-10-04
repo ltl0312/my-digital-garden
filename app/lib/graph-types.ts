@@ -44,6 +44,27 @@ export type ScopeMode = 'all' | 'neighbors' | 'path'
 /** 四种布局算法 */
 export type LayoutName = 'force' | 'tree' | 'radial' | 'timeline'
 
+/** 标签显示模式：moc = 只显示 MOC 节点名（默认）/ all = 全部 / off = 关闭 */
+export type LabelMode = 'moc' | 'all' | 'off'
+
+/** 控制面板参数（Obsidian 风格：显示 + 力导向），持久化在 garden-graph-settings-v3 */
+export interface GraphTuning {
+  /** 节点半径系数 */
+  nodeScale: number
+  /** 连线粗细系数 */
+  edgeWidth: number
+  /** 中心力（d3 forceX/forceY 的 strength 系数），0 = 关闭 */
+  centerStrength: number
+  /** 排斥力系数 */
+  chargeStrength: number
+  /** 连接力系数 */
+  linkStrength: number
+  /** 连接距离系数 */
+  linkDistance: number
+  /** 聚焦时被聚焦节点之间的排斥力倍数 */
+  focusRepel: number
+}
+
 /** 筛选状态（持久化在 garden-graph-state.filter） */
 export interface GraphFilterState {
   scope: ScopeMode
@@ -55,8 +76,8 @@ export interface GraphFilterState {
   tags: string[]
   /** 启用的关系类型；至少保留一种 */
   edgeKinds: EdgeKind[]
-  /** 常显节点标签 */
-  showLabels: boolean
+  /** 标签显示模式 */
+  labelMode: LabelMode
   /** 显示孤立节点 */
   showIsolated: boolean
 }

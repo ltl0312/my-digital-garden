@@ -5,7 +5,7 @@
 // · 可见范围三选一：全图 / 选中节点 2 跳邻居 / 两节点最短路径
 // · 空结果**不清空画布**：保留上一次视图 + 提示条（由页面消费 isEmpty/conflictHint 渲染）
 import type { EdgeKind, GraphFilterState, GraphNode, GraphEdge, ScopeMode } from '~/lib/graph-types'
-import { MATURITY_LABEL } from '~/lib/graph-constants'
+import { LABEL_MODES, MATURITY_LABEL } from '~/lib/graph-constants'
 import { patchGraphState, readGraphState } from '~/lib/graphState'
 
 const DEFAULT_FILTER: GraphFilterState = {
@@ -14,7 +14,7 @@ const DEFAULT_FILTER: GraphFilterState = {
   maturities: [],
   tags: [],
   edgeKinds: ['link', 'tag'],
-  showLabels: true,
+  labelMode: 'moc',
   showIsolated: true
 }
 
@@ -22,10 +22,14 @@ export function useGraphFilter(
   graph: ReturnType<typeof useGraphData>,
   selectedId: Ref<string | null>
 ) {
-  const saved = readGraphState().filter
+  // v3 之前这里存的是 showLabels: boolean，已改为 labelMode：删掉旧键，否则会一直写回
+  const saved = readGraphState().filter as (GraphFilterState & { showLabels?: boolean }) | undefined
+  if (saved && 'showLabels' in saved) delete saved.showLabels
   const state = reactive<GraphFilterState>({ ...DEFAULT_FILTER, ...(saved || {}) })
   // 旧数据可能存了空数组：至少保留一种关系类型
   if (!state.edgeKinds.length) state.edgeKinds = ['link']
+  // 存过非法值（手改 localStorage / 枚举变更）时回落默认
+  if (!LABEL_MODES.includes(state.labelMode)) state.labelMode = 'moc'
 
   watch(state, () => patchGraphState({ filter: { ...state, domains: [...state.domains], maturities: [...state.maturities], tags: [...state.tags], edgeKinds: [...state.edgeKinds] } }), { deep: true })
 
@@ -127,7 +131,7 @@ export function useGraphFilter(
     state.tags = []
     state.edgeKinds = ['link', 'tag']
     state.scope = 'all'
-    state.showLabels = true
+    state.labelMode = 'moc'
     state.showIsolated = true
     clearPath()
   }

@@ -47,6 +47,7 @@ my-digital-garden/
 │   │   │   ├── NodeDetail.vue      # 右栏节点详情（入链/出链/在图中定位/聚焦邻居）
 │   │   │   ├── GraphSearchPanel.vue# 画布内搜索（笔记/标签/领域/命令 四组）
 │   │   │   ├── Minimap.vue         # 缩略图（可拖拽平移/滚轮缩放）
+│   │   │   ├── GraphTuningPanel.vue# 图谱控制（标签模式/节点与连线/力导向参数，仿 Obsidian）
 │   │   │   └── GraphSkeleton.vue   # 加载骨架屏（SSR 安全的伪随机点阵）
 │   │   ├── FileTree.vue        # 递归文件树（含目录内新建笔记）
 │   │   └── CommandPalette.vue  # ⌘K 命令面板（全局搜索跳转）
@@ -181,6 +182,9 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 - **首页**：最近 8 篇 + maturity 徽章（🌱 琥珀 SEEDLING / 🌿 天蓝 GROWING / 🌳 翠绿 EVERGREEN）。
 - **阅读器**：滚动进度条、面包屑、TOC（正则提取 h2/h3 + scrollIntoView）、阅读时长估算（字数/400）、标签可点击筛选、backlinks 玻璃卡片网格。
 - **图谱**：三区布局（左筛选栏 240/272 · 中画布 flex · 右详情栏 288/320；<1024 左栏改抽屉、右栏改底部弹层；<640 保留底部「图例与统计」折叠面板）。d3 forceSimulation（link 120 / charge -320 / collide r+10 / alphaDecay 0.032 / velocityDecay 0.42）；**渲染分级** `RENDER_TIERS`（≤150 SVG / >150 Canvas / >600 只画度数 Top 200，devicePixelRatio 适配）；**四种布局**（力导向/层次树/径向/时间轴，切换 400ms 补间，`computeLayout()` 纯函数在 `app/lib/graphLayouts.ts`）；**单击选中**（右栏详情）、**双击进正文**、拖拽后固定（Obsidian 行为，钉标 + 「双击解除」提示）；可见范围三选一（全图 / 2 跳邻居 / 最短路径）；领域·成熟度·标签多选 + 关系类型开关（显式链接 / 标签共有，至少保留一种）；hover 信息卡 + 邻域高亮（邻域内 2.5px 描边、邻域外 0.12 不透明度、邻域内连线 2.4px）；缩略图（可拖拽平移 / 滚轮缩放）；四态互不复用（骨架屏 / 筛选空态 / 图谱真空态 / 错误态）；快捷键 ⌘K 搜索、⌘F 聚焦搜索、⌘L 锁物理、`G` then `F` 适配全图、`/` 命令面板、`Delete` 断开关系、Esc 逐层退出。位置 + 缩放 + 固定 + 布局 + 筛选持久化到 localStorage（`garden-graph-state`；设置 `garden-graph-settings-v3`）。
+- **标签策略**（`labelMode`，默认 `moc`）：常态只标注 **MOC 节点**（标题匹配 `/^MOC\b/i`，约 36 个），其余节点名字全部隐藏；**聚焦（邻域聚焦）时改为只标注被聚焦的节点**，且不受 `MAX_LABELS`(160) 上限约束；选中 / 悬停始终标注。可切 `all`（上限 160）或 `off`。
+- **图谱控制面板**（左栏 `GraphTuningPanel.vue`，仿 Obsidian 图谱设置）：标签模式三选一；节点大小 / 连线粗细；中心力 / 排斥力 / 连接力 / 连接距离 / **聚焦斥力**（默认 2.4）。参数持久化在 `garden-graph-settings-v3`（`readGraphSettings()` 逐字段校验，防止 NaN 流进 d3）。改任一参数即 `refreshForces()` + `reheat()`。**聚焦时被聚焦节点的电荷力额外乘 `focusRepel`**，邻域自动散开。
+- 页面标题 `知识图谱 · 拾光`（`useHead`）。
 - **侧边栏**：可拖宽度（240–480px，localStorage `garden-sidebar-width`，pointerdown 记录 dragOffset 消除居中偏移）；始终挂载 + 宽度过渡实现丝滑收起；文件树（递归、目录计数、过滤）；标签云（前 20）；Vault Synced 状态栏；管理员可新建笔记。
 - **命令面板**：⌘K/⌃K 全局唤起，输入即搜（pageSize=8），Enter 直达首条。
 - **主题**：`useTheme`（localStorage 'theme' + prefers-color-scheme 兜底）；nuxt.config 内联脚本 FOUC 防护；`theme-switching` 类 + 双 rAF 统一 0.2s 过渡。
