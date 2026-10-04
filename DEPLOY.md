@@ -37,12 +37,15 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v1.3.0` | `b8a194bd4f43` | 图谱：缩略图重绘并着色、连线加深、节点自定义颜色、左栏可收起、右键菜单（**当前**） |
+| `latest` / `v1.4.0` | `f41e416de9b6` | 图谱：控制面板批量上色（按路径/名称/正文圈选）、自定义颜色按用户同步（**当前**） |
+| `v1.3.0` | `b8a194bd4f43` | 图谱：缩略图重绘并着色、连线加深、节点自定义颜色、左栏可收起、右键菜单 |
 | `v1.2.0` | `ec68377534dd` | 图谱：MOC 标签策略、聚焦斥力、控制面板、页面标题 |
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar`、`/opt/garden-image-v1.3.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar`、`/opt/garden-image-v1.3.0.tar`、`/opt/garden-image-v1.4.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删）。
+
+> **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
 ---
 
@@ -193,7 +196,7 @@ pnpm acceptance:ui        # UI 51 项，只开对话框不提交
 
 ```bash
 cd /opt/garden-docker
-docker tag my-digital-garden-app:v1.2.0 my-digital-garden-app:latest   # 回退一格；再退一格用 v1.1.0
+docker tag my-digital-garden-app:v1.3.0 my-digital-garden-app:latest   # 回退一格；再退一格用 v1.2.0
 docker compose -f docker-compose.prod.yml up -d --force-recreate
 until [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:3000/login)" = "200" ]; do sleep 2; done
 ```
@@ -201,6 +204,7 @@ until [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:
 配置回滚：从 `/opt/garden-backup` 恢复对应时间戳的 `docker-compose.prod.yml` 与 `env.*`。
 
 > 数据库迁移**不会**自动回滚。因此每次上线前都应确认本轮是否新增迁移；若有，需预先想好对应的降级 SQL。
+> v1.4.0 的 `GraphColor` 表是**纯新增**，降级 SQL 为 `DROP TABLE "GraphColor";`——但通常不必执行：旧版本只是不读这张表，留着无害（重新升到 v1.4.0 时反而能保住用户已选的颜色）。
 
 ---
 

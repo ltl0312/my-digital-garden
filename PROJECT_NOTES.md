@@ -48,6 +48,7 @@ my-digital-garden/
 │   │   │   ├── GraphSearchPanel.vue# 画布内搜索（笔记/标签/领域/命令 四组）
 │   │   │   ├── Minimap.vue         # 缩略图（可拖拽平移/滚轮缩放）
 │   │   │   ├── GraphTuningPanel.vue# 图谱控制（标签模式/节点与连线/力导向参数/自定义颜色，仿 Obsidian）
+│   │   │   ├── BatchColorPanel.vue # 批量上色（关键词 + 路径/名称/正文圈选 → 一次上色或清除）
 │   │   │   ├── GraphContextMenu.vue# 右键菜单（节点菜单 / 画布空白菜单）
 │   │   │   └── GraphSkeleton.vue   # 加载骨架屏（SSR 安全的伪随机点阵）
 │   │   ├── FileTree.vue        # 递归文件树（含目录内新建笔记）
@@ -56,12 +57,14 @@ my-digital-garden/
 │   │   ├── useAuth.ts          # 认证状态（useAsyncData('auth-me') + isAdmin）
 │   │   ├── useGraphData.ts     # 图谱数据派生（度数/邻接/入出链/领域/标签/最短路径）
 │   │   ├── useGraphFilter.ts   # 图谱筛选状态（范围/领域/成熟度/标签/关系类型）
+│   │   ├── useGraphColors.ts   # 自定义颜色的服务端同步（全量提交 + 防抖 + 本地首帧缓存 + 旧键迁移）
+│   │   ├── useGraphBatchColor.ts# 批量圈选（路径/名称本地过滤，正文走服务端检索）
 │   │   └── useTheme.ts         # 暗黑主题切换（localStorage + 双 rAF 过渡）
 │   ├── lib/                    # 图谱纯逻辑与常量（无 Vue 依赖）
 │   │   ├── graph-types.ts      # GraphNode/GraphEdge/GraphFilterState 等类型
 │   │   ├── graph-constants.ts  # RENDER_TIERS/缩放/边样式/布局选项等集中常量
 │   │   ├── graphLayouts.ts     # 四种布局纯函数 computeLayout()
-│   │   └── graphState.ts       # localStorage 状态读写（字段级合并）
+│   │   └── graphState.ts       # localStorage 状态读写（字段级合并 + 颜色缓存/旧键迁移）
 │   ├── layouts/
 │   │   ├── default.vue         # 主布局：顶栏 + 可拖侧边栏 + 内容区 + ⌘K
 │   │   └── auth.vue            # 登录页布局（居中卡片）
@@ -153,6 +156,8 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 | GET `/api/notes` | 登录 | 分页（page/pageSize≤100）+ 标题/正文模糊搜索 + 标签筛选；返回 notes/total/totalPages |
 | GET `/api/notes/[...slug]` | 登录 | 单篇详情（含 tags、incoming backlinks）；未发布 404 |
 | GET `/api/notes/graph` | 登录 | 全站图谱：nodes（id/title/slug/maturity/primaryTag/tags/domain/dirPath/inDegree/outDegree/updatedAt/readingTime/summary）+ edges（source/target/kind: link\|tag）；进程内缓存 60s |
+| GET `/api/notes/graph/match` | 登录 | 图谱圈选检索：`q` + `fields`（path\|name\|content，默认 content）+ `limit`（默认 1000，≤5000）；多字段 OR，返回 `{ids,total,truncated}` |
+| GET/PUT/DELETE `/api/graph/colors` | 登录 | 自定义颜色**按访问密钥（=用户）隔离**：读 `{colors,count,updatedAt}`；PUT 全量覆盖（差集落库，非法值单条丢弃，>5000 条 413）；DELETE 清空 |
 | GET `/api/tags` | 登录 | 标签及计数（按使用量降序） |
 | POST `/api/auth/verify` | 公开 | 密钥登录，签发 30 天 httpOnly cookie |
 | GET `/api/auth/me` | 公开 | 当前身份（role/label），未登录返回 null |
@@ -187,7 +192,9 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 - **图谱控制面板**（左栏 `GraphTuningPanel.vue`，仿 Obsidian 图谱设置）：标签模式三选一；节点大小 / 连线粗细；中心力 / 排斥力 / 连接力 / 连接距离 / **聚焦斥力**（默认 2.4）。参数持久化在 `garden-graph-settings-v3`（`readGraphSettings()` 逐字段校验，防止 NaN 流进 d3）。改任一参数即 `refreshForces()` + `reheat()`。**聚焦时被聚焦节点的电荷力额外乘 `focusRepel`**，邻域自动散开。
 - **连线配色**：`--edge-link` / `--edge-tag`（亮色 `#94A0AF` / `#C2AF90`，暗色 `#5A6578` / `#7A6A52`）。刻意比 `--line` 深一档——`--line` 画在 `--canvas` 上对比度只有 1.17，细线肉眼看不见。
 - **缩略图**（`Minimap.vue`）：点半径按**屏幕像素**归一到 1.4–3.4px（按 `sqrt(degree)` 插值，绘制时再除以 `fit.scale`），点按节点色着色，并按 `MINIMAP.maxEdges`(700) 步长抽样画连线。根因备忘：老实现直接拿主画布的图坐标半径当屏幕半径，525 个点把 164×112 糊成一片灰。
-- **节点自定义颜色**：在节点上右键 → 设置颜色（`NODE_COLOR_PALETTE` 10 色 + 恢复领域色），持久化在 `garden-graph-node-colors`（`readNodeColors()` 用 `CSS_COLOR_RE` 白名单过滤，防止手改 localStorage 注入脏值）。自定义色优先于领域色；左栏「自定义颜色」区显示计数并可一键清除。
+- **节点自定义颜色**：在节点上右键 → 设置颜色（`NODE_COLOR_PALETTE` 10 色 + 恢复领域色）。**权威存储在服务端** `GraphColor` 表，按访问密钥（=用户身份）隔离——换设备用同一密钥登录即恢复；localStorage 的 `garden-graph-colors-v2`（slug → 颜色）降级为**首帧缓存**，只为在请求回来前先按上次颜色画出来不闪白。自定义色优先于领域色；左栏「自定义颜色」区显示计数并可一键清除。颜色值经 `shared/graph-colors.ts` 的 `normalizeColor()` 白名单（`#rgb`/`#rrggbb(aa)`/`rgb()`/`hsl()`/`var(--x)`）前后端各校验一次。
+- **自定义色同步**（`app/composables/useGraphColors.ts`）：客户端**全量提交**（`PUT /api/graph/colors` 带完整 `{slug: color}`），服务端按差集落库，因此天然幂等、丢包重试不会写坏数据。连点色板 / 批量上色合并成一次请求（600ms 防抖），`beforeunload` 与 `visibilitychange → hidden` 时 `flush()` 立即提交。**键用 slug 而非 `Note.id`**：后者是重建索引就会变的 uuid。旧版按 id 存档的 `garden-graph-node-colors` 会在首次装载时一次性迁移成 slug 键并上传（只有确实映射出条目才清旧键，图谱数据未到位时不清，否则会丢用户历史颜色）。
+- **批量上色**（左栏 `BatchColorPanel.vue` + `app/composables/useGraphBatchColor.ts`）：输入关键词 + 勾选 **路径 / 名称 / 正文** 三个字段圈选节点，点色板一次给整批上色，或「清除匹配节点的颜色」。多字段之间是 **OR（并集）**；路径 / 名称在**前端本地**过滤（`slug`/`dirPath`/`title`/`tags` 小写 includes），正文走服务端 `GET /api/notes/graph/match`（350ms 防抖 + 序号防乱序，正文检索依赖 `pg_trgm` GIN 索引）。圈选范围是**全部图谱节点**而非当前可见节点（颜色是持久属性）；被圈中的节点在主画布上以 accent 描边 + 加粗高亮（Canvas 分级下用根 div 的 `data-match-count` 断言）。
 - **右键菜单**（`GraphContextMenu.vue`）：节点菜单 = 打开笔记 / 聚焦邻居 / 设为路径起点·终点 / 固定·解除固定 / 设置颜色 / 复制 `[[标题]]` / 复制标题 / 断开全部关系；画布空白菜单 = 适配全图 / 重置布局 / 重新点火 / 标签模式 / 清除筛选。`CONTEXT_MENU` 尺寸用于贴边避让；Esc 或外部点击关闭。
 - **左栏可收起**：三区模式下画布左缘的竖直把手（`graph-toggle-left`）切换 `leftCollapsed`。
 - 页面标题 `知识图谱 · 拾光`（`useHead`）。
@@ -295,7 +302,7 @@ https://liutianle.cn
 
 - vault 双向同步（Obsidian ↔ 服务器，如 Syncthing，受内存限制）
 - 密钥哈希存储升级
-- 图谱搜索覆盖正文全文（当前仅前端本地过滤 title/tags/dirPath/summary；要做须后端 `tsvector` 或 Meilisearch，**不得前端全文扫描**）
+- 图谱搜索覆盖正文全文（**圈选检索已落地**：`GET /api/notes/graph/match?fields=content` 走后端 `pg_trgm` GIN 索引，见 `server/api/notes/graph/match.get.ts`；画布内的 `GraphSearchPanel` 仍是前端本地过滤 title/tags/dirPath/summary——要做全文须复用该接口，**不得前端全文扫描**）
 - www 子域名证书、内存监控告警
 
 > 注：「图谱 >500 节点时改 Canvas 渲染」已于知识图谱重构中落地（`RENDER_TIERS`：>150 Canvas、>600 只画 Top 200）。

@@ -134,7 +134,7 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 
 ---
 
-## 4. 笔记接口（需登录）
+## 4. 笔记与图谱接口（需登录）
 
 ### 4.1 笔记列表（分页 / 搜索 / 标签筛选）
 
@@ -263,6 +263,55 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 - `inDegree` / `outDegree` **只统计 `kind: "link"`**，不含标签共有边
 - 标签共有边按标签分组两两相连，**同标签组节点数 > `MAX_TAG_GROUP_SIZE`(40) 时整组跳过**，避免泛用标签产生 O(n²) 边拖垮首帧
 - 前端按 `RENDER_TIERS`（`app/lib/graph-constants.ts`）分级渲染：≤150 节点走 SVG，>150 走 Canvas，>600 只绘制度数 Top 200
+
+### 4.4 图谱圈选检索（按路径 / 名称 / 正文）
+
+`GET /api/notes/graph/match`
+
+| 参数 | 必填 | 说明 |
+|---|---|---|
+| `q` | 是 | 关键词；为空直接返回空结果 |
+| `fields` | 否 | 逗号分隔，白名单 `path`（slug 路径）/ `name`（标题）/ `content`（正文）；默认 `content` |
+| `limit` | 否 | `ids` 返回上限，默认 1000，最大 5000 |
+
+**成功响应 `200`**
+
+```json
+{ "ids": ["笔记uuid"], "total": 207, "truncated": false }
+```
+
+- 多个字段之间是 **OR（并集）**，不是 AND
+- 全部走 `mode: 'insensitive'` 的 `contains`；`path` / `content` 有 `pg_trgm` GIN 索引（迁移 `20260809000000_search_trgm_indexes`），正文检索比标题慢
+- `ids` 是 `Note.id`，与 `GET /api/notes/graph` 的节点 `id` 同源，前端可直接求交集
+- `total` 为命中总数（`count()`），`truncated` 表示 `ids` 被 `limit` 截断
+
+### 4.5 图谱自定义颜色（按用户同步）
+
+> 颜色**按访问密钥（= 用户身份）隔离**存储，换设备用同一密钥登录即恢复；客户端 localStorage 只是首帧缓存。键用笔记 slug（vault 相对路径）而非 `Note.id`——后者是重建索引就会变的 uuid。
+
+`GET /api/graph/colors` — 读取当前用户的全部自定义颜色
+
+```json
+{
+  "colors": { "KnowledgeBase/03_Knowledge/前端/MOC - 前端": "#0090FF" },
+  "count": 1,
+  "updatedAt": "2026-10-01T00:00:00.000Z"
+}
+```
+
+`PUT /api/graph/colors` — **全量覆盖**（客户端每次提交完整状态，因此天然幂等）
+
+| 请求体 | 说明 |
+|---|---|
+| `{ "colors": { "<slug>": "<css color>" } }` | 键是笔记 slug，值是 CSS 颜色 |
+
+- `colors` 不是对象 → `400`；条目数 > `MAX_NODE_COLORS`（5000）→ `413`
+- 颜色值经 `shared/graph-colors.ts` 的 `normalizeColor()` 白名单校验（`#rgb` / `#rrggbb(aa)` / `rgb()` / `hsl()` / `var(--x)`），非法条目**单条丢弃**而非整单失败
+- 服务端按差集落库（先删后插），响应 `{ "ok": true, "count": 1, "dropped": 0 }`
+
+`DELETE /api/graph/colors` — 清空当前用户的全部自定义颜色，响应 `{ "ok": true, "removed": 1 }`
+
+三个接口都需要登录，未带凭据一律 `401`。
 
 ---
 
@@ -595,7 +644,7 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 | 403 | 越权操作（角色 × 目标二维校验）：非 admin 访问管理/写接口、结构目录受保护、非空目录非 root、密钥越权矩阵等 |
 | 404 | 笔记不存在/未发布、目标目录不存在、导入会话过期 |
 | 409 | 新建笔记/文件夹已存在、粘贴到自身目录、导入会话已结束 |
-| 413 | 导入文件超限（单文件或累计，附回滚标记） |
+| 413 | 导入文件超限（单文件或累计，附回滚标记）；自定义颜色条目数超过 `MAX_NODE_COLORS`(5000) |
 | 500 | 数据库或文件系统内部错误 |
 
 ---
@@ -620,28 +669,38 @@ curl -s -b cookies.txt 'http://localhost:3000/api/notes?dir=KnowledgeBase/03_Kno
 # 5. 图谱数据
 curl -s -b cookies.txt http://localhost:3000/api/notes/graph
 
-# 6. 管理员：新建文件夹
+# 6. 图谱圈选：标题或正文含「知识」的笔记 id（并集）
+curl -s -b cookies.txt 'http://localhost:3000/api/notes/graph/match?q=知识&fields=name,content'
+
+# 7. 图谱自定义颜色：全量覆盖写入，再读回 / 清空
+curl -s -b cookies.txt -X PUT http://localhost:3000/api/graph/colors \
+  -H 'Content-Type: application/json' \
+  -d '{"colors":{"KnowledgeBase/03_Knowledge/前端/MOC - 前端":"#0090FF"}}'
+curl -s -b cookies.txt http://localhost:3000/api/graph/colors
+curl -s -b cookies.txt -X DELETE http://localhost:3000/api/graph/colors
+
+# 8. 管理员：新建文件夹
 curl -s -b cookies.txt -X POST http://localhost:3000/api/vault/folders \
   -H 'Content-Type: application/json' -d '{"parent":"KnowledgeBase","name":"新目录"}'
 
-# 7. 管理员：重命名目录（事务内同步子孙 slug）
+# 9. 管理员：重命名目录（事务内同步子孙 slug）
 curl -s -b cookies.txt -X PUT http://localhost:3000/api/vault/rename \
   -H 'Content-Type: application/json' -d '{"path":"KnowledgeBase/新目录","name":"改名后"}'
 
-# 8. 管理员：删除空目录（非空目录仅 root；结构目录任何人不可删）
+# 10. 管理员：删除空目录（非空目录仅 root；结构目录任何人不可删）
 curl -s -b cookies.txt -X DELETE http://localhost:3000/api/vault/nodes \
   -H 'Content-Type: application/json' -d '{"path":"KnowledgeBase/改名后"}'
 
-# 9. 管理员：导入预检（通过后拿 jobId，再逐文件 multipart 上传，最后 finish）
+# 11. 管理员：导入预检（通过后拿 jobId，再逐文件 multipart 上传，最后 finish）
 curl -s -b cookies.txt -X POST http://localhost:3000/api/vault/import/preflight \
   -H 'Content-Type: application/json' \
   -d '{"targetDir":"KnowledgeBase","subDir":"新导入","keepStructure":true,"files":[{"relPath":"a.md","size":1024}]}'
 
-# 10. 管理员：生成密钥
+# 12. 管理员：生成密钥
 curl -s -b cookies.txt -X POST http://localhost:3000/api/admin/keys \
   -H 'Content-Type: application/json' -d '{"label":"朋友小明","role":"user"}'
 
-# 11. 退出登录
+# 13. 退出登录
 curl -s -b cookies.txt -c cookies.txt -X POST http://localhost:3000/api/auth/logout
 ```
 
@@ -654,7 +713,7 @@ curl -s -b cookies.txt -c cookies.txt -X POST http://localhost:3000/api/auth/log
 | `/`（首页 Hero + 统计条 + 最近更新） | `GET /api/notes?pageSize=6`、`GET /api/vault/tree`、`GET /api/tags`、`GET /api/notes/graph` |
 | `/notes`（列表/搜索/排序/密度/筛选芯片） | `GET /api/notes`（`q`/`tag`/`dir`/`sort`）、`GET /api/tags` |
 | `/notes/[...slug]`（阅读/编辑/目录栏/更多操作） | `GET /api/notes/[...slug]`、`PUT/DELETE /api/vault/notes/[...slug]` |
-| `/graph`（图谱） | `GET /api/notes/graph` |
+| `/graph`（图谱） | `GET /api/notes/graph`、`GET /api/notes/graph/match`（批量圈选）、`GET/PUT/DELETE /api/graph/colors`（自定义颜色按用户同步） |
 | `/login` | `POST /api/auth/verify` |
 | `/admin`（密钥管理三形态 + 我的密钥） | `GET/POST /api/admin/keys`、`PATCH/DELETE /api/admin/keys/[id]` |
 | 侧边栏（结构树/领域/标签 + 右键操作 + 剪贴板） | `GET /api/vault/tree`、`GET /api/tags`、`POST /api/vault/notes`、`POST /api/vault/folders`、`PUT /api/vault/rename`、`POST /api/vault/copy`、`DELETE /api/vault/nodes` |
