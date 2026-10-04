@@ -80,6 +80,15 @@ const nodeHits = () => page.evaluate(() => {
     .filter(n => Number.isFinite(n.x) && Number.isFinite(n.y) && n.x > 0 && n.y > 0 && !n.pinned)
 })
 
+/**
+ * 配色快照 —— 必须在**任何用例跑之前**取（下面 G67 的「清除全部颜色」会连用户自己的
+ * 配色一起清掉），跑完整套再原样放回去。对生产跑验收时才不会删掉人家配好的颜色和规则。
+ */
+const colorBackup = {
+  colors: await page.evaluate(() => fetch('/api/graph/colors').then(r => r.json()).then(j => j.colors).catch(() => null)),
+  rules: await page.evaluate(() => fetch('/api/graph/color-rules').then(r => r.json()).catch(() => null))
+}
+
 // ================= A1/A3 骨架 + 就绪 =================
 await goto('/graph')
 await page.waitForFunction(() => document.querySelector('[data-testid="graph-canvas"]')?.getAttribute('data-graph-ready') === '1', { timeout: 60000 }).catch(() => {})
@@ -657,6 +666,22 @@ const wantNode = ['graph-menu-open', 'graph-menu-focus', 'graph-menu-path-start'
 log('G64 节点菜单项齐全', wantNode.every(id => nodeMenuItems.includes(id)),
   `缺 ${wantNode.filter(id => !nodeMenuItems.includes(id)).join(',') || '无'} · 共 ${nodeMenuItems.length} 项`)
 
+// 上色前先记下数据库里**已有**多少自定义色：验收可能跑在一个干净库上，也可能跑在
+// 用户已经配过色的生产库上，断言必须相对基线而不是写死 1。
+const colorBase = await page.evaluate(async () => {
+  let saved = {}
+  try { saved = JSON.parse(localStorage.getItem('garden-graph-colors-v2') || '{}') } catch { /* ignore */ }
+  let server = null
+  try { server = await fetch('/api/graph/colors').then(r => r.json()) } catch { /* ignore */ }
+  const txt = (document.querySelector('[data-testid="graph-color-count"]') || {}).textContent || ''
+  const m = txt.match(/(\d+)/)
+  return {
+    n: Object.keys(saved).length,
+    serverN: server ? server.count : -1,
+    shown: m ? Number(m[1]) : 0
+  }
+})
+
 await page.evaluate(() => document.querySelector('[data-testid="graph-menu-color-E5484D"]') && document.querySelector('[data-testid="graph-menu-color-E5484D"]').click())
 await sleep(1500) // 本地写入是同步的，服务端推送有 600ms 防抖
 const colorState = await page.evaluate(async () => {
@@ -667,18 +692,21 @@ const colorState = await page.evaluate(async () => {
   return {
     n: Object.keys(saved).length,
     value: Object.values(saved)[0] || null,
+    valuesUpper: Object.values(saved).map(v => String(v).toUpperCase()),
     serverN: server ? server.count : -1,
     serverValue: server ? (Object.values(server.colors || {})[0] || null) : null,
+    serverUpper: server ? Object.values(server.colors || {}).map(v => String(v).toUpperCase()) : [],
     count: (document.querySelector('[data-testid="graph-color-count"]') || {}).textContent || null,
     menuOpen: !!document.querySelector('[data-testid="graph-context-menu"]')
   }
 })
 log('G65 设置颜色后写回本地缓存并计数',
-  colorState.n === 1 && String(colorState.count || '').trim() === '1' && !colorState.menuOpen,
-  `cache=${colorState.n}(${colorState.value}) count=${String(colorState.count || '').trim()} menuOpen=${colorState.menuOpen}`)
+  colorState.n === colorBase.n + 1 && Number(String(colorState.count || '').trim()) === colorBase.shown + 1
+  && colorState.valuesUpper.includes('#E5484D') && !colorState.menuOpen,
+  `cache=${colorState.n}(${colorState.value}) count=${String(colorState.count || '').trim()} menuOpen=${colorState.menuOpen} · 基线 ${colorBase.n}/${colorBase.shown}`)
 log('G65b 颜色已同步到服务端（按用户）',
-  colorState.serverN === 1 && String(colorState.serverValue || '').toUpperCase() === '#E5484D',
-  `server=${colorState.serverN}(${colorState.serverValue})`)
+  colorState.serverN === colorBase.serverN + 1 && colorState.serverUpper.includes('#E5484D'),
+  `server=${colorState.serverN}(${colorState.serverValue}) · 基线 ${colorBase.serverN}`)
 
 const mmCustom = await page.evaluate(() =>
   [...document.querySelectorAll('[data-testid="graph-minimap"] circle.mm-dot')]
@@ -1568,6 +1596,26 @@ await page.evaluate(() => {
   localStorage.removeItem('garden-graph-colors-v2')
 })
 
+// —— 把跑测试前用户的配色原样放回去（没有就保持干净） ——
+const restoreColors = colorBackup.colors && Object.keys(colorBackup.colors).length
+  ? await apiJson('/api/graph/colors', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ colors: colorBackup.colors })
+    })
+  : null
+let restoreRules = null
+if (colorBackup.rules && colorBackup.rules.updatedAt !== null) {
+  restoreRules = await apiJson('/api/graph/color-rules', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ rules: colorBackup.rules.rules || [] })
+  })
+}
+log('G110 验收跑完后还原用户原有配色（自定义色 / 颜色规则）',
+  (restoreColors === null || restoreColors.ok === true) && (restoreRules === null || restoreRules.ok === true),
+  `自定义色 ${colorBackup.colors ? Object.keys(colorBackup.colors).length : 0} 条 · 规则 ${colorBackup.rules && colorBackup.rules.updatedAt !== null ? (colorBackup.rules.rules || []).length : '未保存过'} 条`)
+
 // ================= 控制台洁净 =================
 const benign = /ResizeObserver loop|favicon|Download the Vue Devtools/i
 const realErrors = consoleErrors.filter(t => !benign.test(t))
@@ -1587,6 +1635,21 @@ try {
 } catch (e) {
   console.log('[graph-verify] 截图跳过：' + String(e).slice(0, 120))
 }
+
+// —— 截图会反复 goto('/graph')，若客户端在 beforeunload 里误推一次空状态，
+//    刚还原的配色就又没了。所以这里再做一次最终回读（这是对「不吞用户数据」的最终保险）。 ——
+const restoredFinal = await page.evaluate(async () => {
+  const c = await fetch('/api/graph/colors').then(r => r.json()).catch(() => null)
+  const r = await fetch('/api/graph/color-rules').then(r => r.json()).catch(() => null)
+  return { colors: c ? c.colors : null, rules: r ? (r.rules || []).map(x => x.id) : null, rulesSaved: r ? r.updatedAt !== null : null }
+})
+const wantColors = colorBackup.colors ? Object.keys(colorBackup.colors).length : 0
+const wantRulesSaved = !!(colorBackup.rules && colorBackup.rules.updatedAt !== null)
+log('G111 还原后的配色在整套跑完（含多次跳转）后仍在',
+  restoredFinal.colors !== null && Object.keys(restoredFinal.colors).length === wantColors
+  && restoredFinal.rulesSaved === wantRulesSaved
+  && (!wantRulesSaved || restoredFinal.rules.length === (colorBackup.rules.rules || []).length),
+  `自定义色 ${Object.keys(restoredFinal.colors || {}).length}/${wantColors} · 规则 ${restoredFinal.rules ? restoredFinal.rules.length : 'null'}/${wantRulesSaved ? (colorBackup.rules.rules || []).length : '未保存过'}`)
 
 await browser.close()
 
