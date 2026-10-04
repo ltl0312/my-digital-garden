@@ -95,6 +95,7 @@ import {
   DRAG_CLICK_THRESHOLD_PX,
   EDGE_STYLE,
   FOCUS_STYLE,
+  GRAPH_RESTORE_MIN_RATIO,
   LAYOUT_TRANSITION_MS,
   MATURITY_COLORS,
   MAX_LABELS,
@@ -105,7 +106,7 @@ import {
   isMocTitle
 } from '~/lib/graph-constants'
 import { FORCE_PARAMS, computeLayout } from '~/lib/graphLayouts'
-import { patchGraphState, readGraphState } from '~/lib/graphState'
+import { patchGraphState, readGraphState, type NodePos } from '~/lib/graphState'
 import { domainColor } from '#shared/graph-domain'
 
 /** 页面可附带 degree / isolated（缺省时由边就地推算） */
@@ -173,9 +174,16 @@ const props = defineProps<{
   /**
    * 节点自定义颜色：**slug → CSS 颜色**。
    * 由页面持有（useGraphColors 负责与服务端同步），GraphView 只读不写。
+   * 这里只放**手动**（右键单个节点）设的颜色——「自定义颜色 N 个」与「清除」按钮都按它计数。
    */
   colorMap?: Record<string, string>
-  /** 批量上色正在圈选的节点 id；命中的节点画一圈强调色描边 */
+  /**
+   * 规则解析出来的颜色：**slug → CSS 颜色**（需求 m00991）。
+   * 规则表在页面侧（useGraphColorRules），GraphView 同样只读；
+   * 优先级低于 `colorMap`（手动 > 规则 > 兜底）。
+   */
+  ruleColors?: Record<string, string>
+  /** 新建规则时正在预览命中的节点 id；命中的节点画一圈强调色描边 */
   matchIds?: string[]
 }>()
 
@@ -257,6 +265,9 @@ let resizeObserver: ResizeObserver | null = null
 let themeObserver: MutationObserver | null = null
 let mountAt = 0
 let painted = false
+// 第一次拿到节点数据时才会决定「布局从哪来」（存档还原 or 跑力导向），只做一次。
+// 用标志位而不是在 onMounted 里判断：数据是异步到的，onMounted 时 props.nodes 可能还是空的。
+let layoutInitialised = false
 type GraphCssVar = 'line' | 'edgeLink' | 'edgeTag' | 'surface' | 'ink2' | 'ink3' | 'accent' | 'canvas'
 // 用有限键的映射类型而非 Record<string,string>：后者在 noUncheckedIndexedAccess 下
 // 每次取值都是 `string | undefined`，无法直接赋给 canvas 的 fillStyle/strokeStyle。
@@ -285,19 +296,25 @@ const radiusOf = (degree: number, isolated: boolean) => {
 }
 
 /**
- * 节点填充色：**自定义色优先**，否则按领域取色（无领域时回落到成熟度色）。
- * 自定义色由页面持有（`props.colorMap`，slug → 颜色，useGraphColors 同步到服务端），
- * 这里只读——GraphView 不再自己读写 localStorage。
+ * 节点填充色的三级优先级（需求 m00991 第 6 条）：
+ *   ① 手动单节点色（右键设置，`props.colorMap`，最高）
+ *   ② 颜色规则第一条命中的颜色（`props.ruleColors`，由页面用 app/lib/graph-rules.ts 求值）
+ *   ③ 兜底：领域色 → 成熟度色
+ * 这两份 map 都由页面持有（useGraphColors / useGraphColorRules 各自同步到服务端），
+ * 这里只读——GraphView 不碰 localStorage 也不碰网络。
  */
 const colorMap = computed(() => props.colorMap || {})
+const ruleColors = computed(() => props.ruleColors || {})
 
 const colorOf = (n: { slug: string; domain: string; maturity: string }) => {
   const custom = colorMap.value[n.slug]
   if (custom) return custom
+  const fromRule = ruleColors.value[n.slug]
+  if (fromRule) return fromRule
   return n.domain ? domainColor(n.domain) : (MATURITY_COLORS[n.maturity] || '#8C6D46')
 }
 
-/** 批量上色正在圈选的节点集合 */
+/** 正在预览的规则命中集合 */
 const matchSet = computed(() => new Set(props.matchIds || []))
 
 const hitRadiusOf = (n: VNode) => (isTouchNow() ? TOUCH_HIT_RADIUS : Math.max(14, n.r + 6))
@@ -640,19 +657,29 @@ function attachInteraction() {
       })
       .on('drag', (event: any, d: VNode) => {
         dragMoved += Math.abs(event.dx) + Math.abs(event.dy)
+        // 拖动期间临时钉住，节点才严格跟手（d3 的 subject 用的是图坐标）
         d.fx = event.x
         d.fy = event.y
         d.x = event.x
         d.y = event.y
-        if (tier.value === 'svg') render()
+        // 两个分级都必须重绘。这里曾经写成 `if (tier.value === 'svg') render()`，
+        // 于是节点数超过 RENDER_TIERS.svg（150）走 Canvas 分级时，仿真一收敛
+        // （physicsActive 变 false）就「节点拖不动」，必须刷新页面才好。
+        render()
       })
       .on('end', (event: any, d: VNode) => {
         dragging = false
         if (!event.active && simulation && physicsActive.value) simulation.alphaTarget(0)
         const moved = dragMoved > DRAG_CLICK_THRESHOLD_PX
-        if (moved || dragWasPinned) {
-          d.fx = event.x
-          d.fy = event.y
+        if (moved) {
+          d.x = event.x
+          d.y = event.y
+        }
+        // 拖拽**不再固定**节点：只有右键菜单的「固定」才写 fx/fy（需求 m00991 第 3 条）。
+        // 例外是原本就固定的节点——拖它等于挪动固定点。
+        if (dragWasPinned) {
+          d.fx = d.x
+          d.fy = d.y
           d.pinned = true
         } else {
           d.fx = null
@@ -661,7 +688,7 @@ function attachInteraction() {
         }
         suppressClick = moved
         persist()
-        if (tier.value === 'svg') render()
+        render()
       })
     )
     .on('click', (event: any, d: VNode) => {
@@ -760,11 +787,22 @@ function hoverAt(d: VNode, event: any) {
 }
 
 // ---------- 数据同步 ----------
+/** 存档里是否有这个节点可用的坐标（[x, y, fx, fy]，fx/fy 为 NaN 表示未固定） */
+function hasSavedPos(saved: Record<string, NodePos> | undefined, id: string): boolean {
+  const p = saved?.[id]
+  return !!p && Number.isFinite(p[0]) && Number.isFinite(p[1])
+}
+
+/**
+ * 把 props 的节点/边同步进渲染数据结构，并在**第一次**拿到数据时决定布局来源。
+ * 返回本轮的存档覆盖率，供 settleInitialLayout 判断。
+ */
 function syncGraph() {
   const saved = readGraphState().pos
   const prevMap = nodeMap
   const next: VNode[] = []
   const total = props.nodes.length
+  let restored = 0
   props.nodes.forEach((p, i) => {
     const degree = p.degree ?? localDegree.value.get(p.id) ?? 0
     const isolated = p.isolated ?? degree === 0
@@ -785,10 +823,12 @@ function syncGraph() {
       old.isMoc = isMocTitle(p.title)
       old.r = r
       old.color = color
+      restored++
       next.push(old)
       return
     }
     const [x, y] = seedPosition(p.id, saved, i, total)
+    if (hasSavedPos(saved, p.id)) restored++
     const pin = saved?.[p.id]
     const pinned = !!pin && Number.isFinite(pin[2]) && Number.isFinite(pin[3])
     next.push({
@@ -820,6 +860,40 @@ function syncGraph() {
   buildLayers()
   syncSimulation()
   render()
+  settleInitialLayout(total, restored)
+}
+
+/**
+ * 第一次拿到数据时决定「这份布局从哪来」（只执行一次）：
+ *
+ * - 存档覆盖率 ≥ GRAPH_RESTORE_MIN_RATIO：把还原出来的静态布局**钉死**，不点火。
+ *   这是需求 m00991 第 2 条的核心——以前每次打开都重跑力导向，
+ *   存档位置只当起点，所以终局每次都不一样，看起来就是「每次都重置」。
+ * - 覆盖率不够（新库 / 存档残缺 / 一次性新增大量笔记）：跑一次力导向。
+ * - 非力导向布局：交给 applyLayout 的补间（本来就是确定性的）。
+ */
+function settleInitialLayout(total: number, restored: number) {
+  if (layoutInitialised || total === 0) return
+  layoutInitialised = true
+  if (props.layout !== 'force') {
+    applyLayout(props.layout)
+    return
+  }
+  if (restored >= Math.ceil(total * GRAPH_RESTORE_MIN_RATIO)) {
+    freezeRestoredLayout()
+    return
+  }
+  restartSimulation()
+}
+
+/** 停表并让 UI 的物理开关同步为「已停」——静态还原的位置不该再被仿真推动 */
+function freezeRestoredLayout() {
+  simulation?.stop()
+  simulation?.alpha(0)
+  converged.value = true
+  physicsActive.value = false
+  render()
+  persist()
 }
 
 // ---------- 力导向参数（控制面板可调） ----------
@@ -886,6 +960,9 @@ function restartSimulation() {
   }
   refreshForces()
   converged.value = false
+  // 仿真一旦重新起跑，UI 上的物理开关就必须跟着变成「运行中」，
+  // 否则收敛判定会立刻把 alphaTarget 清掉、或者开关显示和实际状态相反。
+  if (!physicsActive.value) physicsActive.value = true
   simulation.alpha(1).restart()
   if (physicsActive.value) simulation.alphaTarget(0)
 }
@@ -921,6 +998,9 @@ function ensureSimulation() {
       if (physicsActive.value) physicsActive.value = false
       persist()
     })
+  // 建好之后立刻停表：什么时候点火完全由调用方决定
+  // （存档还原时绝不能自动跑，否则「每次打开都重排」的老毛病会回来）。
+  simulation.stop()
 }
 
 // ---------- 布局 ----------
@@ -1318,9 +1398,9 @@ onMounted(() => {
   }
 
   ensureSimulation()
+  // 布局来源由 syncGraph → settleInitialLayout 决定（数据可能是异步到的，
+  // 所以不能在这里就下结论；存档够完整就静态还原、不跑力导向）。
   syncGraph()
-
-  if (props.layout !== 'force') applyLayout(props.layout)
 
   window.addEventListener('beforeunload', persist)
   window.addEventListener('resize', onResize)
@@ -1383,7 +1463,10 @@ watch([() => props.selectedId, () => props.labelMode], () => redraw())
 // 自定义颜色变化：只重算颜色并重画，不动仿真（改色不该让图重新跑一遍）
 watch(() => props.colorMap, () => recolor(), { deep: true })
 
-// 批量上色的圈选集合变化：重画描边强调圈（同样不碰仿真）
+// 规则解析出来的颜色变化：同上（改规则、调优先级、启用/停用都会走这里）
+watch(() => props.ruleColors, () => recolor(), { deep: true })
+
+// 规则预览的命中集合变化：重画描边强调圈（同样不碰仿真）
 watch(() => props.matchIds, () => redraw())
 
 // 聚焦变化：被聚焦节点的排斥力要变大，所以除了重画还得把仿真重新点着

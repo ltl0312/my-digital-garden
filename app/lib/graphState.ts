@@ -1,8 +1,8 @@
 // garden-graph-state 的读写（计划书 T3.4 第 6 条）
 // 同一份状态由两处写入：GraphView（pos / zoom / pinned / layout）与 useGraphFilter（filter）。
 // 因此统一走 patchGraphState 做**字段级合并**，避免任一方整对象覆写把对方的字段清掉。
-import { GRAPH_SETTINGS_KEY, GRAPH_STATE_KEY, GRAPH_TUNING_DEFAULTS, NODE_COLOR_CACHE_KEY, NODE_COLOR_KEY } from './graph-constants'
-import { normalizeColor } from '#shared/graph-colors'
+import { GRAPH_SETTINGS_KEY, GRAPH_STATE_KEY, GRAPH_TUNING_DEFAULTS, NODE_COLOR_CACHE_KEY, NODE_COLOR_KEY, RULE_CACHE_KEY } from './graph-constants'
+import { normalizeColor, normalizeRules, type ColorRule } from '#shared/graph-colors'
 import type { GraphFilterState, GraphTuning, LayoutName } from './graph-types'
 
 /** 节点坐标：[x, y, fx, fy]；fx/fy 为 NaN 表示未固定 */
@@ -162,6 +162,41 @@ export function clearLegacyNodeColors(): void {
   if (typeof localStorage === 'undefined') return
   try {
     localStorage.removeItem(NODE_COLOR_KEY)
+  } catch {
+    /* 同上 */
+  }
+}
+
+// ---------- 颜色规则 ----------
+//
+// 权威数据同样在服务端（`/api/graph/color-rules`，按访问密钥隔离）。
+// 这份缓存只为了让图谱在请求回来之前先按上次的规则画出来，不闪白。
+// 读的时候一律过 normalizeRules：缓存可能来自旧版本，规则里的颜色最终会进 SVG `fill`。
+
+export function readRuleCache(): ColorRule[] {
+  if (typeof localStorage === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(RULE_CACHE_KEY)
+    if (!raw) return []
+    return normalizeRules(JSON.parse(raw))
+  } catch {
+    return []
+  }
+}
+
+export function writeRuleCache(rules: ColorRule[]): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(RULE_CACHE_KEY, JSON.stringify(rules))
+  } catch {
+    /* 隐私模式 / 配额满：忽略，服务端仍是权威 */
+  }
+}
+
+export function clearRuleCache(): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.removeItem(RULE_CACHE_KEY)
   } catch {
     /* 同上 */
   }

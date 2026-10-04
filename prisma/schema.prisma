@@ -72,6 +72,7 @@ model AccessKey {
   createdAt  DateTime  @default(now())
 
   graphColors GraphColor[]
+  colorRules  GraphColorRules?
 
   @@index([isActive])
 }
@@ -91,4 +92,20 @@ model GraphColor {
 
   @@id([keyId, slug])
   @@index([keyId])
+}
+
+/**
+ * 图谱颜色规则 —— 同样按「访问密钥（= 用户身份）」隔离，一行一份有序规则表。
+ *
+ * 为什么是单行 JSON 而不是多行表：规则是**有序**的（数组顺序即优先级），
+ * 整体替换天然原子、不必算差集，也不用维护排序列；规则条数上限只有 200，
+ * 单行 jsonb 的读写成本可以忽略。读的时候同样过一遍 normalizeRule 白名单
+ * ——颜色最终会进 SVG `fill`，不能相信库里的值。
+ */
+model GraphColorRules {
+  keyId     String    @id
+  rules     Json
+  updatedAt DateTime  @updatedAt
+
+  key AccessKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
 }

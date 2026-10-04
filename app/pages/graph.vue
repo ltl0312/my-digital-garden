@@ -87,22 +87,31 @@
             @reset="resetTuning"
             @clear-colors="onClearNodeColors"
           />
-          <BatchColorPanel
-            :query="batch.query.value"
-            :fields="batch.fields"
-            :summary="batch.summary.value"
-            :matched-nodes="batch.matchedNodes.value"
-            :matched-count="batch.matchedCount.value"
-            :color-map="graphColors.colors.value"
-            :syncing="graphColors.syncing.value"
-            :sync-error="graphColors.error.value"
-            :last-synced-at="graphColors.lastSyncedAt.value"
-            :content-error="batch.contentError.value"
-            @update:query="batch.query.value = $event"
-            @toggle-field="batch.toggleField"
-            @apply="onBatchApply"
-            @clear-matched="onBatchClear"
-            @locate="onBatchLocate"
+          <ColorRulePanel
+            :rules="ruleStore.rules.value"
+            :count="ruleStore.count.value"
+            :enabled-count="ruleStore.enabledCount.value"
+            :nodes="ruleSubjects"
+            :match-sets="ruleStore.matchSets.value"
+            :match-pending="ruleStore.matchPending.value"
+            :match-error="ruleStore.matchError.value"
+            :draft="draft"
+            :preview-count="previewCount"
+            :preview-pending="previewPending"
+            :preview-error="previewError"
+            :syncing="ruleStore.syncing.value"
+            :sync-error="ruleStore.error.value"
+            :last-synced-at="ruleStore.lastSyncedAt.value"
+            :domain-options="domainNames"
+            :maturity-options="maturityOptions"
+            @update:draft="draft = { ...draft, ...$event }"
+            @add="onRuleAdd"
+            @update="onRuleUpdate"
+            @remove="onRuleRemove"
+            @move="onRuleMove"
+            @toggle="onRuleToggle"
+            @add-defaults="onRuleAddDefaults"
+            @reset="onRuleReset"
           />
         </aside>
 
@@ -127,7 +136,8 @@
             :tuning="tuning"
             :picking-path="pickingPath"
             :color-map="graphColors.colors.value"
-            :match-ids="batchMatchIds"
+            :rule-colors="ruleColors"
+            :match-ids="previewIds"
             @update:selected-id="onSelect"
             @open="openNote"
             @pick="onPick"
@@ -450,13 +460,33 @@ import {
   AlertTriangle, ChevronLeft, ChevronRight, ChevronUp, Maximize2, Minus, Network, Plus,
   RefreshCw, RotateCcw, SlidersHorizontal, Sparkles, ZoomIn
 } from 'lucide-vue-next'
+import type { ColorRule } from '#shared/graph-colors'
 import type { GraphEdge, GraphTuning, LabelMode, LayoutName } from '~/lib/graph-types'
-import { GRAPH_TUNING_DEFAULTS, LAYOUT_OPTIONS, MIN_THREE_PANE_WIDTH, ZOOM } from '~/lib/graph-constants'
+import {
+  GRAPH_TUNING_DEFAULTS,
+  LAYOUT_OPTIONS,
+  MATURITY_LABEL,
+  MATURITY_ORDER,
+  MIN_THREE_PANE_WIDTH,
+  NODE_COLOR_PALETTE,
+  RULE_MATCH_DEBOUNCE_MS,
+  RULE_MATCH_LIMIT,
+  ZOOM
+} from '~/lib/graph-constants'
 import { patchGraphState, readGraphSettings, readGraphState, writeGraphSettings } from '~/lib/graphState'
 import { useGraphData } from '~/composables/useGraphData'
 import { useGraphFilter } from '~/composables/useGraphFilter'
 import { useGraphColors } from '~/composables/useGraphColors'
-import { useGraphBatchColor, type BatchNode } from '~/composables/useGraphBatchColor'
+import { useGraphColorRules } from '~/composables/useGraphColorRules'
+import {
+  draftToRule,
+  emptyDraft,
+  ruleDescription,
+  ruleMatches,
+  resolveRuleColor,
+  type RuleDraft,
+  type RuleSubject
+} from '~/lib/graph-rules'
 import { useConfirm } from '~/composables/useConfirm'
 import { useToast } from '~/composables/useToast'
 import { useViewport } from '~/composables/useViewport'
@@ -465,7 +495,7 @@ import type { GraphColorPayload, GraphNodeProp } from '~/components/GraphView.vu
 import GraphSkeleton from '~/components/graph/GraphSkeleton.vue'
 import FilterPanel from '~/components/graph/FilterPanel.vue'
 import GraphTuningPanel from '~/components/graph/GraphTuningPanel.vue'
-import BatchColorPanel from '~/components/graph/BatchColorPanel.vue'
+import ColorRulePanel from '~/components/graph/ColorRulePanel.vue'
 import NodeDetail from '~/components/graph/NodeDetail.vue'
 import GraphSearchPanel from '~/components/graph/GraphSearchPanel.vue'
 import Minimap from '~/components/graph/Minimap.vue'
@@ -523,23 +553,149 @@ const {
   clearAll
 } = filter
 
-// ---------- 节点自定义颜色：服务端按用户同步 ----------
+// ---------- 节点颜色：手动色 + 颜色规则（两份都由服务端按用户同步） ----------
 // 权威数据在服务端（按访问密钥隔离）；本地只留一份缓存让首帧不闪白。
-// GraphView 不再自己读写 localStorage，只通过 props.colorMap 读、通过 setColor 事件写。
+// GraphView 不再自己读写 localStorage：只读 props.colorMap / props.ruleColors，通过 setColor 事件写手动色。
 const graphColors = useGraphColors()
 
 /**
- * 批量上色的圈选范围 = **全部图谱节点**，不是当前可见节点：
- * 颜色是持久化属性，不该因为此刻恰好筛掉了某个领域就上不了色。
- * 面板上会另外显示「其中 M 个当前可见」。
+ * 规则求值的输入 = **全部图谱节点**，不是当前可见节点：
+ * 颜色是持久化属性，不该因为此刻恰好筛掉了某个领域就不生效。
  */
-const batchNodes = computed<BatchNode[]>(() =>
-  allNodes.value.map(n => ({ id: n.id, slug: n.slug, title: n.title, dirPath: n.dirPath, tags: n.tags }))
+const ruleSubjects = computed<RuleSubject[]>(() =>
+  allNodes.value.map(n => ({
+    id: n.id,
+    slug: n.slug,
+    title: n.title,
+    tags: n.tags,
+    domain: n.domain,
+    maturity: n.maturity
+  }))
 )
-const visibleNodeIds = computed(() => new Set(visibleNodes.value.map(n => n.id)))
-const batch = useGraphBatchColor(batchNodes, visibleNodeIds)
-/** 传给 GraphView 的圈选高亮（数组形式，方便 watch 比较） */
-const batchMatchIds = computed(() => [...batch.matchedIds.value])
+const ruleStore = useGraphColorRules()
+
+/**
+ * 规则解析出的颜色（slug → 颜色），传给 GraphView。
+ * GraphView 的 colorOf 按「手动色 → 规则色 → 兜底色」取第一个有值的，
+ * 所以这里只放规则真正命中的节点（没命中的留给兜底色）。
+ */
+const ruleColors = computed<Record<string, string>>(() => {
+  const sets = ruleStore.matchSets.value
+  const rules = ruleStore.rules.value
+  const out: Record<string, string> = {}
+  for (const node of ruleSubjects.value) {
+    const color = resolveRuleColor(node, rules, sets)
+    if (color) out[node.slug] = color
+  }
+  return out
+})
+
+// ---------- 新建规则的草稿与预览 ----------
+// 草稿只在页面侧存在（还没落库）；预览让用户「添加之前」就看清这条规则会命中谁。
+const draft = ref<RuleDraft>(emptyDraft(NODE_COLOR_PALETTE[0] ?? '#E5484D'))
+const previewIds = ref<string[]>([])
+const previewCount = ref(0)
+const previewPending = ref(false)
+const previewError = ref<string | null>(null)
+let previewTimer: ReturnType<typeof setTimeout> | null = null
+let previewSeq = 0
+
+/** 草稿转成规则（非法草稿为 null，「添加」按钮据此禁用） */
+const previewRule = computed(() => draftToRule(draft.value))
+
+function runPreview() {
+  const rule = previewRule.value
+  if (!rule) {
+    previewIds.value = []
+    previewCount.value = 0
+    previewPending.value = false
+    previewError.value = null
+    return
+  }
+  // 廉价维度（路径 / 文件名 / tag / 领域 / 成熟度）本地就能算，不必等网络
+  if (rule.field !== 'content' && rule.field !== 'property') {
+    const ids: string[] = []
+    for (const node of ruleSubjects.value) if (ruleMatches(rule, node, {})) ids.push(node.id)
+    previewIds.value = ids
+    previewCount.value = ids.length
+    previewPending.value = false
+    previewError.value = null
+    return
+  }
+  // 正文 / 笔记属性：本地没有原始数据，只能问服务端
+  previewPending.value = true
+  const seq = ++previewSeq
+  const params: Record<string, string | number> = {
+    q: rule.value,
+    fields: rule.field,
+    limit: RULE_MATCH_LIMIT
+  }
+  if (rule.field === 'property') params.key = rule.key ?? ''
+  $fetch<{ ids: string[] }>('/api/notes/graph/match', { params }).then(
+    (res) => {
+      if (seq !== previewSeq) return
+      previewIds.value = res.ids || []
+      previewCount.value = previewIds.value.length
+      previewError.value = null
+    },
+    (e: unknown) => {
+      if (seq !== previewSeq) return
+      previewIds.value = []
+      previewCount.value = 0
+      previewError.value = (e as { message?: string })?.message || '匹配失败'
+    }
+  ).finally(() => {
+    if (seq === previewSeq) previewPending.value = false
+  })
+}
+
+function schedulePreview() {
+  if (previewTimer) clearTimeout(previewTimer)
+  previewTimer = setTimeout(() => { previewTimer = null; runPreview() }, RULE_MATCH_DEBOUNCE_MS)
+}
+
+watch([draft, ruleSubjects], () => schedulePreview(), { deep: true })
+
+/** 领域 / 成熟度的可选值：做成下拉，避免手打错字导致 equals 规则永远匹配不到 */
+const domainNames = computed(() => domains.value.map(d => d.name))
+const maturityOptions = computed(() => MATURITY_ORDER.map(m => ({ value: m, label: MATURITY_LABEL[m] ?? m })))
+
+// ---------- 规则增删改 ----------
+function onRuleAdd() {
+  const rule = previewRule.value
+  if (!rule) {
+    toast.error('规则还不完整')
+    return
+  }
+  const created = ruleStore.add({
+    enabled: rule.enabled,
+    field: rule.field,
+    op: rule.op,
+    key: rule.key,
+    value: rule.value,
+    color: rule.color
+  })
+  if (!created) {
+    toast.error('规则不合法')
+    return
+  }
+  toast.success(`已添加规则：${ruleDescription(created)}`)
+  draft.value = { ...draft.value, key: '', value: '' }
+  schedulePreview()
+}
+function onRuleUpdate(id: string, patch: Partial<ColorRule>) { ruleStore.update(id, patch) }
+function onRuleRemove(id: string) { ruleStore.remove(id) }
+function onRuleMove(id: string, delta: number) { ruleStore.move(id, delta) }
+function onRuleToggle(id: string) { ruleStore.toggle(id) }
+function onRuleAddDefaults() {
+  const added = ruleStore.addDefaults(domainNames.value)
+  if (added) toast.success(`补充了 ${added} 条默认配色规则`)
+  else toast.warn('默认的领域 / 成熟度配色规则都已经在了')
+}
+function onRuleReset() {
+  ruleStore.resetToDefaults(domainNames.value)
+  toast.success('已恢复默认配色规则')
+}
 
 // ---------- 视图状态 ----------
 interface MinimapSnapshot {
@@ -820,33 +976,6 @@ function onClearNodeColors() {
   void graphColors.clearAll()
   toast.success('已清除全部自定义颜色')
 }
-/** 批量上色：把圈选到的节点一次涂成同一色 */
-function onBatchApply(color: string) {
-  const entries: Record<string, string> = {}
-  for (const n of batch.matchedNodes.value) entries[n.slug] = color
-  const changed = graphColors.setMany(entries)
-  if (changed) toast.success(`已给 ${changed} 个节点上色`)
-  else toast.warn('这些节点已经是该颜色')
-}
-/** 批量清除：只清圈选到、且确实有自定义色的节点 */
-function onBatchClear() {
-  const entries: Record<string, null> = {}
-  let touched = 0
-  for (const n of batch.matchedNodes.value) {
-    if (graphColors.colors.value[n.slug]) { entries[n.slug] = null; touched++ }
-  }
-  if (!touched) {
-    toast.warn('匹配到的节点没有自定义颜色')
-    return
-  }
-  graphColors.setMany(entries)
-  toast.success(`已清除 ${touched} 个节点的颜色`)
-}
-/** 面板里点一个匹配到的节点 → 定位过去 */
-function onBatchLocate(id: string) {
-  selectedId.value = id
-  nextTick(() => graphRef.value?.focusNode(id))
-}
 function onMenuSetColor(id: string, color: string | null) {
   graphRef.value?.setNodeColor(id, color)
 }
@@ -1043,22 +1172,25 @@ function onWindowKeydown(e: KeyboardEvent) {
   }
 }
 
-// ---------- 自定义颜色的装载 / 落盘时机 ----------
-// 装载必须等图谱数据到位：迁移旧版 id 键的颜色需要 id → slug 的映射表。
-// 只在客户端跑（onMounted 内），SSR 期间不碰 $fetch 也不碰 localStorage。
+// ---------- 颜色 / 颜色规则的装载与落盘时机 ----------
+// 装载必须等图谱数据到位：迁移旧版 id 键的颜色需要 id → slug 的映射表，
+// 播种默认规则需要领域列表。只在客户端跑（onMounted 内），SSR 期间不碰 $fetch 也不碰 localStorage。
 let stopColorsInit: (() => void) | null = null
 const colorsReady = ref(false)
 
 function tryInitColors(): boolean {
-  if (colorsReady.value || !batchNodes.value.length) return false
+  if (colorsReady.value || !ruleSubjects.value.length) return false
   colorsReady.value = true
-  void graphColors.init(batchNodes.value)
+  void graphColors.init(ruleSubjects.value)
+  void ruleStore.init(domainNames.value)
+  schedulePreview()
   return true
 }
 
 /** 关页 / 切后台时把还没提交的颜色改动立刻发出去（防抖窗口内关页会丢最后一次改动） */
 function flushColors() {
   if (graphColors.pending.value) void graphColors.flush()
+  if (ruleStore.pending.value) void ruleStore.flush()
 }
 function onVisibilityChange() {
   if (document.visibilityState === 'hidden') flushColors()
@@ -1071,7 +1203,7 @@ onMounted(() => {
   window.addEventListener('keydown', onWindowKeydown)
 
   if (!tryInitColors()) {
-    stopColorsInit = watch(batchNodes, () => { if (tryInitColors()) { stopColorsInit?.(); stopColorsInit = null } })
+    stopColorsInit = watch(ruleSubjects, () => { if (tryInitColors()) { stopColorsInit?.(); stopColorsInit = null } })
   }
   window.addEventListener('beforeunload', flushColors)
   document.addEventListener('visibilitychange', onVisibilityChange)

@@ -264,14 +264,15 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 - 标签共有边按标签分组两两相连，**同标签组节点数 > `MAX_TAG_GROUP_SIZE`(40) 时整组跳过**，避免泛用标签产生 O(n²) 边拖垮首帧
 - 前端按 `RENDER_TIERS`（`app/lib/graph-constants.ts`）分级渲染：≤150 节点走 SVG，>150 走 Canvas，>600 只绘制度数 Top 200
 
-### 4.4 图谱圈选检索（按路径 / 名称 / 正文）
+### 4.4 图谱圈选检索（按路径 / 文件名 / tag / 正文 / 笔记属性）
 
 `GET /api/notes/graph/match`
 
 | 参数 | 必填 | 说明 |
 |---|---|---|
 | `q` | 是 | 关键词；为空直接返回空结果 |
-| `fields` | 否 | 逗号分隔，白名单 `path`（slug 路径）/ `name`（标题）/ `content`（正文）；默认 `content` |
+| `fields` | 否 | 逗号分隔，白名单 `path`（slug 路径）/ `filename`（标题）/ `tag`（标签名）/ `content`（正文）/ `property`（frontmatter 属性值）；`name` 保留为 `filename` 的别名；默认 `content` |
+| `key` | 否 | 仅 `property` 用：属性名；给了就只在该属性下匹配 |
 | `limit` | 否 | `ids` 返回上限，默认 1000，最大 5000 |
 
 **成功响应 `200`**
@@ -281,9 +282,10 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 ```
 
 - 多个字段之间是 **OR（并集）**，不是 AND
-- 全部走 `mode: 'insensitive'` 的 `contains`；`path` / `content` 有 `pg_trgm` GIN 索引（迁移 `20260809000000_search_trgm_indexes`），正文检索比标题慢
+- 除 `property` 外全部走 `mode: 'insensitive'` 的 `contains`；`path` / `content` 有 `pg_trgm` GIN 索引（迁移 `20260809000000_search_trgm_indexes`），正文检索比标题慢
+- `property` 是例外：frontmatter 的值可能是字符串 / 数字 / 数组 / 嵌套对象，Prisma 的 JSON 过滤覆盖不到，因此这一维度是**取回 `{id, metadata}` 后在 JS 里摊平再匹配**（`flattenProp`，深度 ≤3）。所以**带 `property` 时 DB 查询不截断**，以保证 `total` 是精确的并集大小，最后再统一按 `limit` 截断 `ids`
 - `ids` 是 `Note.id`，与 `GET /api/notes/graph` 的节点 `id` 同源，前端可直接求交集
-- `total` 为命中总数（`count()`），`truncated` 表示 `ids` 被 `limit` 截断
+- 不带 `property` 时 `total` 为命中总数（`count()`）；`truncated` 表示 `ids` 被 `limit` 截断
 
 ### 4.5 图谱自定义颜色（按用户同步）
 
@@ -310,6 +312,41 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 - 服务端按差集落库（先删后插），响应 `{ "ok": true, "count": 1, "dropped": 0 }`
 
 `DELETE /api/graph/colors` — 清空当前用户的全部自定义颜色，响应 `{ "ok": true, "removed": 1 }`
+
+三个接口都需要登录，未带凭据一律 `401`。
+
+### 4.6 图谱颜色规则（按用户同步）
+
+> 「批量上色」的持久形态：一条规则 = 维度 + 算子 + 值 + 颜色。规则**有序**，数组下标即优先级，求值时从上到下第一条命中生效。同样按访问密钥隔离。
+
+`GET /api/graph/color-rules` — 读取当前用户的规则表
+
+```json
+{
+  "rules": [
+    { "id": "r-1f0c…", "enabled": true, "field": "path", "op": "contains", "value": "KnowledgeBase/03_Knowledge", "color": "#0090FF" },
+    { "id": "r-2ab9…", "enabled": true, "field": "property", "op": "contains", "key": "status", "value": "已发布", "color": "#46A758" }
+  ],
+  "count": 2,
+  "updatedAt": "2026-10-15T00:00:00.000Z"
+}
+```
+
+- **`updatedAt` 为 `null` 表示该用户从未保存过规则**（表里没有这一行）。前端据此决定是否播种默认的领域 / 成熟度配色；用户把规则全删光时提交的是 `[]`，那一行存在，因此不会再被播种回默认值
+
+`PUT /api/graph/color-rules` — **全量覆盖**（数组顺序即优先级）
+
+| 请求体 | 说明 |
+|---|---|
+| `{ "rules": [ { …ColorRule } ] }` | `field` ∈ `path`/`filename`/`tag`/`property`/`content`/`domain`/`maturity`；`op` ∈ `contains`/`equals`（`domain`/`maturity` 只允许 `equals`）；`property` 必须有 `key`，其余必须有 `value` |
+
+- `rules` 不是数组 → `400`；原始条目数 > `MAX_COLOR_RULES`（200）→ `413`
+- 每条经 `shared/graph-colors.ts` 的 `normalizeRule()` 校验，非法条目**单条丢弃**（`id` 必须匹配 `/^[\w:-]+$/` 且 ≤64 字符，`color` 走与节点颜色同一套白名单）
+- 响应 `{ "ok": true, "count": 2, "dropped": 0 }`
+
+`DELETE /api/graph/color-rules` — **连那一行一起删掉**，响应 `{ "ok": true, "removed": 1 }`
+
+- 与 `PUT { "rules": [] }` 的区别：PUT 空数组会留下一行空规则，表示「用户主动清空了规则」，`updatedAt` 不再是 `null`，因此前端不会再播种；DELETE 之后 `updatedAt` 回到 `null`，前端会重新播种默认的领域 / 成熟度配色——即「恢复出厂设置」
 
 三个接口都需要登录，未带凭据一律 `401`。
 
@@ -713,7 +750,7 @@ curl -s -b cookies.txt -c cookies.txt -X POST http://localhost:3000/api/auth/log
 | `/`（首页 Hero + 统计条 + 最近更新） | `GET /api/notes?pageSize=6`、`GET /api/vault/tree`、`GET /api/tags`、`GET /api/notes/graph` |
 | `/notes`（列表/搜索/排序/密度/筛选芯片） | `GET /api/notes`（`q`/`tag`/`dir`/`sort`）、`GET /api/tags` |
 | `/notes/[...slug]`（阅读/编辑/目录栏/更多操作） | `GET /api/notes/[...slug]`、`PUT/DELETE /api/vault/notes/[...slug]` |
-| `/graph`（图谱） | `GET /api/notes/graph`、`GET /api/notes/graph/match`（批量圈选）、`GET/PUT/DELETE /api/graph/colors`（自定义颜色按用户同步） |
+| `/graph`（图谱） | `GET /api/notes/graph`、`GET /api/notes/graph/match`（规则匹配预览）、`GET/PUT/DELETE /api/graph/colors`（手动单节点颜色按用户同步）、`GET/PUT /api/graph/color-rules`（颜色规则按用户同步） |
 | `/login` | `POST /api/auth/verify` |
 | `/admin`（密钥管理三形态 + 我的密钥） | `GET/POST /api/admin/keys`、`PATCH/DELETE /api/admin/keys/[id]` |
 | 侧边栏（结构树/领域/标签 + 右键操作 + 剪贴板） | `GET /api/vault/tree`、`GET /api/tags`、`POST /api/vault/notes`、`POST /api/vault/folders`、`PUT /api/vault/rename`、`POST /api/vault/copy`、`DELETE /api/vault/nodes` |

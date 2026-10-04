@@ -48,7 +48,7 @@ my-digital-garden/
 │   │   │   ├── GraphSearchPanel.vue# 画布内搜索（笔记/标签/领域/命令 四组）
 │   │   │   ├── Minimap.vue         # 缩略图（可拖拽平移/滚轮缩放）
 │   │   │   ├── GraphTuningPanel.vue# 图谱控制（标签模式/节点与连线/力导向参数/自定义颜色，仿 Obsidian）
-│   │   │   ├── BatchColorPanel.vue # 批量上色（关键词 + 路径/名称/正文圈选 → 一次上色或清除）
+│   │   │   ├── ColorRulePanel.vue  # 颜色规则（按维度建规则 + 有序列表/启停/调优先级/行内改色）
 │   │   │   ├── GraphContextMenu.vue# 右键菜单（节点菜单 / 画布空白菜单）
 │   │   │   └── GraphSkeleton.vue   # 加载骨架屏（SSR 安全的伪随机点阵）
 │   │   ├── FileTree.vue        # 递归文件树（含目录内新建笔记）
@@ -58,7 +58,7 @@ my-digital-garden/
 │   │   ├── useGraphData.ts     # 图谱数据派生（度数/邻接/入出链/领域/标签/最短路径）
 │   │   ├── useGraphFilter.ts   # 图谱筛选状态（范围/领域/成熟度/标签/关系类型）
 │   │   ├── useGraphColors.ts   # 自定义颜色的服务端同步（全量提交 + 防抖 + 本地首帧缓存 + 旧键迁移）
-│   │   ├── useGraphBatchColor.ts# 批量圈选（路径/名称本地过滤，正文走服务端检索）
+│   │   ├── useGraphColorRules.ts # 颜色规则的服务端同步（有序数组整体 PUT + 服务端维度匹配集合）
 │   │   └── useTheme.ts         # 暗黑主题切换（localStorage + 双 rAF 过渡）
 │   ├── lib/                    # 图谱纯逻辑与常量（无 Vue 依赖）
 │   │   ├── graph-types.ts      # GraphNode/GraphEdge/GraphFilterState 等类型
@@ -194,7 +194,8 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 - **缩略图**（`Minimap.vue`）：点半径按**屏幕像素**归一到 1.4–3.4px（按 `sqrt(degree)` 插值，绘制时再除以 `fit.scale`），点按节点色着色，并按 `MINIMAP.maxEdges`(700) 步长抽样画连线。根因备忘：老实现直接拿主画布的图坐标半径当屏幕半径，525 个点把 164×112 糊成一片灰。
 - **节点自定义颜色**：在节点上右键 → 设置颜色（`NODE_COLOR_PALETTE` 10 色 + 恢复领域色）。**权威存储在服务端** `GraphColor` 表，按访问密钥（=用户身份）隔离——换设备用同一密钥登录即恢复；localStorage 的 `garden-graph-colors-v2`（slug → 颜色）降级为**首帧缓存**，只为在请求回来前先按上次颜色画出来不闪白。自定义色优先于领域色；左栏「自定义颜色」区显示计数并可一键清除。颜色值经 `shared/graph-colors.ts` 的 `normalizeColor()` 白名单（`#rgb`/`#rrggbb(aa)`/`rgb()`/`hsl()`/`var(--x)`）前后端各校验一次。
 - **自定义色同步**（`app/composables/useGraphColors.ts`）：客户端**全量提交**（`PUT /api/graph/colors` 带完整 `{slug: color}`），服务端按差集落库，因此天然幂等、丢包重试不会写坏数据。连点色板 / 批量上色合并成一次请求（600ms 防抖），`beforeunload` 与 `visibilitychange → hidden` 时 `flush()` 立即提交。**键用 slug 而非 `Note.id`**：后者是重建索引就会变的 uuid。旧版按 id 存档的 `garden-graph-node-colors` 会在首次装载时一次性迁移成 slug 键并上传（只有确实映射出条目才清旧键，图谱数据未到位时不清，否则会丢用户历史颜色）。
-- **批量上色**（左栏 `BatchColorPanel.vue` + `app/composables/useGraphBatchColor.ts`）：输入关键词 + 勾选 **路径 / 名称 / 正文** 三个字段圈选节点，点色板一次给整批上色，或「清除匹配节点的颜色」。多字段之间是 **OR（并集）**；路径 / 名称在**前端本地**过滤（`slug`/`dirPath`/`title`/`tags` 小写 includes），正文走服务端 `GET /api/notes/graph/match`（350ms 防抖 + 序号防乱序，正文检索依赖 `pg_trgm` GIN 索引）。圈选范围是**全部图谱节点**而非当前可见节点（颜色是持久属性）；被圈中的节点在主画布上以 accent 描边 + 加粗高亮（Canvas 分级下用根 div 的 `data-match-count` 断言）。
+- **颜色规则**（左栏 `ColorRulePanel.vue` + `app/composables/useGraphColorRules.ts` + 纯求值 `app/lib/graph-rules.ts`）：批量上色被重写成**一条记录在案的规则**——选维度（文件路径 / 文件名 / tag 标签 / 笔记属性 / 文章内容 / 领域 / 成熟度）+ 算子（包含 / 等于）+ 值 + 颜色。规则存在 `GraphColorRules` 表的**一行 jsonb**（`{ keyId, rules: ColorRule[] }`，按访问密钥隔离），因为规则是**有序**的：数组下标即优先级，从上到下第一条命中生效，整体替换天然原子、不用算差集。原来写死在代码里的「按领域」「按成熟度」配色由 `defaultRules()` 播种成同一份列表里的预置规则，因此可以改色、调序、停用；「恢复默认配色」整体重置，「补充默认配色」只补缺的。**播种条件是服务端没有那一行（`updatedAt === null`）而不是「规则为空」**——用户把规则全删光时提交的是 `[]`，用「为空」判断会导致下次打开又长回一堆默认规则。
+  求值优先级：**手动单节点色（右键）→ 规则按顺序第一条命中 → 兜底（领域色 → 成熟度色）**。廉价维度（路径 / 文件名 / tag / 领域 / 成熟度）在**前端本地**求值；昂贵维度（正文 / 笔记属性）由 `GET /api/notes/graph/match` 解析成 id 集合后按 `id ∈ set` 判定（350ms 防抖 + 序号防乱序）。新建规则表单带**实时预览**：填完就能看到会命中多少节点、并在主画布上以 accent 描边高亮（Canvas 分级下用根 div 的 `data-match-count` 断言）。
 - **右键菜单**（`GraphContextMenu.vue`）：节点菜单 = 打开笔记 / 聚焦邻居 / 设为路径起点·终点 / 固定·解除固定 / 设置颜色 / 复制 `[[标题]]` / 复制标题 / 断开全部关系；画布空白菜单 = 适配全图 / 重置布局 / 重新点火 / 标签模式 / 清除筛选。`CONTEXT_MENU` 尺寸用于贴边避让；Esc 或外部点击关闭。
 - **左栏可收起**：三区模式下画布左缘的竖直把手（`graph-toggle-left`）切换 `leftCollapsed`。
 - 页面标题 `知识图谱 · 拾光`（`useHead`）。

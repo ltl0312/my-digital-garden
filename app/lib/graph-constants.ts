@@ -18,6 +18,17 @@ export const GRAPH_SETTINGS_KEY = 'garden-graph-settings-v3'
 /** localStorage：图谱状态（节点坐标 / 缩放 / 固定集合 / 布局 / 筛选） */
 export const GRAPH_STATE_KEY = 'garden-graph-state'
 
+/**
+ * 位置存档的「可信覆盖率」。
+ *
+ * 需求（m00991 第 2 条）：图谱位置要自动保存，下次打开按上次的样子还原，
+ * 只有手动点「重置位置」才重新排布。力导向仿真默认会 alpha=1 起跑、
+ * 把存档位置只当成**起点**再算一遍，所以必须显式判断「这份存档能不能直接信」：
+ * 存档里至少这么大比例的节点有坐标时，就静态还原、不点火。
+ * 低于这个比例（例如 vault 里一次性新增了大量笔记）才重跑布局。
+ */
+export const GRAPH_RESTORE_MIN_RATIO = 0.6
+
 /** 成熟度：展示顺序（常青 → 成长 → 幼苗）与文案/颜色 */
 export const MATURITY_ORDER = ['EVERGREEN', 'GROWING', 'SEEDLING'] as const
 export const MATURITY_LABEL: Record<string, string> = {
@@ -159,16 +170,19 @@ export const NODE_COLOR_KEY = 'garden-graph-node-colors'
  */
 export const NODE_COLOR_CACHE_KEY = 'garden-graph-colors-v2'
 
-/** 批量上色：可筛选的字段（路径 / 名称 / 正文） */
-export const BATCH_FIELDS = [
-  { value: 'path', label: '路径', hint: '匹配 vault 相对路径' },
-  { value: 'name', label: '名称', hint: '匹配标题与标签' },
-  { value: 'content', label: '正文', hint: '服务端全文检索（较慢）' }
-] as const
+/**
+ * localStorage：颜色规则的**本地缓存**（首帧用）。
+ * 权威数据在服务端 `/api/graph/color-rules`（按访问密钥隔离，见 prisma GraphColorRules）。
+ */
+export const RULE_CACHE_KEY = 'garden-graph-color-rules-v1'
 
-/** 批量上色：正文检索的防抖毫秒数与最少字符数 */
-export const BATCH_CONTENT_DEBOUNCE_MS = 350
-export const BATCH_CONTENT_MIN_LENGTH = 1
+/** 规则里「文章内容 / 笔记属性」要问服务端，多个规则合并成一次防抖请求 */
+export const RULE_MATCH_DEBOUNCE_MS = 350
+/** 服务端匹配一次最多回多少 id（图谱上限约 600 节点，留足冗余） */
+export const RULE_MATCH_LIMIT = 5000
+
+/** 颜色规则里「文章内容」的匹配值至少要有几个字符才发请求（1 个字符命中太宽，没意义） */
+export const RULE_MIN_VALUE_LENGTH = 1
 
 /** 右键「设置颜色」色板：按色相排布，亮暗两套主题下都有足够对比度 */
 export const NODE_COLOR_PALETTE = [
