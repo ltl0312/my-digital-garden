@@ -85,7 +85,24 @@
             @label-mode="setLabelMode"
             @reheat="reheatGraph"
             @reset="resetTuning"
-            @clear-colors="clearNodeColors"
+            @clear-colors="onClearNodeColors"
+          />
+          <BatchColorPanel
+            :query="batch.query.value"
+            :fields="batch.fields"
+            :summary="batch.summary.value"
+            :matched-nodes="batch.matchedNodes.value"
+            :matched-count="batch.matchedCount.value"
+            :color-map="graphColors.colors.value"
+            :syncing="graphColors.syncing.value"
+            :sync-error="graphColors.error.value"
+            :last-synced-at="graphColors.lastSyncedAt.value"
+            :content-error="batch.contentError.value"
+            @update:query="batch.query.value = $event"
+            @toggle-field="batch.toggleField"
+            @apply="onBatchApply"
+            @clear-matched="onBatchClear"
+            @locate="onBatchLocate"
           />
         </aside>
 
@@ -109,10 +126,14 @@
             :label-mode="filterState.labelMode"
             :tuning="tuning"
             :picking-path="pickingPath"
+            :color-map="graphColors.colors.value"
+            :match-ids="batchMatchIds"
             @update:selected-id="onSelect"
             @open="openNote"
             @pick="onPick"
             @contextmenu="onGraphContextMenu"
+            @set-color="onSetNodeColor"
+            @clear-colors="onClearNodeColors"
           />
 
           <!-- 左栏收起 / 展开把手（需求 m01569 第 3 条）：只在三区模式下有意义 -->
@@ -434,14 +455,17 @@ import { GRAPH_TUNING_DEFAULTS, LAYOUT_OPTIONS, MIN_THREE_PANE_WIDTH, ZOOM } fro
 import { patchGraphState, readGraphSettings, readGraphState, writeGraphSettings } from '~/lib/graphState'
 import { useGraphData } from '~/composables/useGraphData'
 import { useGraphFilter } from '~/composables/useGraphFilter'
+import { useGraphColors } from '~/composables/useGraphColors'
+import { useGraphBatchColor, type BatchNode } from '~/composables/useGraphBatchColor'
 import { useConfirm } from '~/composables/useConfirm'
 import { useToast } from '~/composables/useToast'
 import { useViewport } from '~/composables/useViewport'
 import GraphView from '~/components/GraphView.vue'
-import type { GraphNodeProp } from '~/components/GraphView.vue'
+import type { GraphColorPayload, GraphNodeProp } from '~/components/GraphView.vue'
 import GraphSkeleton from '~/components/graph/GraphSkeleton.vue'
 import FilterPanel from '~/components/graph/FilterPanel.vue'
 import GraphTuningPanel from '~/components/graph/GraphTuningPanel.vue'
+import BatchColorPanel from '~/components/graph/BatchColorPanel.vue'
 import NodeDetail from '~/components/graph/NodeDetail.vue'
 import GraphSearchPanel from '~/components/graph/GraphSearchPanel.vue'
 import Minimap from '~/components/graph/Minimap.vue'
@@ -498,6 +522,24 @@ const {
   onlyDomain,
   clearAll
 } = filter
+
+// ---------- 节点自定义颜色：服务端按用户同步 ----------
+// 权威数据在服务端（按访问密钥隔离）；本地只留一份缓存让首帧不闪白。
+// GraphView 不再自己读写 localStorage，只通过 props.colorMap 读、通过 setColor 事件写。
+const graphColors = useGraphColors()
+
+/**
+ * 批量上色的圈选范围 = **全部图谱节点**，不是当前可见节点：
+ * 颜色是持久化属性，不该因为此刻恰好筛掉了某个领域就上不了色。
+ * 面板上会另外显示「其中 M 个当前可见」。
+ */
+const batchNodes = computed<BatchNode[]>(() =>
+  allNodes.value.map(n => ({ id: n.id, slug: n.slug, title: n.title, dirPath: n.dirPath, tags: n.tags }))
+)
+const visibleNodeIds = computed(() => new Set(visibleNodes.value.map(n => n.id)))
+const batch = useGraphBatchColor(batchNodes, visibleNodeIds)
+/** 传给 GraphView 的圈选高亮（数组形式，方便 watch 比较） */
+const batchMatchIds = computed(() => [...batch.matchedIds.value])
 
 // ---------- 视图状态 ----------
 interface MinimapSnapshot {
@@ -768,13 +810,45 @@ function onGraphContextMenu(p: GraphContextPayload) {
 }
 function closeMenu() { menu.value = null }
 
+/** GraphView 发回的单个节点改色意图（右键菜单） */
+function onSetNodeColor(p: GraphColorPayload) {
+  graphColors.set(p.slug, p.color)
+  toast.success(p.color ? '已设置节点颜色' : '已恢复领域色')
+}
+/** GraphView 发回的「清除全部自定义颜色」意图（控制面板按钮） */
+function onClearNodeColors() {
+  void graphColors.clearAll()
+  toast.success('已清除全部自定义颜色')
+}
+/** 批量上色：把圈选到的节点一次涂成同一色 */
+function onBatchApply(color: string) {
+  const entries: Record<string, string> = {}
+  for (const n of batch.matchedNodes.value) entries[n.slug] = color
+  const changed = graphColors.setMany(entries)
+  if (changed) toast.success(`已给 ${changed} 个节点上色`)
+  else toast.warn('这些节点已经是该颜色')
+}
+/** 批量清除：只清圈选到、且确实有自定义色的节点 */
+function onBatchClear() {
+  const entries: Record<string, null> = {}
+  let touched = 0
+  for (const n of batch.matchedNodes.value) {
+    if (graphColors.colors.value[n.slug]) { entries[n.slug] = null; touched++ }
+  }
+  if (!touched) {
+    toast.warn('匹配到的节点没有自定义颜色')
+    return
+  }
+  graphColors.setMany(entries)
+  toast.success(`已清除 ${touched} 个节点的颜色`)
+}
+/** 面板里点一个匹配到的节点 → 定位过去 */
+function onBatchLocate(id: string) {
+  selectedId.value = id
+  nextTick(() => graphRef.value?.focusNode(id))
+}
 function onMenuSetColor(id: string, color: string | null) {
   graphRef.value?.setNodeColor(id, color)
-  toast.success(color ? '已设置节点颜色' : '已恢复领域色')
-}
-function clearNodeColors() {
-  graphRef.value?.resetNodeColors()
-  toast.success('已清除全部自定义颜色')
 }
 function onMenuCopy(text: string, label: string) {
   const p = navigator.clipboard?.writeText(text)
@@ -969,11 +1043,38 @@ function onWindowKeydown(e: KeyboardEvent) {
   }
 }
 
+// ---------- 自定义颜色的装载 / 落盘时机 ----------
+// 装载必须等图谱数据到位：迁移旧版 id 键的颜色需要 id → slug 的映射表。
+// 只在客户端跑（onMounted 内），SSR 期间不碰 $fetch 也不碰 localStorage。
+let stopColorsInit: (() => void) | null = null
+const colorsReady = ref(false)
+
+function tryInitColors(): boolean {
+  if (colorsReady.value || !batchNodes.value.length) return false
+  colorsReady.value = true
+  void graphColors.init(batchNodes.value)
+  return true
+}
+
+/** 关页 / 切后台时把还没提交的颜色改动立刻发出去（防抖窗口内关页会丢最后一次改动） */
+function flushColors() {
+  if (graphColors.pending.value) void graphColors.flush()
+}
+function onVisibilityChange() {
+  if (document.visibilityState === 'hidden') flushColors()
+}
+
 onMounted(() => {
   const saved = readGraphState().layout
   if (saved) layout.value = saved
   statusTimer = setInterval(syncStatus, 700)
   window.addEventListener('keydown', onWindowKeydown)
+
+  if (!tryInitColors()) {
+    stopColorsInit = watch(batchNodes, () => { if (tryInitColors()) { stopColorsInit?.(); stopColorsInit = null } })
+  }
+  window.addEventListener('beforeunload', flushColors)
+  document.addEventListener('visibilitychange', onVisibilityChange)
 
   if (pageEl.value && typeof ResizeObserver !== 'undefined') {
     pageObserver = new ResizeObserver((entries) => {
@@ -986,6 +1087,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (statusTimer) clearInterval(statusTimer)
   window.removeEventListener('keydown', onWindowKeydown)
+  window.removeEventListener('beforeunload', flushColors)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  stopColorsInit?.()
+  stopColorsInit = null
+  flushColors()
   pageObserver?.disconnect()
   pageObserver = null
 })

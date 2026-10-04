@@ -71,5 +71,24 @@ model AccessKey {
   lastUsedAt DateTime?
   createdAt  DateTime  @default(now())
 
+  graphColors GraphColor[]
+
   @@index([isActive])
+}
+
+/**
+ * 图谱节点自定义颜色 —— 按「访问密钥（= 用户身份）」隔离。
+ * 以 slug（vault 相对路径）为键而非 Note.id：Note.id 是重建库时会变的 uuid，
+ * slug 才是笔记在图谱里的稳定身份，换设备 / 重建索引后仍能对上。
+ */
+model GraphColor {
+  keyId     String
+  slug      String
+  color     String
+  updatedAt DateTime @updatedAt
+
+  key AccessKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
+
+  @@id([keyId, slug])
+  @@index([keyId])
 }

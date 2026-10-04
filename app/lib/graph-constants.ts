@@ -151,6 +151,25 @@ export const MAX_LABELS = 160
 /** localStorage：节点自定义颜色（节点 id → CSS 颜色），与领域配色互不干扰 */
 export const NODE_COLOR_KEY = 'garden-graph-node-colors'
 
+/**
+ * localStorage：节点自定义颜色的**本地缓存**（slug → CSS 颜色）。
+ * 权威数据在服务端（`/api/graph/colors`，按访问密钥隔离，见 prisma GraphColor）；
+ * 这份缓存只为了让图谱在请求回来之前先按上次的颜色画出来，不闪白。
+ * 键从 id 换成 slug：id 是重建库会变的 uuid，slug 才是笔记的稳定身份。
+ */
+export const NODE_COLOR_CACHE_KEY = 'garden-graph-colors-v2'
+
+/** 批量上色：可筛选的字段（路径 / 名称 / 正文） */
+export const BATCH_FIELDS = [
+  { value: 'path', label: '路径', hint: '匹配 vault 相对路径' },
+  { value: 'name', label: '名称', hint: '匹配标题与标签' },
+  { value: 'content', label: '正文', hint: '服务端全文检索（较慢）' }
+] as const
+
+/** 批量上色：正文检索的防抖毫秒数与最少字符数 */
+export const BATCH_CONTENT_DEBOUNCE_MS = 350
+export const BATCH_CONTENT_MIN_LENGTH = 1
+
 /** 右键「设置颜色」色板：按色相排布，亮暗两套主题下都有足够对比度 */
 export const NODE_COLOR_PALETTE = [
   '#E5484D', '#E8730C', '#D4A017', '#46A758', '#12A594',

@@ -658,20 +658,27 @@ log('G64 节点菜单项齐全', wantNode.every(id => nodeMenuItems.includes(id)
   `缺 ${wantNode.filter(id => !nodeMenuItems.includes(id)).join(',') || '无'} · 共 ${nodeMenuItems.length} 项`)
 
 await page.evaluate(() => document.querySelector('[data-testid="graph-menu-color-E5484D"]') && document.querySelector('[data-testid="graph-menu-color-E5484D"]').click())
-await sleep(1100)
-const colorState = await page.evaluate(() => {
+await sleep(1500) // 本地写入是同步的，服务端推送有 600ms 防抖
+const colorState = await page.evaluate(async () => {
   let saved = {}
-  try { saved = JSON.parse(localStorage.getItem('garden-graph-node-colors') || '{}') } catch { /* ignore */ }
+  try { saved = JSON.parse(localStorage.getItem('garden-graph-colors-v2') || '{}') } catch { /* ignore */ }
+  let server = null
+  try { server = await fetch('/api/graph/colors').then(r => r.json()) } catch { /* ignore */ }
   return {
     n: Object.keys(saved).length,
     value: Object.values(saved)[0] || null,
+    serverN: server ? server.count : -1,
+    serverValue: server ? (Object.values(server.colors || {})[0] || null) : null,
     count: (document.querySelector('[data-testid="graph-color-count"]') || {}).textContent || null,
     menuOpen: !!document.querySelector('[data-testid="graph-context-menu"]')
   }
 })
-log('G65 设置颜色后写回存档并计数',
+log('G65 设置颜色后写回本地缓存并计数',
   colorState.n === 1 && String(colorState.count || '').trim() === '1' && !colorState.menuOpen,
-  `saved=${colorState.n}(${colorState.value}) count=${String(colorState.count || '').trim()} menuOpen=${colorState.menuOpen}`)
+  `cache=${colorState.n}(${colorState.value}) count=${String(colorState.count || '').trim()} menuOpen=${colorState.menuOpen}`)
+log('G65b 颜色已同步到服务端（按用户）',
+  colorState.serverN === 1 && String(colorState.serverValue || '').toUpperCase() === '#E5484D',
+  `server=${colorState.serverN}(${colorState.serverValue})`)
 
 const mmCustom = await page.evaluate(() =>
   [...document.querySelectorAll('[data-testid="graph-minimap"] circle.mm-dot')]
@@ -682,14 +689,21 @@ await page.evaluate(() => {
   const b = document.querySelector('[data-testid="graph-tuning-clear-colors"]')
   if (b) b.click()
 })
-await sleep(900)
-const colorCleared = await page.evaluate(() => {
+await sleep(1200)
+const colorCleared = await page.evaluate(async () => {
   let saved = {}
-  try { saved = JSON.parse(localStorage.getItem('garden-graph-node-colors') || '{}') } catch { /* ignore */ }
-  return { n: Object.keys(saved).length, btn: !!document.querySelector('[data-testid="graph-tuning-clear-colors"]') }
+  try { saved = JSON.parse(localStorage.getItem('garden-graph-colors-v2') || '{}') } catch { /* ignore */ }
+  let server = null
+  try { server = await fetch('/api/graph/colors').then(r => r.json()) } catch { /* ignore */ }
+  return {
+    n: Object.keys(saved).length,
+    serverN: server ? server.count : -1,
+    btn: !!document.querySelector('[data-testid="graph-tuning-clear-colors"]')
+  }
 })
-log('G67 「清除全部自定义颜色」生效', colorCleared.n === 0 && !colorCleared.btn,
-  `saved=${colorCleared.n} 按钮残留=${colorCleared.btn}`)
+log('G67 「清除全部自定义颜色」生效（本地 + 服务端）',
+  colorCleared.n === 0 && colorCleared.serverN === 0 && !colorCleared.btn,
+  `cache=${colorCleared.n} server=${colorCleared.serverN} 按钮残留=${colorCleared.btn}`)
 
 // 画布空白处右键：挑一个离所有节点最远的候选点，避免误中节点
 const hits4 = await nodeHits()
@@ -762,6 +776,253 @@ log('G72 节点与连线滑杆范围已放宽',
   && !!ranges.linkDistance && ranges.linkDistance.max >= 5
   && !!ranges.focusRepel && ranges.focusRepel.max >= 10,
   JSON.stringify(ranges))
+
+// ================= 批量上色 + 自定义色按用户同步 =================
+// 全部走语义钩子：graph-batch-* 面板、/api/graph/colors、/api/notes/graph/match。
+const apiJson = (path, init) => page.evaluate(async (p, i) => {
+  try { return await fetch(p, i).then(r => r.json()) } catch { return null }
+}, path, init || undefined)
+
+await setVp(1440, 900)
+await goto('/graph')
+await sleep(1500)
+await page.evaluate(() => { document.querySelector('[data-testid="graph-batch-query"]')?.scrollIntoView({ block: 'center' }) })
+await sleep(300)
+
+log('G73 控制面板存在「批量上色」区', await vis('[data-testid="graph-batch-panel"]'))
+
+// 先清干净：颜色来自上一段的右键测试，且服务端也可能有残留
+await apiJson('/api/graph/colors', { method: 'DELETE' })
+await sleep(200)
+
+/** 设定圈选字段：只勾选要用的那一个 */
+const setFields = async (want) => {
+  await page.evaluate((w) => {
+    for (const f of ['path', 'name', 'content']) {
+      const el = document.querySelector(`[data-testid="graph-batch-field-${f}"]`)
+      if (el && !!el.checked !== w.includes(f)) el.click()
+    }
+  }, want)
+  await sleep(120)
+}
+/** 输入关键词并等结果稳定 */
+const setQuery = async (q, wait = 900) => {
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="graph-batch-query"]')
+    if (el) { el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })) }
+  })
+  await sleep(120)
+  await page.click('[data-testid="graph-batch-query"]')
+  await page.type('[data-testid="graph-batch-query"]', q, { delay: 12 })
+  await sleep(wait)
+}
+const readBatch = () => page.evaluate(() => {
+  const txt = (s) => (document.querySelector(s) || {}).textContent || ''
+  const n = (s) => {
+    const t = txt(s)
+    const m = t.match(/(\d+)/)
+    return m ? Number(m[1]) : -1
+  }
+  return {
+    summary: txt('[data-testid="graph-batch-summary"]').trim(),
+    matched: n('[data-testid="graph-batch-summary"]'),
+    items: document.querySelectorAll('[data-testid="graph-batch-item"]').length,
+    paletteDisabled: !!(document.querySelector('[data-testid="graph-batch-color-0090FF"]') || {}).disabled
+  }
+})
+
+// —— 按名称圈选 ——
+await setFields(['name'])
+await setQuery('MOC')
+const byName = await readBatch()
+log('G74 按名称圈选节点', byName.matched > 0 && byName.items > 0 && !byName.paletteDisabled,
+  `${byName.summary} · 列表 ${byName.items} 项`)
+
+// —— 按路径圈选 ——
+await setFields(['path'])
+await setQuery('KnowledgeBase/03_Knowledge')
+const byPath = await readBatch()
+log('G75 按路径圈选节点', byPath.matched > 0 && !byPath.paletteDisabled, byPath.summary)
+
+// —— 按正文圈选（走服务端全文检索） ——
+await setFields(['content'])
+await setQuery('知识', 1800)
+const byContent = await readBatch()
+log('G76 按正文圈选节点（服务端检索）', byContent.matched > 0, byContent.summary)
+
+// —— 多字段是并集，不是交集 ——
+await setFields(['name'])
+await setQuery('前端')
+const onlyName = (await readBatch()).matched
+await setFields(['path'])
+await setQuery('前端')
+const onlyPath = (await readBatch()).matched
+await setFields(['path', 'name'])
+await setQuery('前端')
+const bothFields = (await readBatch()).matched
+log('G77 多字段按并集圈选（不是交集）',
+  onlyName > 0 && onlyPath > 0 && onlyName !== onlyPath && bothFields >= Math.max(onlyName, onlyPath),
+  `名称 ${onlyName} · 路径 ${onlyPath} · 并集 ${bothFields}`)
+
+// —— 批量上色并落服务端 ——
+await setFields(['path'])
+await setQuery('KnowledgeBase')
+const beforeApply = await readBatch()
+await page.evaluate(() => document.querySelector('[data-testid="graph-batch-color-0090FF"]')?.click())
+await sleep(1600) // 600ms 防抖 + 落库
+const afterApply = await apiJson('/api/graph/colors')
+log('G78 批量上色已写入服务端',
+  !!afterApply && afterApply.count === beforeApply.matched && afterApply.count > 0,
+  `匹配 ${beforeApply.matched} → 服务端 ${afterApply ? afterApply.count : 'null'} 条`)
+log('G78b 服务端存的是合法颜色值',
+  !!afterApply && Object.values(afterApply.colors || {}).every(c => String(c).toUpperCase() === '#0090FF'),
+  `样本 ${afterApply ? JSON.stringify(Object.values(afterApply.colors || {}).slice(0, 2)) : 'null'}`)
+
+// —— 圈选高亮：匹配结果必须真的送到渲染层 ——
+// Canvas 分级（>150 节点）看不到描边属性，所以断言分两层：
+// 两种分级都必须对上 data-match-count；SVG 分级再额外核对强调色描边的点数。
+const highlighted = await page.evaluate(() => {
+  const root = document.querySelector('[data-testid="graph-canvas"]')
+  const dots = [...document.querySelectorAll('circle.gnode-dot')]
+  return {
+    tier: root ? root.getAttribute('data-tier') : null,
+    matchCount: Number(root ? root.getAttribute('data-match-count') : -1),
+    dots: dots.length,
+    accent: dots.filter(c => (c.getAttribute('stroke') || '').includes('accent')).length
+  }
+})
+log('G78c 圈选结果已送达渲染层并高亮',
+  highlighted.matchCount === beforeApply.matched
+  && (highlighted.tier !== 'svg' || highlighted.accent === beforeApply.matched),
+  `tier=${highlighted.tier} matchCount=${highlighted.matchCount}/${beforeApply.matched} svg描边=${highlighted.accent}/${highlighted.dots}`)
+
+// —— 换设备：清掉本地缓存后仍能从服务端恢复 ——
+const expected = afterApply ? afterApply.count : 0
+await page.evaluate(() => {
+  localStorage.removeItem('garden-graph-colors-v2')
+  localStorage.removeItem('garden-graph-node-colors')
+})
+await goto('/graph')
+await sleep(2200)
+const restored = await page.evaluate(() => {
+  let cache = {}
+  try { cache = JSON.parse(localStorage.getItem('garden-graph-colors-v2') || '{}') } catch { /* ignore */ }
+  const txt = (document.querySelector('[data-testid="graph-color-count"]') || {}).textContent || ''
+  const m = txt.match(/(\d+)/)
+  return { cache: Object.keys(cache).length, shown: m ? Number(m[1]) : -1 }
+})
+log('G79 清空本地缓存后从服务端恢复（同用户跨设备）',
+  expected > 0 && restored.cache === expected && restored.shown === expected,
+  `服务端 ${expected} · 恢复后缓存 ${restored.cache} · 界面计数 ${restored.shown}`)
+
+// —— 旧版（按 Note.id）存档一次性迁移到 slug 键并推上服务端 ——
+await apiJson('/api/graph/colors', { method: 'DELETE' })
+const sample = await page.evaluate(async () => {
+  const g = await fetch('/api/notes/graph').then(r => r.json())
+  const n = g.nodes.find(x => x.slug && x.id)
+  return n ? { id: n.id, slug: n.slug } : null
+})
+if (sample) {
+  await page.evaluate((s) => {
+    localStorage.removeItem('garden-graph-colors-v2')
+    localStorage.setItem('garden-graph-node-colors', JSON.stringify({ [s.id]: '#46A758' }))
+  }, sample)
+  await goto('/graph')
+  await sleep(2200)
+  const migrated = await apiJson('/api/graph/colors')
+  const legacyLeft = await page.evaluate(() => !!localStorage.getItem('garden-graph-node-colors'))
+  log('G80 旧版按 id 存档迁移为 slug 键并上传',
+    !!migrated && migrated.colors && migrated.colors[sample.slug] === '#46A758' && !legacyLeft,
+    `slug=${sample.slug} 服务端=${migrated ? JSON.stringify(migrated.colors) : 'null'} 旧键残留=${legacyLeft}`)
+} else {
+  log('G80 旧版按 id 存档迁移为 slug 键并上传', false, '取不到样本节点')
+}
+
+// —— 批量清除：只清圈选到的节点 ——
+await setFields(['path'])
+await setQuery('KnowledgeBase')
+const beforeClear = await readBatch()
+await page.evaluate(() => document.querySelector('[data-testid="graph-batch-clear"]')?.click())
+await sleep(1600)
+const afterClear = await apiJson('/api/graph/colors')
+log('G81 批量清除圈选节点的颜色',
+  beforeClear.matched > 0 && !!afterClear && afterClear.count === 0,
+  `圈选 ${beforeClear.matched} → 服务端剩 ${afterClear ? afterClear.count : 'null'}`)
+
+// —— 未登录访问颜色接口必须 401（按用户隔离的前提） ——
+// 在 Node 侧发（无 cookie jar），而不是页面里发：页面里 fetch 必然带 cookie，
+// 用 headers.cookie 伪造也不行（Cookie 是 forbidden header，浏览器会丢掉它并换成真 cookie），
+// 而故意触发 401 会在页面留下 console.error 把 G42 弄脏。
+const anonRes = await fetch(BASE + '/api/graph/colors').catch(() => null)
+log('G82 未带凭据访问颜色接口被拒',
+  !!anonRes && (anonRes.status === 401 || anonRes.status === 403),
+  `status=${anonRes ? anonRes.status : 'ERR'}`)
+
+// —— /api/notes/graph/match 三个字段都可用 ——
+const matchOk = await page.evaluate(async () => {
+  const hit = async (q, fields) => {
+    const r = await fetch(`/api/notes/graph/match?q=${encodeURIComponent(q)}&fields=${fields}&limit=2000`)
+    if (!r.ok) return { status: r.status }
+    const j = await r.json()
+    return { status: r.status, total: j.total, ids: Array.isArray(j.ids) ? j.ids.length : -1 }
+  }
+  return {
+    path: await hit('KnowledgeBase', 'path'),
+    name: await hit('MOC', 'name'),
+    content: await hit('知识', 'content'),
+    blank: await hit('', 'content')
+  }
+})
+log('G83 /api/notes/graph/match 支持路径 / 名称 / 正文三字段',
+  matchOk.path.total > 0 && matchOk.name.total > 0 && matchOk.content.total > 0
+  && matchOk.blank.total === 0
+  && matchOk.path.ids === matchOk.path.total,
+  JSON.stringify(matchOk))
+
+// —— 非法颜色值必须被服务端丢弃 ——
+const dropped = await page.evaluate(async () => {
+  const r = await fetch('/api/graph/colors', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ colors: { 'x/ok.md': '#123456', 'x/bad.md': 'javascript:alert(1)' } })
+  })
+  const j = await r.json()
+  const after = await fetch('/api/graph/colors').then(x => x.json())
+  return { status: r.status, dropped: j.dropped, kept: after.count }
+})
+log('G84 非法颜色值被服务端丢弃', dropped.status === 200 && dropped.dropped === 1 && dropped.kept === 1,
+  JSON.stringify(dropped))
+
+// 收尾：别把测试数据留给后面的用例
+await apiJson('/api/graph/colors', { method: 'DELETE' })
+await page.evaluate(() => localStorage.removeItem('garden-graph-colors-v2'))
+
+// —— 窄屏：批量上色面板必须能经「筛选」抽屉打开（不能只在桌面三区模式下可用） ——
+await setVp(390, 844)
+await goto('/graph')
+await sleep(1800)
+const drawerBtn = await vis('[data-testid="graph-open-filters"]')
+if (drawerBtn) {
+  await page.click('[data-testid="graph-open-filters"]')
+  await sleep(800)
+}
+const narrow = await page.evaluate(() => {
+  const p = document.querySelector('[data-testid="graph-batch-panel"]')
+  const aside = document.querySelector('[data-testid="graph-left-panel"]')
+  if (!p) return { open: false, w: 0, inside: false, asideW: 0, vw: window.innerWidth }
+  const r = p.getBoundingClientRect()
+  const ar = aside ? aside.getBoundingClientRect() : null
+  return {
+    open: getComputedStyle(p).display !== 'none' && r.width > 0,
+    w: Math.round(r.width),
+    inside: r.left >= -1 && r.right <= window.innerWidth + 1,
+    asideW: ar ? Math.round(ar.width) : 0,
+    vw: window.innerWidth
+  }
+})
+log('G85 窄屏下批量上色面板可经「筛选」抽屉打开',
+  drawerBtn && narrow.open && narrow.inside,
+  `按钮=${drawerBtn} 面板宽=${narrow.w} 抽屉宽=${narrow.asideW} vw=${narrow.vw} 在视口内=${narrow.inside}`)
 
 // ================= 控制台洁净 =================
 const benign = /ResizeObserver loop|favicon|Download the Vue Devtools/i

@@ -9,6 +9,8 @@
     data-testid="graph-canvas"
     :data-graph-ready="ready ? '1' : '0'"
     :data-zoom="zoomK"
+    :data-tier="tier"
+    :data-match-count="matchSet.size"
     @keydown="onKeydown"
     @pointerdown="onPointerDownCapture"
     @contextmenu.prevent="onCanvasContextMenu"
@@ -103,13 +105,7 @@ import {
   isMocTitle
 } from '~/lib/graph-constants'
 import { FORCE_PARAMS, computeLayout } from '~/lib/graphLayouts'
-import {
-  clearNodeColors,
-  patchGraphState,
-  readGraphState,
-  readNodeColors,
-  setNodeColor as persistNodeColor
-} from '~/lib/graphState'
+import { patchGraphState, readGraphState } from '~/lib/graphState'
 import { domainColor } from '#shared/graph-domain'
 
 /** 页面可附带 degree / isolated（缺省时由边就地推算） */
@@ -124,6 +120,13 @@ export interface GraphContextPayload {
   id: string | null
   x: number
   y: number
+}
+
+/** 节点自定义颜色的写意图（颜色本身由页面持有并同步到服务端，GraphView 只负责发意图） */
+export interface GraphColorPayload {
+  id: string
+  slug: string
+  color: string | null
 }
 
 interface VNode {
@@ -167,6 +170,13 @@ const props = defineProps<{
   /** 控制面板参数（显示 + 力导向） */
   tuning: GraphTuning
   pickingPath: boolean
+  /**
+   * 节点自定义颜色：**slug → CSS 颜色**。
+   * 由页面持有（useGraphColors 负责与服务端同步），GraphView 只读不写。
+   */
+  colorMap?: Record<string, string>
+  /** 批量上色正在圈选的节点 id；命中的节点画一圈强调色描边 */
+  matchIds?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -175,6 +185,8 @@ const emit = defineEmits<{
   (e: 'pick', id: string): void
   (e: 'ready'): void
   (e: 'contextmenu', payload: GraphContextPayload): void
+  (e: 'setColor', payload: GraphColorPayload): void
+  (e: 'clearColors'): void
 }>()
 
 const physicsActive = defineModel<boolean>('physicsActive', { default: true })
@@ -274,15 +286,19 @@ const radiusOf = (degree: number, isolated: boolean) => {
 
 /**
  * 节点填充色：**自定义色优先**，否则按领域取色（无领域时回落到成熟度色）。
- * 自定义色由右键菜单写入 `garden-graph-node-colors`（见 setNodeColor）。
+ * 自定义色由页面持有（`props.colorMap`，slug → 颜色，useGraphColors 同步到服务端），
+ * 这里只读——GraphView 不再自己读写 localStorage。
  */
-const nodeColors = ref<Record<string, string>>({})
+const colorMap = computed(() => props.colorMap || {})
 
-const colorOf = (n: { id: string; domain: string; maturity: string }) => {
-  const custom = nodeColors.value[n.id]
+const colorOf = (n: { slug: string; domain: string; maturity: string }) => {
+  const custom = colorMap.value[n.slug]
   if (custom) return custom
   return n.domain ? domainColor(n.domain) : (MATURITY_COLORS[n.maturity] || '#8C6D46')
 }
+
+/** 批量上色正在圈选的节点集合 */
+const matchSet = computed(() => new Set(props.matchIds || []))
 
 const hitRadiusOf = (n: VNode) => (isTouchNow() ? TOUCH_HIT_RADIUS : Math.max(14, n.r + 6))
 
@@ -418,9 +434,11 @@ function drawCanvas() {
     ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2)
     ctx.fillStyle = n.color
     ctx.fill()
-    ctx.lineWidth = (hot && focus && n.id === props.selectedId ? FOCUS_STYLE.nodeStrokeWidth : FOCUS_STYLE.nodeBaseStrokeWidth) / k
-    ctx.strokeStyle = n.isolated ? cssVars.ink3 : cssVars.canvas
-    if (n.isolated) ctx.setLineDash([3 / k, 3 / k])
+    ctx.lineWidth = (matchSet.value.has(n.id)
+      ? FOCUS_STYLE.nodeStrokeWidth + 1
+      : (hot && focus && n.id === props.selectedId ? FOCUS_STYLE.nodeStrokeWidth : FOCUS_STYLE.nodeBaseStrokeWidth)) / k
+    ctx.strokeStyle = matchSet.value.has(n.id) ? cssVars.accent : (n.isolated ? cssVars.ink3 : cssVars.canvas)
+    if (n.isolated && !matchSet.value.has(n.id)) ctx.setLineDash([3 / k, 3 / k])
     else ctx.setLineDash([])
     ctx.stroke()
     ctx.setLineDash([])
@@ -562,9 +580,11 @@ function buildLayers() {
     nodeSel.select('circle.gnode-dot')
       .attr('r', (d: VNode) => d.r)
       .attr('fill', (d: VNode) => d.color)
-      .attr('stroke', (d: VNode) => (d.isolated ? 'var(--ink-3)' : 'var(--canvas)'))
-      .attr('stroke-width', (d: VNode) => (d.isolated ? FOCUS_STYLE.isolatedStrokeWidth : FOCUS_STYLE.nodeBaseStrokeWidth))
-      .attr('stroke-dasharray', (d: VNode) => (d.isolated ? '3 3' : null))
+      .attr('stroke', (d: VNode) => (matchSet.value.has(d.id) ? 'var(--accent)' : (d.isolated ? 'var(--ink-3)' : 'var(--canvas)')))
+      .attr('stroke-width', (d: VNode) => (matchSet.value.has(d.id)
+        ? FOCUS_STYLE.nodeStrokeWidth + 1
+        : (d.isolated ? FOCUS_STYLE.isolatedStrokeWidth : FOCUS_STYLE.nodeBaseStrokeWidth)))
+      .attr('stroke-dasharray', (d: VNode) => (d.isolated && !matchSet.value.has(d.id) ? '3 3' : null))
       .attr('opacity', (d: VNode) => {
         if (d.isolated) return focus && !focus.has(d.id) ? EDGE_STYLE.dimOpacity : 0.45
         return focus && !focus.has(d.id) ? EDGE_STYLE.dimOpacity : 1
@@ -1142,7 +1162,9 @@ function togglePin(id: string): boolean {
 
 const isPinned = (id: string) => pinnedIds().includes(id)
 
-// ---------- 节点自定义颜色（右键菜单 / 控制面板） ----------
+// ---------- 节点自定义颜色（右键菜单 / 批量上色面板） ----------
+// 颜色状态不在本组件里：页面用 useGraphColors 持有（slug → 颜色）并同步到服务端，
+// 通过 props.colorMap 传进来。这里只做两件事——按 map 上色、把用户的写意图发回页面。
 /** 重算全部节点填充色并就地刷新：只改颜色，不碰坐标，所以不重新点火 */
 function recolor() {
   for (const n of nodeData) n.color = colorOf(n)
@@ -1154,19 +1176,21 @@ function recolor() {
 
 /** 设置 / 清除单个节点的自定义颜色（color 传 null = 恢复领域色） */
 const setNodeColor = (id: string, color: string | null) => {
-  nodeColors.value = persistNodeColor(id, color)
+  const n = nodeData.find(x => x.id === id)
+  if (!n) return
+  emit('setColor', { id, slug: n.slug, color })
 }
 
 /** 清除全部节点的自定义颜色 */
-const resetNodeColors = () => {
-  clearNodeColors()
-  nodeColors.value = {}
-}
+const resetNodeColors = () => emit('clearColors')
 
 /** 该节点是否被改过颜色（右键菜单据此显示「恢复领域色」） */
-const nodeColorOf = (id: string): string | null => nodeColors.value[id] || null
+const nodeColorOf = (id: string): string | null => {
+  const n = nodeData.find(x => x.id === id)
+  return n ? (colorMap.value[n.slug] || null) : null
+}
 
-const customColorCount = computed(() => Object.keys(nodeColors.value).length)
+const customColorCount = computed(() => Object.keys(colorMap.value).length)
 
 // ---------- 键盘 ----------
 const onKeydown = (e: KeyboardEvent) => {
@@ -1255,8 +1279,6 @@ onMounted(() => {
   if (!hostRef.value || !svgRef.value) return
   mountAt = performance.now()
   refreshCssVars()
-  // 自定义颜色必须在首次 syncGraph 之前读进来，否则首帧会先按领域色画一遍再跳色
-  nodeColors.value = readNodeColors()
   measure()
 
   const svg = d3.select(svgRef.value)
@@ -1359,7 +1381,10 @@ function redraw() {
 watch([() => props.selectedId, () => props.labelMode], () => redraw())
 
 // 自定义颜色变化：只重算颜色并重画，不动仿真（改色不该让图重新跑一遍）
-watch(nodeColors, () => recolor(), { deep: true })
+watch(() => props.colorMap, () => recolor(), { deep: true })
+
+// 批量上色的圈选集合变化：重画描边强调圈（同样不碰仿真）
+watch(() => props.matchIds, () => redraw())
 
 // 聚焦变化：被聚焦节点的排斥力要变大，所以除了重画还得把仿真重新点着
 watch(() => props.focusIds, () => {
