@@ -654,7 +654,12 @@ function schedulePreview() {
   previewTimer = setTimeout(() => { previewTimer = null; runPreview() }, RULE_MATCH_DEBOUNCE_MS)
 }
 
-watch([draft, ruleSubjects], () => schedulePreview(), { deep: true })
+// 只盯「匹配条件」。别深监听整个 draft —— 颜色也在 draft 里，拖一下透明度滑杆就会
+// 触发一串预览请求，而颜色根本不影响命中谁。
+watch(
+  [() => draft.value.field, () => draft.value.op, () => draft.value.key, () => draft.value.value, ruleSubjects],
+  () => schedulePreview()
+)
 
 /** 领域 / 成熟度的可选值：做成下拉，避免手打错字导致 equals 规则永远匹配不到 */
 const domainNames = computed(() => domains.value.map(d => d.name))

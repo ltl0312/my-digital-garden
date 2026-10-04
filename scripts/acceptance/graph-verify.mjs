@@ -1322,6 +1322,252 @@ if (pinNode) {
 }
 await apiJson('/api/graph/colors', { method: 'DELETE' })
 
+// ================= 任意颜色 / rgba（需求 m01619） =================
+// 这一段的重点是：颜色不再被 10 个预设色锁死，能挑任意色、能用 rgba 表达半透明。
+await apiJson('/api/graph/colors', { method: 'DELETE' })
+await setVp(1440, 900)
+await goto('/graph')
+await page.waitForFunction(
+  () => document.querySelector('[data-testid="graph-canvas"]')?.getAttribute('data-graph-ready') === '1',
+  { timeout: 60000 }
+).catch(() => {})
+await sleep(2000)
+await page.evaluate(() => localStorage.removeItem('garden-graph-colors-v2'))
+await goto('/graph')
+await sleep(2200)
+
+/** 在画布中间找一个节点并右键打开菜单；返回命中的候选坐标 */
+async function openNodeMenu() {
+  const box = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="graph-canvas"]')
+    if (!el) return { x: 0, y: 0, w: 0, h: 0 }
+    const r = el.getBoundingClientRect()
+    return { x: r.left, y: r.top, w: r.width, h: r.height }
+  })
+  const hits = await nodeHits()
+  const mids = hits.filter(n => n.x > box.x + 24 && n.x < box.x + box.w - 24
+    && n.y > box.y + 96 && n.y < box.y + box.h - 80)
+  for (const cand of [...mids.filter(n => n.degree >= 3), ...mids, ...hits].slice(0, 12)) {
+    await page.mouse.click(cand.x, cand.y, { button: 'right' })
+    await sleep(420)
+    if (await readMenuKind() === 'node') return cand
+  }
+  return null
+}
+
+/** 在页面里往某个输入框写值并补发事件（Vue 的 v-model / @input 都靠这个驱动） */
+const writeInput = (tid, value, kind = 'input') => page.evaluate(({ tid, value, kind }) => {
+  const el = document.querySelector(`[data-testid="${tid}"]`)
+  if (!el) return false
+  el.value = value
+  el.dispatchEvent(new Event(kind, { bubbles: true }))
+  el.dispatchEvent(new Event('change', { bubbles: true }))
+  return true
+}, { tid, value, kind })
+
+const ccNode = await openNodeMenu()
+
+// —— 菜单里必须出现「任意色」控件，而不只是 10 个圆点 ——
+const pickerUi = await page.evaluate(() => {
+  const ids = [...document.querySelectorAll('[data-testid^="graph-menu-color-"]')]
+    .map(e => e.getAttribute('data-testid') || '')
+  const native = document.querySelector('[data-testid="graph-menu-color-native"]')
+  const alpha = document.querySelector('[data-testid="graph-menu-color-alpha"]')
+  return {
+    kind: document.querySelector('[data-testid="graph-context-menu"]')?.getAttribute('data-menu-kind'),
+    presets: ids.filter(id => /^graph-menu-color-[0-9A-F]{6}$/.test(id)).length,
+    native: !!native && native.getAttribute('type') === 'color',
+    alpha: !!alpha && alpha.getAttribute('type') === 'range'
+      && Number(alpha.getAttribute('min')) === 5 && Number(alpha.getAttribute('max')) === 100,
+    text: !!document.querySelector('[data-testid="graph-menu-color-text"]'),
+    preview: !!document.querySelector('[data-testid="graph-menu-color-preview"]'),
+    alphaLabel: !!document.querySelector('[data-testid="graph-menu-color-alpha-label"]')
+  }
+})
+log('G101 右键菜单提供任意色输入（原生取色 / 透明度滑杆 / 文本框）',
+  pickerUi.kind === 'node' && pickerUi.presets === 10 && pickerUi.native
+  && pickerUi.alpha && pickerUi.text && pickerUi.preview && pickerUi.alphaLabel,
+  JSON.stringify(pickerUi))
+
+// —— 文本框输入任意非预设色 ——
+const CUSTOM_HEX = '#7B3FA0'
+await writeInput('graph-menu-color-text', CUSTOM_HEX)
+await sleep(1300)
+const cc102 = await page.evaluate(async () => {
+  const server = await fetch('/api/graph/colors').then(r => r.json())
+  const menu = document.querySelector('[data-testid="graph-context-menu"]')
+  return {
+    count: server.count,
+    values: Object.values(server.colors || {}),
+    open: !!menu && menu.getAttribute('data-menu-kind') === 'node'
+  }
+})
+log('G102 文本框可设任意色（非预设色），且菜单保持打开',
+  !!ccNode && cc102.count === 1 && String(cc102.values[0]).toUpperCase() === CUSTOM_HEX && cc102.open,
+  `节点=${ccNode ? ccNode.title : 'no-hit'} 服务端=${JSON.stringify(cc102.values)} 菜单开着=${cc102.open}`)
+
+// —— 透明度滑杆 → rgba 落库 ——
+await writeInput('graph-menu-color-alpha', '40')
+await sleep(1300)
+const cc103 = await page.evaluate(async () => {
+  const server = await fetch('/api/graph/colors').then(r => r.json())
+  const txt = (t) => {
+    const el = document.querySelector(`[data-testid="graph-menu-color-${t}"]`)
+    return el ? (el.textContent || '').replace(/\s+/g, ' ').trim() : null
+  }
+  const preview = document.querySelector('[data-testid="graph-menu-color-preview"]')
+  const text = document.querySelector('[data-testid="graph-menu-color-text"]')
+  return {
+    value: Object.values(server.colors || {})[0] || null,
+    label: txt('alpha-label'),
+    text: text ? text.value : null,
+    preview: preview ? preview.style.background : null
+  }
+})
+log('G103 透明度滑杆写出 rgba 并落库',
+  cc103.value === 'rgba(123, 63, 160, 0.4)' && cc103.label === '40%'
+  && String(cc103.text).startsWith('rgba(') && /rgba\(123, 63, 160/.test(String(cc103.preview)),
+  JSON.stringify(cc103))
+
+// —— 半透明色要真的画到图上（缩略图圆点用的是同一个值） ——
+await sleep(1600)
+const cc104 = await page.evaluate(() => {
+  const fills = [...document.querySelectorAll('circle.mm-dot')].map(c => c.getAttribute('fill') || '')
+  return {
+    dots: fills.length,
+    rgba: fills.filter(f => /^rgba\(123, 63, 160/.test(f)).length,
+    hint: (document.querySelector('[data-testid="graph-color-count"]') || {}).textContent || ''
+  }
+})
+log('G104 半透明色已绘制到缩略图',
+  cc104.rgba >= 1,
+  `缩略图点 ${cc104.dots} 个 · 命中 rgba ${cc104.rgba} 个 · 颜色计数「${cc104.hint.trim()}」`)
+
+// —— 非法写法要被挡住，且不能污染已存颜色 ——
+await writeInput('graph-menu-color-text', 'javascript:alert(1)')
+await sleep(900)
+const cc105 = await page.evaluate(async () => {
+  const hint = document.querySelector('[data-testid="graph-menu-color-hint"]')
+  const label = document.querySelector('[data-testid="graph-menu-color-alpha-label"]')
+  const server = await fetch('/api/graph/colors').then(r => r.json())
+  return {
+    hint: hint ? (hint.textContent || '').replace(/\s+/g, ' ').trim() : null,
+    label: label ? (label.textContent || '').trim() : null,
+    value: Object.values(server.colors || {})[0] || null
+  }
+})
+log('G105 非法颜色写法被拒且不影响已存颜色',
+  !!cc105.hint && cc105.value === 'rgba(123, 63, 160, 0.4)' && cc105.label === '40%',
+  `提示=${cc105.hint ? cc105.hint.slice(0, 18) : 'null'} 服务端=${cc105.value} 透明度=${cc105.label}`)
+
+// —— 回到不透明 hex：提示消失、透明度回满 ——
+await writeInput('graph-menu-color-text', '#3E63DD')
+await sleep(1300)
+const cc106 = await page.evaluate(async () => {
+  const hint = document.querySelector('[data-testid="graph-menu-color-hint"]')
+  const label = document.querySelector('[data-testid="graph-menu-color-alpha-label"]')
+  const server = await fetch('/api/graph/colors').then(r => r.json())
+  return {
+    hint: !!hint,
+    label: label ? (label.textContent || '').trim() : null,
+    value: Object.values(server.colors || {})[0] || null
+  }
+})
+log('G106 改回不透明 hex 后提示消失、透明度回满',
+  !cc106.hint && cc106.label === '100%' && String(cc106.value).toUpperCase() === '#3E63DD',
+  JSON.stringify(cc106))
+
+// —— 服务端放行 rgba / 简写 hex，拒绝注入型字符串 ——
+const apiColors = await page.evaluate(async () => {
+  const r = await fetch('/api/graph/colors', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      colors: {
+        'a/ok.md': 'rgba(18, 52, 86, 0.55)',
+        'a/ok2.md': '#abc',
+        'a/ok3.md': 'hsl(160 56% 40%)',
+        'a/bad.md': 'rgb(0,0,0);background:url(x)',
+        'a/bad2.md': 'rgb(0,0)'
+      }
+    })
+  })
+  const j = await r.json()
+  const after = await fetch('/api/graph/colors').then(x => x.json())
+  return { status: r.status, count: j.count, dropped: j.dropped, colors: after.colors }
+})
+log('G107 服务端放行 rgba / 简写 hex / 空格语法 hsl，拒绝注入串',
+  apiColors.status === 200 && apiColors.dropped === 2 && apiColors.count === 3
+  && apiColors.colors['a/ok.md'] === 'rgba(18, 52, 86, 0.55)'
+  && apiColors.colors['a/ok2.md'] === '#abc'
+  && apiColors.colors['a/ok3.md'] === 'hsl(160 56% 40%)',
+  JSON.stringify(apiColors))
+
+await apiJson('/api/graph/colors', { method: 'DELETE' })
+await page.evaluate(() => localStorage.removeItem('garden-graph-colors-v2'))
+
+// —— 颜色规则面板同样要能挑任意色 ——
+await apiJson('/api/graph/color-rules', { method: 'DELETE' })
+await page.evaluate(() => localStorage.removeItem('garden-graph-color-rules-v1'))
+await goto('/graph')
+await sleep(2600)
+await scrollRules()
+await writeInput('graph-rule-color-text', 'rgba(18, 52, 86, 0.55)')
+await sleep(300)
+await writeInput('graph-rule-value', 'KnowledgeBase')
+await sleep(900)
+await page.evaluate(() => document.querySelector('[data-testid="graph-rule-submit"]')?.click())
+await sleep(1500)
+const ruleRgba = await page.evaluate(async () => {
+  const j = await fetch('/api/graph/color-rules').then(r => r.json())
+  const custom = (j.rules || []).filter(r => /^rgba\(/.test(r.color))
+  const uniq = new Set((j.rules || []).map(r => r.color))
+  return {
+    count: j.count,
+    customCount: custom.length,
+    color: custom[0] ? custom[0].color : null,
+    field: custom[0] ? custom[0].field : null,
+    distinctColors: uniq.size
+  }
+})
+log('G108 颜色规则也能用任意 rgba 颜色',
+  ruleRgba.customCount === 1 && ruleRgba.color === 'rgba(18, 52, 86, 0.55)' && ruleRgba.field === 'path',
+  JSON.stringify(ruleRgba))
+
+// —— 规则行内编辑同样能改透明度 ——
+const rgbaRuleId = await page.evaluate(async () => {
+  const j = await fetch('/api/graph/color-rules').then(r => r.json())
+  const r = (j.rules || []).find(x => /^rgba\(/.test(x.color))
+  return r ? r.id : null
+})
+let editAlphaOk = false
+let editAlphaDetail = '未找到目标规则'
+if (rgbaRuleId) {
+  await scrollRules()
+  await page.evaluate((q) => document.querySelector(q)?.click(), `[data-testid="graph-rule-swatch-${rgbaRuleId}"]`)
+  await sleep(300)
+  await writeInput(`graph-rule-edit-color-${rgbaRuleId}-alpha`, '80')
+  await sleep(1200)
+  await page.evaluate((q) => document.querySelector(q)?.click(), `[data-testid="graph-rule-edit-done-${rgbaRuleId}"]`)
+  await sleep(1500)
+  const edited = await page.evaluate(async (id) => {
+    const j = await fetch('/api/graph/color-rules').then(r => r.json())
+    const r = (j.rules || []).find(x => x.id === id)
+    return r ? r.color : null
+  }, rgbaRuleId)
+  editAlphaOk = edited === 'rgba(18, 52, 86, 0.8)'
+  editAlphaDetail = `0.55 → ${edited}`
+}
+log('G109 规则行内编辑可调透明度', editAlphaOk, editAlphaDetail)
+
+// 收尾：别把测试数据留给后面的用例
+await apiJson('/api/graph/color-rules', { method: 'DELETE' })
+await apiJson('/api/graph/colors', { method: 'DELETE' })
+await page.evaluate(() => {
+  localStorage.removeItem('garden-graph-color-rules-v1')
+  localStorage.removeItem('garden-graph-colors-v2')
+})
+
 // ================= 控制台洁净 =================
 const benign = /ResizeObserver loop|favicon|Download the Vue Devtools/i
 const realErrors = consoleErrors.filter(t => !benign.test(t))

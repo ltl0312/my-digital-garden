@@ -1,6 +1,7 @@
 <template>
   <div
-    class="absolute z-50 min-w-[208px] max-w-[240px] rounded-[10px] border border-line bg-surface shadow-ds3 py-1 select-none"
+    ref="root"
+    class="absolute z-50 min-w-[232px] max-w-[248px] rounded-[10px] border border-line bg-surface shadow-ds3 py-1 select-none"
     data-testid="graph-context-menu"
     :data-menu-kind="target ? 'node' : 'canvas'"
     :data-menu-node="target ? target.id : ''"
@@ -16,20 +17,13 @@
       >
         {{ item.text }}
       </div>
-      <div v-else-if="item.kind === 'swatches'" class="px-2.5 pt-1 pb-1.5">
-        <div class="flex flex-wrap gap-1.5">
-          <button
-            v-for="c in NODE_COLOR_PALETTE"
-            :key="c"
-            type="button"
-            class="h-5 w-5 rounded-full border transition-transform duration-micro hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            :class="isCurrentColor(c) ? 'border-ink ring-1 ring-ink/40' : 'border-black/10'"
-            :style="{ background: c }"
-            :data-testid="`graph-menu-color-${c.slice(1)}`"
-            :title="c"
-            :aria-label="`设为颜色 ${c}`"
-            @click="pick(c)"
-          />
+      <div v-else-if="item.kind === 'swatches'" class="px-2.5 pt-1 pb-2">
+        <ColorPicker
+          testid="graph-menu-color"
+          :model-value="target?.color ?? null"
+          @update="applyColor"
+        />
+        <div class="mt-1.5 flex flex-wrap gap-1.5">
           <button
             type="button"
             class="h-5 rounded-full border border-line px-2 text-[11px] text-ink-2 hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -58,8 +52,9 @@
 </template>
 
 <script setup lang="ts">
-import { CONTEXT_MENU, LABEL_MODE_LABEL, LABEL_MODES, NODE_COLOR_PALETTE } from '~/lib/graph-constants'
+import { CONTEXT_MENU, LABEL_MODE_LABEL, LABEL_MODES } from '~/lib/graph-constants'
 import type { LabelMode } from '~/lib/graph-types'
+import ColorPicker from './ColorPicker.vue'
 
 /** 右键目标；`null` 表示在画布空白处右键 */
 export interface ContextTarget {
@@ -107,24 +102,33 @@ const emit = defineEmits<{
   (e: 'clear-filters'): void
 }>()
 
-/** 贴边避让：先按估算尺寸夹到容器内，再留 8px 边距 */
+/**
+ * 贴边避让。菜单里现在塞了取色控件，高度不再是常数，所以挂载后实测一次真实尺寸，
+ * 测量前先用 `CONTEXT_MENU` 的估算值兜住（避免首帧闪到容器外）。
+ */
+const root = ref<HTMLElement | null>(null)
+const size = ref<{ w: number; h: number }>({ w: CONTEXT_MENU.width, h: CONTEXT_MENU.height })
+
 const pos = computed(() => {
-  const w = CONTEXT_MENU.width
-  const h = CONTEXT_MENU.height
-  const maxX = Math.max(8, props.containerW - w - 8)
-  const maxY = Math.max(8, props.containerH - h - 8)
+  const maxX = Math.max(8, props.containerW - size.value.w - 8)
+  const maxY = Math.max(8, props.containerH - size.value.h - 8)
   return {
     x: Math.min(Math.max(8, props.x), maxX),
     y: Math.min(Math.max(8, props.y), maxY)
   }
 })
 
-const isCurrentColor = (c: string) => props.target?.color === c
-
 function pick(color: string | null) {
   if (!props.target) return
   emit('set-color', props.target.id, color)
   emit('close')
+}
+
+/** 预设色一次到位就收起菜单；自定义控件（取色/滑杆/文本框）留着菜单看实时效果 */
+function applyColor(color: string, source: 'preset' | 'custom') {
+  if (!props.target) return
+  emit('set-color', props.target.id, color)
+  if (source === 'preset') emit('close')
 }
 
 function run(item: Item) {
@@ -230,7 +234,12 @@ function onOutside(e: PointerEvent) {
   if (!el) emit('close')
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick()
+  const el = root.value
+  if (el && el.offsetWidth && el.offsetHeight) {
+    size.value = { w: el.offsetWidth, h: el.offsetHeight }
+  }
   window.addEventListener('keydown', onKeydown, true)
   window.addEventListener('pointerdown', onOutside, true)
 })

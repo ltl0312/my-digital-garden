@@ -204,5 +204,12 @@ export const MINIMAP = {
   maxEdges: 700
 } as const
 
-/** 右键菜单估算尺寸（用于贴边避让） */
-export const CONTEXT_MENU = { width: 208, height: 320 } as const
+/**
+ * 右键菜单**估算**尺寸（仅用于首帧贴边避让）。菜单里现在有取色控件，高度不再是常数，
+ * 组件挂载后会实测 `offsetHeight` 覆盖这个值，这里给一个偏大的初值免得首帧闪出容器。
+ */
+export const CONTEXT_MENU = { width: 240, height: 430 } as const
+
+/** 颜色输入框不透明度的可调区间（百分比）：低于 5% 的颜色在图上基本等于消失 */
+export const COLOR_ALPHA_MIN_PCT = 5
+export const COLOR_ALPHA_MAX_PCT = 100

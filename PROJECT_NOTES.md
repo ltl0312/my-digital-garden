@@ -49,6 +49,7 @@ my-digital-garden/
 │   │   │   ├── Minimap.vue         # 缩略图（可拖拽平移/滚轮缩放）
 │   │   │   ├── GraphTuningPanel.vue# 图谱控制（标签模式/节点与连线/力导向参数/自定义颜色，仿 Obsidian）
 │   │   │   ├── ColorRulePanel.vue  # 颜色规则（按维度建规则 + 有序列表/启停/调优先级/行内改色）
+│   │   │   ├── ColorPicker.vue   # 通用颜色选择器（预设色板 + 任意色 + 透明度滑杆）
 │   │   │   ├── GraphContextMenu.vue# 右键菜单（节点菜单 / 画布空白菜单）
 │   │   │   └── GraphSkeleton.vue   # 加载骨架屏（SSR 安全的伪随机点阵）
 │   │   ├── FileTree.vue        # 递归文件树（含目录内新建笔记）
@@ -157,7 +158,7 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 | GET `/api/notes/[...slug]` | 登录 | 单篇详情（含 tags、incoming backlinks）；未发布 404 |
 | GET `/api/notes/graph` | 登录 | 全站图谱：nodes（id/title/slug/maturity/primaryTag/tags/domain/dirPath/inDegree/outDegree/updatedAt/readingTime/summary）+ edges（source/target/kind: link\|tag）；进程内缓存 60s |
 | GET `/api/notes/graph/match` | 登录 | 图谱圈选检索：`q` + `fields`（path\|name\|content，默认 content）+ `limit`（默认 1000，≤5000）；多字段 OR，返回 `{ids,total,truncated}` |
-| GET/PUT/DELETE `/api/graph/colors` | 登录 | 自定义颜色**按访问密钥（=用户）隔离**：读 `{colors,count,updatedAt}`；PUT 全量覆盖（差集落库，非法值单条丢弃，>5000 条 413）；DELETE 清空 |
+| GET/PUT/DELETE `/api/graph/colors` | 登录 | 自定义颜色**按访问密钥（=用户）隔离**：读 `{colors,count,updatedAt}`；PUT 全量覆盖（任意合法 CSS 颜色，含 `rgba()`/`hsla()`，差集落库，非法值单条丢弃，>5000 条 413）；DELETE 清空 |
 | GET `/api/tags` | 登录 | 标签及计数（按使用量降序） |
 | POST `/api/auth/verify` | 公开 | 密钥登录，签发 30 天 httpOnly cookie |
 | GET `/api/auth/me` | 公开 | 当前身份（role/label），未登录返回 null |
@@ -192,7 +193,8 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 - **图谱控制面板**（左栏 `GraphTuningPanel.vue`，仿 Obsidian 图谱设置）：标签模式三选一；节点大小 / 连线粗细；中心力 / 排斥力 / 连接力 / 连接距离 / **聚焦斥力**（默认 2.4）。参数持久化在 `garden-graph-settings-v3`（`readGraphSettings()` 逐字段校验，防止 NaN 流进 d3）。改任一参数即 `refreshForces()` + `reheat()`。**聚焦时被聚焦节点的电荷力额外乘 `focusRepel`**，邻域自动散开。
 - **连线配色**：`--edge-link` / `--edge-tag`（亮色 `#94A0AF` / `#C2AF90`，暗色 `#5A6578` / `#7A6A52`）。刻意比 `--line` 深一档——`--line` 画在 `--canvas` 上对比度只有 1.17，细线肉眼看不见。
 - **缩略图**（`Minimap.vue`）：点半径按**屏幕像素**归一到 1.4–3.4px（按 `sqrt(degree)` 插值，绘制时再除以 `fit.scale`），点按节点色着色，并按 `MINIMAP.maxEdges`(700) 步长抽样画连线。根因备忘：老实现直接拿主画布的图坐标半径当屏幕半径，525 个点把 164×112 糊成一片灰。
-- **节点自定义颜色**：在节点上右键 → 设置颜色（`NODE_COLOR_PALETTE` 10 色 + 恢复领域色）。**权威存储在服务端** `GraphColor` 表，按访问密钥（=用户身份）隔离——换设备用同一密钥登录即恢复；localStorage 的 `garden-graph-colors-v2`（slug → 颜色）降级为**首帧缓存**，只为在请求回来前先按上次颜色画出来不闪白。自定义色优先于领域色；左栏「自定义颜色」区显示计数并可一键清除。颜色值经 `shared/graph-colors.ts` 的 `normalizeColor()` 白名单（`#rgb`/`#rrggbb(aa)`/`rgb()`/`hsl()`/`var(--x)`）前后端各校验一次。
+- **节点自定义颜色**：在节点上右键 → 设置颜色（10 个预设色 + 任意色输入 + 恢复领域色）。**权威存储在服务端** `GraphColor` 表，按访问密钥（=用户身份）隔离——换设备用同一密钥登录即恢复；localStorage 的 `garden-graph-colors-v2`（slug → 颜色）降级为**首帧缓存**，只为在请求回来前先按上次颜色画出来不闪白。自定义色优先于领域色；左栏「自定义颜色」区显示计数并可一键清除。颜色值经 `shared/graph-colors.ts` 的 `normalizeColor()` 白名单前后端各校验一次。
+- **任意色 / 透明度**（`ColorPicker.vue`，右键菜单与颜色规则表单共用）：预设色板 + 原生 `<input type="color">` + 透明度滑杆（5%–100%）+ 文本框。文本框接受 `#RGB`/`#RGBA`/`#RRGGBB`/`#RRGGBBAA`/`rgb()`/`rgba()`/`hsl()`/`hsla()`，统一经 `formatColor()` 归一——**不透明写 `#RRGGBB`、半透明写 `rgba(r, g, b, a)`**（只在真需要透明度时才引入 rgba，免得把满屏简洁的 hex 全改写成函数式写法）。预览色块画在棋盘格上，半透明时才看得出「确实透了」。改动立即 emit，没有「应用」按钮；`source: 'preset' | 'custom'` 让父级区分——右键菜单里点预设色顺手关菜单，拖滑杆 / 打字时菜单必须留着（否则滑一下菜单就没了，看不到节点实时变色）。**踩坑**：文本框提交最初写成 `withAlpha(parsed, parsed.a)`，而 `withAlpha` 只接受颜色**字符串**（内部走 `parseColor`，非字符串直接返回 null），于是合法色静默不 emit，只有非法色那条分支（只设 `textInvalid`）看起来正常——改成 `formatColor(parsed)`。
 - **自定义色同步**（`app/composables/useGraphColors.ts`）：客户端**全量提交**（`PUT /api/graph/colors` 带完整 `{slug: color}`），服务端按差集落库，因此天然幂等、丢包重试不会写坏数据。连点色板 / 批量上色合并成一次请求（600ms 防抖），`beforeunload` 与 `visibilitychange → hidden` 时 `flush()` 立即提交。**键用 slug 而非 `Note.id`**：后者是重建索引就会变的 uuid。旧版按 id 存档的 `garden-graph-node-colors` 会在首次装载时一次性迁移成 slug 键并上传（只有确实映射出条目才清旧键，图谱数据未到位时不清，否则会丢用户历史颜色）。
 - **颜色规则**（左栏 `ColorRulePanel.vue` + `app/composables/useGraphColorRules.ts` + 纯求值 `app/lib/graph-rules.ts`）：批量上色被重写成**一条记录在案的规则**——选维度（文件路径 / 文件名 / tag 标签 / 笔记属性 / 文章内容 / 领域 / 成熟度）+ 算子（包含 / 等于）+ 值 + 颜色。规则存在 `GraphColorRules` 表的**一行 jsonb**（`{ keyId, rules: ColorRule[] }`，按访问密钥隔离），因为规则是**有序**的：数组下标即优先级，从上到下第一条命中生效，整体替换天然原子、不用算差集。原来写死在代码里的「按领域」「按成熟度」配色由 `defaultRules()` 播种成同一份列表里的预置规则，因此可以改色、调序、停用；「恢复默认配色」整体重置，「补充默认配色」只补缺的。**播种条件是服务端没有那一行（`updatedAt === null`）而不是「规则为空」**——用户把规则全删光时提交的是 `[]`，用「为空」判断会导致下次打开又长回一堆默认规则。
   求值优先级：**手动单节点色（右键）→ 规则按顺序第一条命中 → 兜底（领域色 → 成熟度色）**。廉价维度（路径 / 文件名 / tag / 领域 / 成熟度）在**前端本地**求值；昂贵维度（正文 / 笔记属性）由 `GET /api/notes/graph/match` 解析成 id 集合后按 `id ∈ set` 判定（350ms 防抖 + 序号防乱序）。新建规则表单带**实时预览**：填完就能看到会命中多少节点、并在主画布上以 accent 描边高亮（Canvas 分级下用根 div 的 `data-match-count` 断言）。

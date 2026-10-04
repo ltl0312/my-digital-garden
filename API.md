@@ -308,7 +308,8 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 | `{ "colors": { "<slug>": "<css color>" } }` | 键是笔记 slug，值是 CSS 颜色 |
 
 - `colors` 不是对象 → `400`；条目数 > `MAX_NODE_COLORS`（5000）→ `413`
-- 颜色值经 `shared/graph-colors.ts` 的 `normalizeColor()` 白名单校验（`#rgb` / `#rrggbb(aa)` / `rgb()` / `hsl()` / `var(--x)`），非法条目**单条丢弃**而非整单失败
+- 颜色值经 `shared/graph-colors.ts` 的 `normalizeColor()` 白名单校验，接受**任意合法 CSS 颜色字面量**：`#RGB` / `#RGBA` / `#RRGGBB` / `#RRGGBBAA` / `rgb()` / `rgba()` / `hsl()` / `hsla()`（逗号或空格分隔、通道百分比、`/` 或第 4 参表达 alpha 都行）以及 `var(--x)`；非法条目**单条丢弃**而非整单失败
+- 服务端**不做归一化**：写什么存什么（`hsl(160 56% 40%)` 原样保留）。客户端 UI 一律经 `formatColor()` 归一——不透明写成 `#RRGGBB`，半透明写成 `rgba(r, g, b, a)`（a 两位小数）
 - 服务端按差集落库（先删后插），响应 `{ "ok": true, "count": 1, "dropped": 0 }`
 
 `DELETE /api/graph/colors` — 清空当前用户的全部自定义颜色，响应 `{ "ok": true, "removed": 1 }`

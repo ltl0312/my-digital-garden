@@ -109,20 +109,13 @@
         >
       </div>
 
-      <!-- 颜色 -->
-      <div class="mt-1.5 grid grid-cols-10 gap-1" data-testid="graph-rule-palette">
-        <button
-          v-for="c in NODE_COLOR_PALETTE"
-          :key="c"
-          type="button"
-          class="h-5 rounded-[4px] border transition-transform duration-micro hover:scale-110"
-          :class="c === draft.color ? 'border-[var(--ink)] ring-1 ring-[var(--ink)]' : 'border-line'"
-          :style="{ background: c }"
-          :data-testid="`graph-rule-color-${c.slice(1)}`"
-          :aria-label="`用 ${c}`"
-          :title="c"
-          @click="emit('update:draft', { color: c })"
-        ></button>
+      <!-- 颜色：预设色板 + 任意色 / 透明度 -->
+      <div class="mt-1.5" data-testid="graph-rule-palette">
+        <ColorPicker
+          testid="graph-rule-color"
+          :model-value="draft.color"
+          @update="(c: string) => emit('update:draft', { color: c })"
+        />
       </div>
 
       <!-- 预览：添加之前先看清这条规则会命中谁 -->
@@ -228,19 +221,11 @@
 
         <!-- 行内编辑：改颜色 / 改匹配值 -->
         <div v-if="editingId === r.id" class="border-t border-line p-1.5" :data-testid="`graph-rule-editor-${r.id}`">
-          <div class="grid grid-cols-10 gap-1">
-            <button
-              v-for="c in NODE_COLOR_PALETTE"
-              :key="c"
-              type="button"
-              class="h-4 rounded-[3px] border transition-transform duration-micro hover:scale-110"
-              :class="c === r.color ? 'border-[var(--ink)] ring-1 ring-[var(--ink)]' : 'border-line'"
-              :style="{ background: c }"
-              :data-testid="`graph-rule-edit-color-${r.id}-${c.slice(1)}`"
-              :aria-label="`改成 ${c}`"
-              @click="emit('update', r.id, { color: c })"
-            ></button>
-          </div>
+          <ColorPicker
+            :testid="`graph-rule-edit-color-${r.id}`"
+            :model-value="r.color"
+            @update="(c: string) => emit('update', r.id, { color: c })"
+          />
           <input
             :value="r.field === 'property' ? (r.key ?? '') : r.value"
             type="text"
@@ -309,7 +294,7 @@
 import { ChevronDown, ChevronUp, Eye, EyeOff, Trash2 } from 'lucide-vue-next'
 import type { ColorRule, ColorRuleField, ColorRuleOp } from '#shared/graph-colors'
 import { COLOR_RULE_FIELD_LABEL, COLOR_RULE_OP_LABEL, ruleOpsFor } from '#shared/graph-colors'
-import { NODE_COLOR_PALETTE } from '~/lib/graph-constants'
+import ColorPicker from './ColorPicker.vue'
 import {
   RULE_FIELD_ORDER,
   countRuleMatches,
