@@ -156,6 +156,56 @@ export function withAlpha(input: unknown, alpha: number): string | null {
   return formatColor({ ...c, a: alpha })
 }
 
+// ---------------------------- HSV（调色盘用） ----------------------------
+//
+// 界面上那块「饱和度 × 明度」的方阵 + 色相条，本质就是 HSV：方阵的横轴是 s、
+// 纵轴是 v，色相条单独选 h。CSS 里可以用 `linear-gradient(to top, #000, transparent)`
+// 叠 `linear-gradient(to right, #fff, hsl(H,100%,50%))` 画出方阵底色，但**从颜色反推
+// 光标位置**必须真的算一次 HSV，所以下面两个换算是必须的。
+
+export interface Hsv { h: number; s: number; v: number }
+
+/** rgb 分量 → HSV（`h` 单位是度 0–360，`s`/`v` 是 0–1） */
+export function rgbToHsv(c: { r: number; g: number; b: number }): Hsv {
+  const r = clampNum(c.r, 0, 255) / 255
+  const g = clampNum(c.g, 0, 255) / 255
+  const b = clampNum(c.b, 0, 255) / 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const d = max - min
+  let h = 0
+  if (d !== 0) {
+    if (max === r) h = ((g - b) / d) % 6
+    else if (max === g) h = (b - r) / d + 2
+    else h = (r - g) / d + 4
+    h *= 60
+    if (h < 0) h += 360
+  }
+  return { h, s: max === 0 ? 0 : d / max, v: max }
+}
+
+/** HSV → rgb 分量（s=0 时三通道相等，即灰度） */
+export function hsvToRgb(c: Hsv): { r: number; g: number; b: number } {
+  const h = (((c.h % 360) + 360) % 360) / 60
+  const s = clampNum(c.s, 0, 1)
+  const v = clampNum(c.v, 0, 1)
+  const i = Math.floor(h) % 6
+  const f = h - Math.floor(h)
+  const p = v * (1 - s)
+  const q = v * (1 - s * f)
+  const t = v * (1 - s * (1 - f))
+  const table: [number, number, number][] = [
+    [v, t, p],
+    [q, v, p],
+    [p, v, t],
+    [p, q, v],
+    [t, p, v],
+    [v, p, q]
+  ]
+  const [r, g, b] = table[i] ?? [v, p, q]
+  return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) }
+}
+
 /**
  * 单个用户最多能存多少条自定义色。
  * 图谱上限约 600 个节点，留足冗余；同时防止有人 PUT 一个几十万键的对象把库撑爆。

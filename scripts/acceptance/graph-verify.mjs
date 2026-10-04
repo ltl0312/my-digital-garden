@@ -1393,28 +1393,92 @@ const writeInput = (tid, value, kind = 'input') => page.evaluate(({ tid, value, 
   return true
 }, { tid, value, kind })
 
+/**
+ * 在自绘控件（调色盘方阵 / 色相条 / 透明度条）上按下并拖动。
+ * 这三条不是 <input type=range> 而是手写的指针拖拽，所以只能用真实鼠标事件驱动。
+ * fx/fy 是相对控件左上角的比例（0–1）。
+ */
+const dragOn = async (tid, fx, fy = 0.5) => {
+  await page.evaluate((id) => {
+    const el = document.querySelector(`[data-testid="${id}"]`)
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    if (r.top < 0 || r.bottom > window.innerHeight) el.scrollIntoView({ block: 'center' })
+  }, tid)
+  await sleep(120)
+  const box = await page.evaluate((id) => {
+    const el = document.querySelector(`[data-testid="${id}"]`)
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { x: r.left, y: r.top, w: r.width, h: r.height }
+  }, tid)
+  if (!box || box.w < 2 || box.h < 2) return false
+  const x = box.x + box.w * fx
+  const y = box.y + box.h * fy
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await sleep(50)
+  await page.mouse.move(x, y + 1)
+  await sleep(50)
+  await page.mouse.up()
+  await sleep(260)
+  return true
+}
+
+const PRESETS = ['#E5484D', '#E8730C', '#D4A017', '#46A758', '#12A594', '#0090FF', '#3E63DD', '#8E4EC6', '#D6409F', '#8B8D98']
+const isHex6 = (v) => typeof v === 'string' && /^#[0-9A-F]{6}$/.test(v)
+const notPreset = (v) => isHex6(v) && !PRESETS.includes(v)
+const hexOf = (v) => String(v || '').toUpperCase()
+const rgbPrefix = (v) => {
+  const m = /^rgba\((\d+), (\d+), (\d+),/.exec(String(v || ''))
+  return m ? `rgba(${m[1]}, ${m[2]}, ${m[3]},` : null
+}
+const serverColor = () => page.evaluate(async () => {
+  const j = await fetch('/api/graph/colors').then(r => r.json())
+  const vals = Object.values(j.colors || {})
+  return vals[0] || null
+})
+/** 读调色盘文本框里的当前值：emit 后立刻更新，不像服务端那样要等 600ms 防抖 */
+const menuText = () => page.evaluate(() => {
+  const el = document.querySelector('[data-testid="graph-menu-color-text"]')
+  return el ? el.value : null
+})
+
 const ccNode = await openNodeMenu()
 
-// —— 菜单里必须出现「任意色」控件，而不只是 10 个圆点 ——
+// —— 菜单里必须出现「调色盘」（饱和度/明度方阵 + 色相条 + 透明度条），而不只是 10 个圆点 ——
 const pickerUi = await page.evaluate(() => {
   const ids = [...document.querySelectorAll('[data-testid^="graph-menu-color-"]')]
     .map(e => e.getAttribute('data-testid') || '')
-  const native = document.querySelector('[data-testid="graph-menu-color-native"]')
+  const box = (tid) => {
+    const el = document.querySelector(`[data-testid="${tid}"]`)
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { w: Math.round(r.width), h: Math.round(r.height) }
+  }
+  const hue = document.querySelector('[data-testid="graph-menu-color-hue"]')
   const alpha = document.querySelector('[data-testid="graph-menu-color-alpha"]')
   return {
     kind: document.querySelector('[data-testid="graph-context-menu"]')?.getAttribute('data-menu-kind'),
     presets: ids.filter(id => /^graph-menu-color-[0-9A-F]{6}$/.test(id)).length,
-    native: !!native && native.getAttribute('type') === 'color',
-    alpha: !!alpha && alpha.getAttribute('type') === 'range'
-      && Number(alpha.getAttribute('min')) === 5 && Number(alpha.getAttribute('max')) === 100,
+    sv: box('graph-menu-color-sv'),
+    hue: box('graph-menu-color-hue'),
+    alpha: box('graph-menu-color-alpha'),
+    hueRange: !!hue && Number(hue.getAttribute('aria-valuemax')) === 360,
+    alphaRange: !!alpha && Number(alpha.getAttribute('aria-valuemin')) === 5
+      && Number(alpha.getAttribute('aria-valuemax')) === 100,
     text: !!document.querySelector('[data-testid="graph-menu-color-text"]'),
     preview: !!document.querySelector('[data-testid="graph-menu-color-preview"]'),
     alphaLabel: !!document.querySelector('[data-testid="graph-menu-color-alpha-label"]')
   }
 })
-log('G101 右键菜单提供任意色输入（原生取色 / 透明度滑杆 / 文本框）',
-  pickerUi.kind === 'node' && pickerUi.presets === 10 && pickerUi.native
-  && pickerUi.alpha && pickerUi.text && pickerUi.preview && pickerUi.alphaLabel,
+log('G101 右键菜单提供调色盘（饱和度/明度方阵 + 色相条 + 透明度条 + 文本框）',
+  pickerUi.kind === 'node' && pickerUi.presets === 10
+  && !!pickerUi.sv && pickerUi.sv.w >= 100 && pickerUi.sv.h >= 40
+  && !!pickerUi.hue && pickerUi.hue.h >= 8
+  && !!pickerUi.alpha && pickerUi.alpha.h >= 8
+  && pickerUi.hueRange && pickerUi.alphaRange
+  && pickerUi.text && pickerUi.preview && pickerUi.alphaLabel,
   JSON.stringify(pickerUi))
 
 // —— 文本框输入任意非预设色 ——
@@ -1434,8 +1498,28 @@ log('G102 文本框可设任意色（非预设色），且菜单保持打开',
   !!ccNode && cc102.count === 1 && String(cc102.values[0]).toUpperCase() === CUSTOM_HEX && cc102.open,
   `节点=${ccNode ? ccNode.title : 'no-hit'} 服务端=${JSON.stringify(cc102.values)} 菜单开着=${cc102.open}`)
 
-// —— 透明度滑杆 → rgba 落库 ——
-await writeInput('graph-menu-color-alpha', '40')
+// —— 调色盘（色相条）能调出预设色板之外的任意色 ——
+// 注意：读值走文本框（emit 后立刻更新），服务端要等 600ms 防抖才落库，拖完马上查会读到旧值。
+await dragOn('graph-menu-color-hue', 0.1)
+const hueA = await menuText()
+await dragOn('graph-menu-color-hue', 0.85)
+const hueB = await menuText()
+log('G103a 拖动色相条可选出任意色（不限于预设色板）',
+  notPreset(hueA) && notPreset(hueB) && hexOf(hueA) !== hexOf(hueB) && hexOf(hueB) !== CUSTOM_HEX,
+  `色相 10%→${hueA} · 85%→${hueB}（预设是固定的 10 个色）`)
+
+// —— 方阵的横轴是饱和度、纵轴是明度 ——
+await dragOn('graph-menu-color-sv', 0.92, 0.12)
+const svA = await menuText()
+await dragOn('graph-menu-color-sv', 0.08, 0.88)
+const svB = await menuText()
+await sleep(1300)
+log('G103b 拖动方阵可调饱和度与明度',
+  notPreset(svA) && notPreset(svB) && hexOf(svA) !== hexOf(svB) && hexOf(await serverColor()) === hexOf(svB),
+  `右上（高饱和/高明度）→${svA} · 左下（低饱和/低明度）→${svB} · 服务端=${await serverColor()}`)
+
+// —— 透明度条 → rgba 落库（下限 5%，所以比例要按 (a-0.05)/0.95 映射）——
+await dragOn('graph-menu-color-alpha', (0.4 - 0.05) / 0.95)
 await sleep(1300)
 const cc103 = await page.evaluate(async () => {
   const server = await fetch('/api/graph/colors').then(r => r.json())
@@ -1452,24 +1536,27 @@ const cc103 = await page.evaluate(async () => {
     preview: preview ? preview.style.background : null
   }
 })
-log('G103 透明度滑杆写出 rgba 并落库',
-  cc103.value === 'rgba(123, 63, 160, 0.4)' && cc103.label === '40%'
-  && String(cc103.text).startsWith('rgba(') && /rgba\(123, 63, 160/.test(String(cc103.preview)),
+const cc103Alpha = Number((/^rgba\(\d+, \d+, \d+, ([\d.]+)\)$/.exec(String(cc103.value)) || [])[1])
+log('G103 拖动透明度条写出 rgba 并落库',
+  Number.isFinite(cc103Alpha) && Math.abs(cc103Alpha - 0.4) <= 0.06
+  && cc103.label === `${Math.round(cc103Alpha * 100)}%`
+  && String(cc103.text).startsWith('rgba(')
+  && String(cc103.preview).startsWith(String(rgbPrefix(cc103.value))),
   JSON.stringify(cc103))
 
 // —— 半透明色要真的画到图上（缩略图圆点用的是同一个值） ——
 await sleep(1600)
-const cc104 = await page.evaluate(() => {
+const cc104 = await page.evaluate((prefix) => {
   const fills = [...document.querySelectorAll('circle.mm-dot')].map(c => c.getAttribute('fill') || '')
   return {
     dots: fills.length,
-    rgba: fills.filter(f => /^rgba\(123, 63, 160/.test(f)).length,
+    rgba: fills.filter(f => f.startsWith(prefix)).length,
     hint: (document.querySelector('[data-testid="graph-color-count"]') || {}).textContent || ''
   }
-})
+}, rgbPrefix(cc103.value))
 log('G104 半透明色已绘制到缩略图',
   cc104.rgba >= 1,
-  `缩略图点 ${cc104.dots} 个 · 命中 rgba ${cc104.rgba} 个 · 颜色计数「${cc104.hint.trim()}」`)
+  `缩略图点 ${cc104.dots} 个 · 命中 ${rgbPrefix(cc103.value)}… 的 ${cc104.rgba} 个 · 颜色计数「${cc104.hint.trim()}」`)
 
 // —— 非法写法要被挡住，且不能污染已存颜色 ——
 await writeInput('graph-menu-color-text', 'javascript:alert(1)')
@@ -1485,7 +1572,8 @@ const cc105 = await page.evaluate(async () => {
   }
 })
 log('G105 非法颜色写法被拒且不影响已存颜色',
-  !!cc105.hint && cc105.value === 'rgba(123, 63, 160, 0.4)' && cc105.label === '40%',
+  !!cc105.hint && cc105.value === cc103.value
+  && cc105.label === `${Math.round(cc103Alpha * 100)}%`,
   `提示=${cc105.hint ? cc105.hint.slice(0, 18) : 'null'} 服务端=${cc105.value} 透明度=${cc105.label}`)
 
 // —— 回到不透明 hex：提示消失、透明度回满 ——
@@ -1574,7 +1662,8 @@ if (rgbaRuleId) {
   await scrollRules()
   await page.evaluate((q) => document.querySelector(q)?.click(), `[data-testid="graph-rule-swatch-${rgbaRuleId}"]`)
   await sleep(300)
-  await writeInput(`graph-rule-edit-color-${rgbaRuleId}-alpha`, '80')
+  // 透明度条是自绘的，得用指针拖（目标 0.8：比例 (0.8-0.05)/0.95）
+  await dragOn(`graph-rule-edit-color-${rgbaRuleId}-alpha`, (0.8 - 0.05) / 0.95)
   await sleep(1200)
   await page.evaluate((q) => document.querySelector(q)?.click(), `[data-testid="graph-rule-edit-done-${rgbaRuleId}"]`)
   await sleep(1500)
@@ -1583,7 +1672,8 @@ if (rgbaRuleId) {
     const r = (j.rules || []).find(x => x.id === id)
     return r ? r.color : null
   }, rgbaRuleId)
-  editAlphaOk = edited === 'rgba(18, 52, 86, 0.8)'
+  const editedAlpha = Number((/^rgba\(18, 52, 86, ([\d.]+)\)$/.exec(String(edited)) || [])[1])
+  editAlphaOk = Number.isFinite(editedAlpha) && Math.abs(editedAlpha - 0.8) <= 0.06
   editAlphaDetail = `0.55 → ${edited}`
 }
 log('G109 规则行内编辑可调透明度', editAlphaOk, editAlphaDetail)

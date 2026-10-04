@@ -5,7 +5,7 @@
     data-testid="graph-context-menu"
     :data-menu-kind="target ? 'node' : 'canvas'"
     :data-menu-node="target ? target.id : ''"
-    :style="{ left: pos.x + 'px', top: pos.y + 'px' }"
+    :style="{ left: pos.x + 'px', top: pos.y + 'px', maxHeight: maxHeight + 'px', overflowY: 'auto' }"
     role="menu"
     @contextmenu.prevent
   >
@@ -117,6 +117,9 @@ const pos = computed(() => {
     y: Math.min(Math.max(8, props.y), maxY)
   }
 })
+
+/** 取色控件让菜单高了不少，比容器还高时必须能滚，否则底部项会点不到 */
+const maxHeight = computed(() => Math.max(160, props.containerH - 16))
 
 function pick(color: string | null) {
   if (!props.target) return
