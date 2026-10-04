@@ -189,21 +189,27 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 
 ---
 
-## 九、生产部署（已上线）
+## 九、生产部署（已上线 · Docker）
+
+> 2026-10-04 核实：线上实际由 **Docker 容器**承载，**PM2 未在运行**（本节此前记为 PM2 cluster，已更正）。
 
 ```
 https://liutianle.cn
    └→ Nginx（80→301，443 SSL，acme.sh ECC 证书自动续期）
-        └→ PM2 cluster ×2（Nuxt SSR :3000，开机自启）
-             ├→ PostgreSQL 15（127.0.0.1:5432 回环，garden_user）
-             ├→ Chokidar watcher（生产轮询 1s）
-             └→ content/vault（Obsidian 库）
+        └→ proxy_pass http://127.0.0.1:3000
+             └→ Docker 容器 garden-app（my-digital-garden-app:latest，network_mode: host）
+                  ├→ 宿主原生 PostgreSQL（127.0.0.1:5432，postgresql.service）
+                  ├→ Chokidar watcher（容器内 /app/content/vault）
+                  └→ bind mount /opt/digital-garden/content/vault（Obsidian 库）
 ```
 
-- 服务器：阿里云 ECS `8.163.35.246`（Alibaba Cloud Linux 4，2 核 / 1.6G 内存 / 40G），部署目录 `/opt/digital-garden`。
-- **关键约束**：`.output` 依赖 pnpm 符号链接，**不可 Windows 构建后拷到 Linux 运行**，必须在 Linux 原生 `pnpm install && prisma migrate deploy && pnpm build`。
-- 容器方案（Docker/Syncthing）因 Docker Hub 拉取失败与内存不足已弃用，改为 dnf 原生 PG + 手动/工具同步。
-- 常用运维：`pm2 restart digital-garden`；`pm2 logs digital-garden`；`sudo -u postgres psql`；`systemctl reload nginx`；acme.sh 自动续期。
+- 服务器：阿里云 ECS `8.163.35.246`（Alibaba Cloud Linux 4，2 核 / 1.6G 内存 / 40G），Docker Engine 24.0.9（overlay2）。
+- 编排目录 `/opt/garden-docker`：`docker-compose.prod.yml` + `.env`（`DATABASE_URL` / `AUTH_SECRET` / `NODE_OPTIONS`，mode 600）。备份目录 `/opt/garden-backup`。
+- **镜像来源：本地构建 → `docker save` → scp → 服务器 `docker load`**；服务器只跑容器、不构建（1.6G 内存不足）。容器名固定 `garden-app`，`restart: unless-stopped`，`network_mode: host`，内存上限 640M + `NODE_OPTIONS=--max-old-space-size=384`（2026-09-22 曾因 watcher 全量重算吃满 1.6G 拖死整机，故限流）。
+- **PM2 路径已退役**：`/opt/digital-garden` 是 PM2 时代遗留源码（仅其 `content/vault` 仍被容器 bind mount），`/root/.pm2/dump.pm2` 为历史残留。
+- **关键约束**：`.output` 依赖 pnpm 符号链接，**不可把 Windows 构建的裸 `.output` 拷到 Linux 运行**；但 Docker 镜像内的产物是在 Linux 容器里构建的，因此**镜像整体搬运是安全的**（与裸 `.output` 搬运是两回事）。
+- 完整步骤、回滚与踩坑见 `DEPLOY.md`。
+- 常用运维：`docker ps --filter name=garden-app`；`docker logs --tail 50 garden-app`；`cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate`；`sudo -u postgres psql`；`systemctl reload nginx`；acme.sh 自动续期。
 
 ---
 

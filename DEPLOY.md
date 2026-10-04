@@ -1,195 +1,237 @@
-# 数字花园 · 本地到云服务器一键部署手册
+# 数字花园 · 生产部署手册（Docker）
 
-> 目标环境：Ubuntu 22.04 LTS 云服务器（开放 80、443、8384、22000、21027 端口）
-> 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL 18 + Syncthing + PM2 + Nginx + Certbot
+> 目标环境：阿里云 ECS `8.163.35.246`（Alibaba Cloud Linux 4，2 核 / 1.6G 内存 / 40G）
+> 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
+> 线上域名：`https://liutianle.cn`
+>
+> 最后核实：2026-10-04。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
-## 0. 前置条件
+## 0. 线上实况速览
 
-| 位置 | 要求 |
+```
+https://liutianle.cn
+   └→ Nginx（80→301，443 SSL，acme.sh ECC 证书自动续期）
+        └→ proxy_pass http://127.0.0.1:3000
+             └→ Docker 容器 garden-app（my-digital-garden-app:latest，network_mode: host）
+                  ├→ 宿主原生 PostgreSQL（127.0.0.1:5432，postgresql.service）
+                  ├→ Chokidar watcher（容器内 /app/content/vault）
+                  └→ bind mount /opt/digital-garden/content/vault（Obsidian 库）
+```
+
+| 项 | 值 |
 |---|---|
-| 本地 | Node ≥ 20.19、pnpm ≥ 8、Obsidian（写作端） |
-| 云服务器 | Ubuntu 22.04、Node ≥ 20.19、pnpm、Docker + Compose V2、PM2、Nginx、Certbot |
-| 域名 | 已解析至服务器 IP（如 `your-garden-domain.com`） |
+| 编排目录 | `/opt/garden-docker`（`docker-compose.prod.yml` + `.env`，`.env` mode 600） |
+| 备份目录 | `/opt/garden-backup`（compose / .env 按时间戳留档 + 回滚镜像 ID） |
+| 容器名 | `garden-app`，`restart: unless-stopped`，`network_mode: host` |
+| 资源上限 | `mem_limit: 640m` + `NODE_OPTIONS=--max-old-space-size=384` |
+| 镜像 tag | `my-digital-garden-app:latest` 与 `:vX.Y.Z` 指向同一 ImageID |
+| Docker | Engine 24.0.9（overlay2，classic image store） |
+| 数据库 | 宿主原生 PostgreSQL，**非容器**；`/opt/garden-docker/.env` 的 `DATABASE_URL` 指向 `127.0.0.1:5432` |
+| HTTPS | acme.sh（`/root/.acme.sh/liutianle.cn_ecc`），**非 certbot** |
 
-服务器环境准备：
-
-```bash
-# Node 20.x（含 pnpm）
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs nginx
-sudo corepack enable && corepack prepare pnpm@latest --activate
-sudo npm i -g pm2
-
-# Docker + Compose V2
-curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker $USER   # 重新登录生效
-
-# Certbot
-sudo apt-get install -y certbot python3-certbot-nginx
-```
+> **镜像在开发机构建，服务器只 `docker load` 后直接跑**——服务器 1.6G 内存不足以跑 `pnpm install && pnpm build`。
 
 ---
 
-## 1. 本地打包
-
-> **重要：** `.output` 依赖 pnpm 符号链接结构，**不可从 Windows 直接拷贝到 Linux 运行**（依赖解析会断裂）。生产构建必须在服务器（Linux）上执行。本地仅做产物正确性验证。
-
-本地验证构建：
+## 1. 本地构建镜像
 
 ```bash
-pnpm build          # 产物 .output/，本地验证无 error
+# 仓库根目录
+docker build --progress=plain -t my-digital-garden-app:v1.1.0 -t my-digital-garden-app:latest .
 ```
 
-（可选）本地 Linux 容器等价验证：
+`Dockerfile` 为多阶段构建（`node:24-alpine`）：
 
-```bash
-# Docker Desktop 可用时，将 .output 复制进容器并重建依赖后运行
-docker run -d --name garden-preview -p 3100:3000 -w /app node:20-alpine sleep infinity
-docker cp .output garden-preview:/app/.output
-docker cp scripts garden-preview:/app/scripts
-docker cp content garden-preview:/app/content
-docker exec garden-preview sh -c "cd /app/.output/server && npm install --omit=dev --no-audit --no-fund"
-docker exec -d garden-preview env NODE_ENV=production DATABASE_URL="postgresql://postgres:密码@host.docker.internal:5432/digital_garden?schema=public" node scripts/start-prod.mjs
-curl http://localhost:3100/   # 应返回 200
-```
+- **build 阶段**：先只 COPY `package.json` / `pnpm-lock.yaml` / `pnpm-workspace.yaml` / `prisma/` / `prisma.config.ts` → `pnpm install --frozen-lockfile` → 用占位 `DATABASE_URL` 跑 `prisma generate`（仅为让 schema 类型可用）→ 再 `COPY . .` → `pnpm build`。分层顺序是为了让依赖层吃缓存。
+- **runtime 阶段**：`pnpm install --frozen-lockfile --prod` → `COPY --from=build /app/.output` + `scripts/` + `entrypoint.sh`，`EXPOSE 3000`，`CMD ["./entrypoint.sh"]`。
 
-> **为什么经 `scripts/start-prod.mjs` 启动：** nitro 产物内部的 `_importMeta_` 占位路径
-> （`file:///_entry.js`）在 Windows 上会让内联的 Prisma 客户端抛
-> `ERR_INVALID_FILE_URL_PATH`；包装器会先写入入口的真实绝对 URL 再加载产物。
-> Linux 上虽不触发，但统一从包装器进入（`pnpm start` / PM2 / entrypoint.sh 均已切换）。
-
-准备部署包（**源码而非产物**，服务器上重新构建）：
-
-```bash
-mkdir -p dist-deploy && cd dist-deploy
-git clone <你的仓库地址> .   # 或 rsync 项目源码（排除 node_modules/.output/.nuxt/.env）
-# 确认包含：package.json、pnpm-lock.yaml、nuxt.config.ts、app/、server/、
-#            prisma/（schema + migrations）、prisma.config.ts、content/、
-#            docker-compose.yml、ecosystem.config.cjs、nginx.conf
-tar czf digital-garden-src.tar.gz .
-```
+`.dockerignore` 已排除 `node_modules`/`.nuxt`/`.output`/`.env.*`/`content`/`.git`/`*.md` 等，构建上下文很小。
 
 ---
 
-## 2. 服务器初始化
+## 2. 导出并上传镜像
 
 ```bash
-sudo mkdir -p /opt/digital-garden
-sudo chown $USER:$USER /opt/digital-garden
-cd /opt/digital-garden
+docker save -o garden-image-v1.1.0.tar \
+  my-digital-garden-app:v1.1.0 my-digital-garden-app:latest
 
-# 解压源码包
-tar xzf digital-garden-src.tar.gz
+# 两端核对完整性
+Get-FileHash garden-image-v1.1.0.tar -Algorithm SHA256      # Windows
+sha256sum garden-image-v1.1.0.tar                            # Linux
 
-# 关键：创建 vault 目录（watcher 监听路径，生产环境同样运行，缺失会导致监听失败）
-mkdir -p content/vault
-sudo ln -s /opt/digital-garden/content/vault /var/vault   # 与 Syncthing 容器共享同一目录
-
-# 安装依赖（含 prisma CLI，供生产迁移；生产构建在服务器完成）
-pnpm install
+scp -i ~/.ssh/garden.pem garden-image-v1.1.0.tar root@8.163.35.246:/opt/garden-image-new.tar
 ```
 
-配置生产环境变量：
+### ⚠️ 打包陷阱：不要把 tar 再包一层
 
 ```bash
-cat > .env <<'EOF'
-DATABASE_URL="postgresql://garden_user:换成强密码@localhost:5432/garden_db?schema=public"
-AUTH_SECRET="换成随机长字符串"   # 生产必需：缺失时应用启动即失败（见 server/utils/auth.ts）
-PORT=3000
-EOF
+# ❌ 错误：tar 里只有「一个普通文件」，docker load 必然失败
+tar -czf garden-image-v1.1.0.tar.gz garden-image-v1.1.0.tar
 ```
+
+这样产生的 `.tar.gz` 解压后只含一个名为 `garden-image-v1.1.0.tar` 的普通文件，`docker load` 会报：
+
+```
+open /var/lib/docker/tmp/docker-import-<id>/repositories: no such file or directory
+```
+
+**正确做法：直接上传裸 `.tar`，不要 gzip。** Docker Desktop 的镜像层本身就是压缩存储的，`gzip` 几乎无收益（实测 301,535,744 B → 300,608,949 B，仅省 0.3%）。若确需压缩，必须压**内容**而不是压文件本身。
+
+### 镜像格式说明
+
+本机 Docker Desktop 29.x 使用 **containerd snapshotter**，`docker save` 产出的是 **OCI layout** 归档（`blobs/`、`oci-layout`、`index.json`），同时附带一份兼容用的 `manifest.json`（`repositories` 文件不存在）。
+
+实测 **Docker Engine 24.0.9 可以直接 `docker load` 该归档**，无需转换。载入后 classic store 计算出的 ImageID 与本地 containerd store 显示的不同（本地 `3e419e63d94e` → 服务器 `1c983fe652b1`），**这是正常的**，以容器实际运行为准。
 
 ---
 
-## 3. 数据层编排（Docker Compose）
+## 3. 服务器载入镜像（不影响运行中的容器）
 
 ```bash
-cd /opt/digital-garden
-docker compose up -d
-docker ps                      # garden-db 与 garden-syncthing 均 Up
-docker compose logs postgres   # 确认 "database system is ready to accept connections"
+ssh -i ~/.ssh/garden.pem root@8.163.35.246
+
+STAMP=$(date +%Y%m%d-%H%M%S); BK=/opt/garden-backup; mkdir -p "$BK"
+cp -a /opt/garden-docker/docker-compose.prod.yml "$BK/docker-compose.prod.yml.$STAMP"
+cp -a /opt/garden-docker/.env "$BK/env.$STAMP"; chmod 600 "$BK"/env.*
+
+# 记录回滚点
+docker inspect garden-app --format '{{.Image}}' | tee "$BK/rollback-image-id.$STAMP.txt"
+docker image inspect my-digital-garden-app:v1.0.0 --format 'v1.0.0={{.Id}}'
+
+docker load -i /opt/garden-image-new.tar
+docker images | head -8     # 确认 :v1.1.0 / :latest 指向新 ID，且 :v1.0.0 仍在
 ```
 
-> 密码通过 `.env` 注入：`docker-compose.yml` 的 `POSTGRES_PASSWORD` 与 `ecosystem.config.cjs` 的 `DATABASE_URL` 均从环境变量读取，**禁止硬编码**（历史硬编码版本已从仓库清除）。
+`docker load` 会把旧的 `:latest` tag 挪成 dangling（`<none>`），**旧的 `:vX.Y.Z` tag 仍然保留**——这就是回滚点，务必确认它还在。
 
 ---
 
-## 4. 数据库迁移
+## 4. 重建容器
 
 ```bash
-cd /opt/digital-garden
-npx prisma migrate deploy      # 应用 prisma/migrations/ 中全部迁移（勿用 migrate dev）
-npx prisma migrate status      # 应输出 Database schema is up to date!
+cd /opt/garden-docker
+docker compose -f docker-compose.prod.yml up -d --force-recreate
+
+# 等就绪（entrypoint 先跑迁移，最多重试 10 次 × 5s）
+until [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:3000/login)" = "200" ]; do sleep 2; done
+
+docker ps --filter name=garden-app
+docker logs --tail 30 garden-app
 ```
+
+容器启动日志应包含：
+
+```
+[garden] 等待数据库就绪...
+No pending migrations to apply.
+[garden] 迁移完成，启动应用...
+[garden] watcher: 开始监听 /app/content/vault
+Listening on http://[::]:3000
+```
+
+`entrypoint.sh` 的流程是：`npx prisma migrate deploy`（最多 10 次、每次 sleep 5）→ `exec node scripts/start-prod.mjs`。
 
 ---
 
-## 5. 生产构建与 PM2 托管
+## 5. 部署后验证
+
+### 5.1 端点与容器
 
 ```bash
-cd /opt/digital-garden
-pnpm build                     # 在 Linux 上构建（关键：勿跨平台搬运 .output）
-pm2 start ecosystem.config.cjs  # Cluster 模式，instances: max（凭据从 .env 读取）
-pm2 save && pm2 startup        # 开机自启（按提示执行 sudo 命令）
-pm2 status                     # digital-garden 应为 online
-pm2 logs digital-garden        # 确认 [garden] watcher 监听日志无 error
-curl http://localhost:3000/    # 本机应返回 200
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/login          # 200
+curl -s -o /dev/null -w '%{http_code}\n' https://liutianle.cn/login            # 200
+curl -s -o /dev/null -w '%{http_code}\n' https://liutianle.cn/                 # 302（未登录跳转，正常）
+curl -s -o /dev/null -w '%{http_code}\n' https://liutianle.cn/api/notes/graph  # 401（未登录，正常）
+docker inspect garden-app --format 'Image={{.Image}} Started={{.State.StartedAt}} Mem={{.HostConfig.Memory}}'
+free -m
 ```
 
----
-
-## 6. Nginx 反向代理与 HTTPS
+### 5.2 新代码确实生效
 
 ```bash
-sudo cp nginx.conf /etc/nginx/sites-available/garden.conf
-sudo ln -s /etc/nginx/sites-available/garden.conf /etc/nginx/sites-enabled/
-sudo sed -i 's/your-garden-domain.com/你的真实域名/g' /etc/nginx/sites-available/garden.conf
-sudo nginx -t && sudo systemctl reload nginx
-
-# 签发 SSL 证书（certbot 自动改写 nginx 配置并启用 HTTPS）
-sudo certbot --nginx -d your-garden-domain.com
+# 服务端产物含新字段
+docker exec garden-app sh -c "grep -o dirPath /app/.output/server/chunks/routes/api/notes/graph.get.mjs | wc -l"
+# 客户端产物含新 testid
+docker exec garden-app sh -c "grep -rl graph-minimap /app/.output/public/_nuxt/"
 ```
 
+### 5.3 登录后只读校验接口形状
+
+登录用 root 密钥（`POST /api/auth/verify`，body `{"key":"..."}`，成功下发 `garden_token` cookie），然后 `GET /api/notes/graph` 应返回：
+
+- `nodes[]` 含 `id,title,slug,maturity,primaryTag,tags,domain,dirPath,inDegree,outDegree,updatedAt,readingTime,summary`
+- `edges[]` 含 `source,target,kind`（`kind` 为 `link` / `tag`）
+
+### 5.4 只读验收套件（推荐）
+
+```bash
+# Windows PowerShell
+$env:GARDEN_BASE='https://liutianle.cn'
+pnpm acceptance:graph     # 图谱重构 46 项，纯只读
+pnpm acceptance:shell     # 外壳 47 项，只开对话框不提交
+pnpm acceptance:ui        # UI 51 项，只开对话框不提交
+```
+
+> 🚫 **`pnpm acceptance:api`（`e4-regression.mjs`）绝不能对生产跑**：它会 POST `/api/admin/keys`、POST `/api/vault/folders`、POST `/api/vault/notes`、PUT `/api/vault/rename`、POST `/api/vault/copy`，并 DELETE `/api/vault/nodes`（含 `KnowledgeBase/03_Knowledge`）——**会真实改动生产数据**。
+
 ---
 
-## 7. Syncthing 双向同步配对
+## 6. 回滚
 
-1. 访问 `http://<服务器IP>:8384`（首次建议 `ssh -L 8384:localhost:8384 <服务器>` 隧道访问，避免暴露公网）
-2. 在 Syncthing Web UI 添加同步文件夹 `/var/syncthing/Vault`（即宿主机 `/var/vault`，即 `/opt/digital-garden/content/vault`）
-3. 在本地 Obsidian 中：将本地 vault 目录与服务器设备配对（扫码或设备 ID 互认）
-4. 首次全量同步后，服务器 watcher 自动将全部笔记写入 PostgreSQL
+```bash
+cd /opt/garden-docker
+docker tag my-digital-garden-app:v1.0.0 my-digital-garden-app:latest
+docker compose -f docker-compose.prod.yml up -d --force-recreate
+until [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:3000/login)" = "200" ]; do sleep 2; done
+```
 
----
+配置回滚：从 `/opt/garden-backup` 恢复对应时间戳的 `docker-compose.prod.yml` 与 `env.*`。
 
-## 8. 验收清单
-
-- [ ] `https://your-garden-domain.com/` 返回首页（花园最近更新）
-- [ ] `https://your-garden-domain.com/notes/<slug>` 可访问既有笔记（含反向链接卡片）
-- [ ] `https://your-garden-domain.com/graph` 图谱页渲染节点与边
-- [ ] 本地 Obsidian 新建/修改笔记 → **秒级同步** → 线上 `/notes/<新slug>` 立即可访问
-- [ ] 暗黑模式切换与持久化正常
-- [ ] `pm2 status` 全部 online；`pm2 logs` 无 error
+> 数据库迁移**不会**自动回滚。因此每次上线前都应确认本轮是否新增迁移；若有，需预先想好对应的降级 SQL。
 
 ---
 
-## 9. 运维速查
+## 7. 运维速查
 
 | 操作 | 命令 |
 |---|---|
-| 重启应用 | `pm2 restart digital-garden` |
-| 查看应用日志 | `pm2 logs digital-garden` |
-| 重启数据容器 | `docker compose restart` |
-| 查看 Nginx 日志 | `sudo journalctl -u nginx -f` |
-| 数据库备份 | `docker exec garden-db pg_dump -U garden_user garden_db > backup.sql` |
-| 数据库恢复 | `docker exec -i garden-db psql -U garden_user garden_db < backup.sql` |
-| 更新部署 | 拉取新源码 → `pnpm install && npx prisma migrate deploy && pnpm build && pm2 restart digital-garden` |
+| 查看容器 | `docker ps --filter name=garden-app` |
+| 查看日志 | `docker logs --tail 50 garden-app` |
+| 跟随日志 | `docker logs -f garden-app` |
+| 重启应用 | `cd /opt/garden-docker && docker compose -f docker-compose.prod.yml restart` |
+| 重建应用 | `cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate` |
+| 资源占用 | `docker stats --no-stream garden-app`；`free -m` |
+| 进容器排查 | `docker exec -it garden-app sh` |
+| 重启 Nginx | `systemctl reload nginx` |
+| 数据库连接 | `sudo -u postgres psql -d garden_db` |
+| 清理悬空镜像 | `docker image prune -f` |
+| 证书续期 | acme.sh 自动（`/root/.acme.sh/liutianle.cn_ecc`） |
+
+**上线新版本的标准流程**：§1 构建 → §2 导出上传 → §3 载入 → §4 重建 → §5 验证；任一环节失败走 §6 回滚。
 
 ---
 
-## 10. 已知平台限制（实测记录）
+## 8. 已知平台限制与踩坑（实测记录）
 
-1. **Windows 本地直接运行 `.output`**：Nitro 打包将 `import.meta.url` 替换为占位 `file:///_entry.js`，Prisma 7 客户端生成的 `__dirname` shim 在 Windows 上调用 `fileURLToPath` 会抛 `ERR_INVALID_FILE_URL_PATH`；Linux 上该占位路径合法，**生产不受影响**。
-2. **pnpm 符号链接跨平台断裂**：Windows 构建的 `.output/server/node_modules` 使用 pnpm 链接结构，迁移到 Linux 后依赖解析失败（如 `postgres-array` 缺失）。**务必在服务器（Linux）上执行 `pnpm build`**。
-3. 生产环境建议使用 Node ≥ 20.19（Nuxt 4 要求）。
+1. **`tar` 套 `tar` 会让 `docker load` 失败**（报 `.../repositories: no such file or directory`）。见 §2，直接上传裸 `.tar`。
+2. **Windows 写出的 `.sh` 经 `ssh "bash -s"` 执行会带 CRLF**，报 `bash: line N: $'\r': command not found`。发送前先剥掉 `\r`，或改用 `scp` 上传 LF 文件后再执行。
+3. **PowerShell 会吃掉传给 `ssh` 的内层双引号**，导致 bash 把 `|` 当管道（`bash: line 1: {{.Image}}: command not found`）。远程命令尽量只用单引号，或避免嵌套引号。
+4. **`docker save` 的 ImageID 与载入后的不一致**：本机 containerd store 与服务器 classic overlay2 store 计算方式不同，属正常现象。
+5. **Windows 本地直接运行 `.output`**：Nitro 打包将 `import.meta.url` 替换为占位 `file:///_entry.js`，Prisma 7 客户端生成的 `__dirname` shim 在 Windows 上调用 `fileURLToPath` 会抛 `ERR_INVALID_FILE_URL_PATH`。故统一经 `scripts/start-prod.mjs` 包装器启动（`entrypoint.sh` 已采用）。
+6. **pnpm 符号链接跨平台断裂**：Windows 构建的 `.output/server/node_modules` 使用 pnpm 链接结构，**裸 `.output` 搬到 Linux 会依赖解析失败**（如 `postgres-array` 缺失）。Docker 镜像内是在 Linux 容器中构建的，因此**搬运镜像安全**，搬运裸 `.output` 不安全。
+7. **内存红线**：1.6G 内存曾被 watcher 全量重算吃满拖死整机（2026-09-22），故容器限 640M / Node 堆 384M。若发现容器被 OOM Kill，先查 watcher 是否在扫大目录。
+8. **本机与服务器架构需一致**：本机为 `linux/amd64`，与服务器一致，镜像可直接 load。
+9. 生产环境建议 Node ≥ 20.19（Nuxt 4 要求）；当前镜像为 `node:24-alpine`。
+
+---
+
+## 9. 已退役的 PM2 路径（仅作历史参考）
+
+线上早期使用 PM2 cluster + 原生 PG + Syncthing + certbot，相关痕迹：
+
+- `/opt/digital-garden`：PM2 时代源码与 `.output`。**其 `content/vault` 仍被当前容器 bind mount**，不可删除。
+- `/root/.pm2/dump.pm2`：历史 dump（PM2 当前未运行，探针里的 `pm2 list` 会意外拉起 God Daemon，用完请 `pm2 kill`）。
+- `ecosystem.config.cjs`、`docker-compose.yml`（postgres + syncthing 基础编排）、`docker-compose.local.yml`（本机演示）仍在仓库中，但**线上均未使用**。
+- `/opt/garden-src`：2026-09-24 在服务器上用 `docker build` 产出 v1.0.0 的源码树，现已弃用（服务器内存不足以再构建）。
