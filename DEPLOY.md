@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v1.6.0` | `886e72ddc5a4` | 图谱：自定义颜色支持任意色与透明度（`ColorPicker.vue`，hex/rgb/hsl/rgba 全放行）（**当前**） |
+| `latest` / `v1.7.0` | `72f0b4acbd8a` | 图谱：颜色选择器改为**调色盘**（饱和度/明度方阵 + 色相条 + 透明度条）（**当前**） |
+| `v1.6.0` | `886e72ddc5a4` | 图谱：自定义颜色支持任意色与透明度（`ColorPicker.vue`，hex/rgb/hsl/rgba 全放行） |
 | `v1.5.0` | `45d7d52720d4` | 图谱：拖拽与布局持久化修复、固定只由右键触发、上色改成可排序的颜色规则系统 |
 | `v1.4.0` | `f41e416de9b6` | 图谱：控制面板批量上色（按路径/名称/正文圈选）、自定义颜色按用户同步 |
 | `v1.3.0` | `b8a194bd4f43` | 图谱：缩略图重绘并着色、连线加深、节点自定义颜色、左栏可收起、右键菜单 |
@@ -45,13 +46,15 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar`、`/opt/garden-image-v1.3.0.tar`、`/opt/garden-image-v1.4.0.tar`、`/opt/garden-image-v1.5.0.tar`、`/opt/garden-image-v1.6.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v1.7.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
 > **v1.5.0 又加了一张表**：`GraphColorRules`（迁移 `20261015000000_graph_color_rules`，单行 jsonb 存有序规则数组）。同样是纯新增，升降级语义与 `GraphColor` 一致——回滚到 v1.4.0 时表保留、旧代码不读，用户已配好的规则不会丢。
 
 > **v1.6.0 无 schema 变更**（只放开颜色白名单、新增前端 `ColorPicker.vue`），启动日志是 `No pending migrations to apply.`，回滚到 v1.5.0 无任何数据副作用。注意颜色值的**新写法会被旧版本拒绝**：v1.5.0 及更早的 `normalizeColor()` 只认 `#rgb`/`#rrggbb(aa)`/`rgb()`/`hsl()`/`var(--x)`，若用户已存了 `hsl(160 56% 40%)`（空格语法）这类新写法，回滚后那些条目会被**单条丢弃**（其余颜色不受影响）。
+
+> **v1.7.0 无 schema 变更**（只重写前端 `ColorPicker.vue` 并给 `shared/graph-colors.ts` 补 `rgbToHsv`/`hsvToRgb`），启动日志同样 `No pending migrations to apply.`。颜色值的**存储格式与 v1.6.0 完全一致**（`formatColor()` 没动：不透明写 `#RRGGBB`、半透明写 `rgba(r, g, b, a)`），所以 v1.6.0 ⇄ v1.7.0 双向回滚都不会丢任何用户配色或规则。
 
 ---
 
@@ -189,7 +192,7 @@ docker exec garden-app sh -c "grep -rl graph-minimap /app/.output/public/_nuxt/"
 ```bash
 # Windows PowerShell
 $env:GARDEN_BASE='https://liutianle.cn'
-pnpm acceptance:graph     # 图谱重构 116 项，配色部分会自动快照并还原
+pnpm acceptance:graph     # 图谱重构 118 项，配色部分会自动快照并还原
 pnpm acceptance:shell     # 外壳 47 项，只开对话框不提交
 pnpm acceptance:ui        # UI 51 项，只开对话框不提交
 ```
