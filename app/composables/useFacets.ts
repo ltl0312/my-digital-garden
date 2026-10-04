@@ -19,45 +19,26 @@ export interface TagGroup {
   total: number
 }
 
-/** 领域色相（spec 3.1 的 8 个色族）：按名称固定映射，未命中者回退 misc */
-export const DOMAIN_HUES: Record<string, string> = {
-  前端: '--hue-frontend',
-  后端: '--hue-backend',
-  数据库: '--hue-database',
-  运维: '--hue-devops',
-  计算机基础: '--hue-cs',
-  软件工程: '--hue-se',
-  跨学科纵深: '--hue-cross',
-  其他: '--hue-misc'
-}
+// 领域派生规则**不在本文件定义**：唯一份在 shared/graph-domain.ts（前后端共用），
+// 这里只做 re-export，保证既有调用点（app 内 `from '~/composables/useFacets'`）不受影响。
+import {
+  DOMAIN_FALLBACK,
+  DOMAIN_HUES,
+  DOMAIN_HUE_DEG,
+  domainColor,
+  domainOfSlug,
+  hueVarOf,
+  normalizeDomain
+} from '#shared/graph-domain'
 
-export const hueVarOf = (name: string): string => DOMAIN_HUES[name] || '--hue-misc'
-
-/** 同一套领域色相的数值形式（SVG fill 需要真实颜色，不能吃 CSS 变量名） */
-export const DOMAIN_HUE_DEG: Record<string, number> = {
-  前端: 160,
-  后端: 232,
-  数据库: 275,
-  运维: 32,
-  计算机基础: 195,
-  软件工程: 344,
-  跨学科纵深: 88,
-  其他: 220
-}
-
-export const domainColor = (name: string, l = 46): string =>
-  `hsl(${DOMAIN_HUE_DEG[name] ?? DOMAIN_HUE_DEG['其他']} 56% ${l}%)`
-
-/** 从笔记 slug 解析领域名与所属目录（约定：<知识区>/<领域>/…；不匹配返回空） */
-export function domainOfSlug(slug: string | undefined): { domain: string; dirPath: string } {
-  if (!slug) return { domain: '', dirPath: '' }
-  const parts = slug.split('/')
-  parts.pop() // 去掉文件名
-  const kbIdx = parts.findIndex(p => /^\d{2}_Knowledge$/i.test(p))
-  const dirPath = parts.join(' / ')
-  const domain = parts[kbIdx + 1]
-  if (kbIdx >= 0 && domain !== undefined) return { domain, dirPath }
-  return { domain: '', dirPath }
+export {
+  DOMAIN_FALLBACK,
+  DOMAIN_HUES,
+  DOMAIN_HUE_DEG,
+  domainColor,
+  domainOfSlug,
+  hueVarOf,
+  normalizeDomain
 }
 
 
