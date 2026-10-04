@@ -1588,9 +1588,10 @@ if (rgbaRuleId) {
 }
 log('G109 规则行内编辑可调透明度', editAlphaOk, editAlphaDetail)
 
-// 收尾：别把测试数据留给后面的用例
-await apiJson('/api/graph/color-rules', { method: 'DELETE' })
-await apiJson('/api/graph/colors', { method: 'DELETE' })
+// 收尾：别把测试数据留给后面的用例。
+// 只在快照成功（非 null）时才删——快照失败意味着读不到用户原有配色，宁可留下测试数据，也不能误删。
+if (colorBackup.rules !== null) await apiJson('/api/graph/color-rules', { method: 'DELETE' })
+if (colorBackup.colors !== null) await apiJson('/api/graph/colors', { method: 'DELETE' })
 await page.evaluate(() => {
   localStorage.removeItem('garden-graph-color-rules-v1')
   localStorage.removeItem('garden-graph-colors-v2')
@@ -1636,8 +1637,30 @@ try {
   console.log('[graph-verify] 截图跳过：' + String(e).slice(0, 120))
 }
 
-// —— 截图会反复 goto('/graph')，若客户端在 beforeunload 里误推一次空状态，
-//    刚还原的配色就又没了。所以这里再做一次最终回读（这是对「不吞用户数据」的最终保险）。 ——
+// —— 截图会反复 goto('/graph')，而客户端在「规则从未保存过」（服务端 updatedAt === null）时
+//    会自动播种 10 条默认规则并回推服务端；所以最终还原必须在一个**没有前端应用**的同源页面
+//    （静态资源）上做，否则刚删掉的规则行会被前端立刻写回来。
+//    这里先跳到 /favicon.ico 让 /graph 的 beforeunload flush 落完，再按快照的精确状态还原。 ——
+await page.goto('/favicon.ico', { waitUntil: 'domcontentloaded' }).catch(() => {})
+await sleep(600)
+const finalize = await page.evaluate(async (backup) => {
+  const put = (p, body) => fetch(p, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(r => r.json()).catch(() => null)
+  const del = p => fetch(p, { method: 'DELETE' }).then(r => r.json()).catch(() => null)
+  const out = {}
+  if (backup.colors === null) out.colors = 'skipped'
+  else if (Object.keys(backup.colors).length) out.colors = await put('/api/graph/colors', { colors: backup.colors })
+  else out.colors = await del('/api/graph/colors')
+  if (backup.rules === null) out.rules = 'skipped'
+  else if (backup.rules.updatedAt !== null) out.rules = await put('/api/graph/color-rules', { rules: backup.rules.rules || [] })
+  else out.rules = await del('/api/graph/color-rules')
+  return out
+}, colorBackup)
+
+// 最终回读（这是对「不吞用户数据」的最终保险）
 const restoredFinal = await page.evaluate(async () => {
   const c = await fetch('/api/graph/colors').then(r => r.json()).catch(() => null)
   const r = await fetch('/api/graph/color-rules').then(r => r.json()).catch(() => null)
@@ -1649,7 +1672,7 @@ log('G111 还原后的配色在整套跑完（含多次跳转）后仍在',
   restoredFinal.colors !== null && Object.keys(restoredFinal.colors).length === wantColors
   && restoredFinal.rulesSaved === wantRulesSaved
   && (!wantRulesSaved || restoredFinal.rules.length === (colorBackup.rules.rules || []).length),
-  `自定义色 ${Object.keys(restoredFinal.colors || {}).length}/${wantColors} · 规则 ${restoredFinal.rules ? restoredFinal.rules.length : 'null'}/${wantRulesSaved ? (colorBackup.rules.rules || []).length : '未保存过'}`)
+  `自定义色 ${Object.keys(restoredFinal.colors || {}).length}/${wantColors} · 规则 ${restoredFinal.rules ? restoredFinal.rules.length : 'null'}/${wantRulesSaved ? (colorBackup.rules.rules || []).length : '未保存过'} · finalize=${JSON.stringify(finalize)}`)
 
 await browser.close()
 

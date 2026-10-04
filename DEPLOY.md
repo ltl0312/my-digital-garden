@@ -189,10 +189,19 @@ docker exec garden-app sh -c "grep -rl graph-minimap /app/.output/public/_nuxt/"
 ```bash
 # Windows PowerShell
 $env:GARDEN_BASE='https://liutianle.cn'
-pnpm acceptance:graph     # 图谱重构 46 项，纯只读
+pnpm acceptance:graph     # 图谱重构 116 项，配色部分会自动快照并还原
 pnpm acceptance:shell     # 外壳 47 项，只开对话框不提交
 pnpm acceptance:ui        # UI 51 项，只开对话框不提交
 ```
+
+> 💾 **`acceptance:graph` 会动配色，但跑完会原样还原**：为覆盖「写服务端 / 跨设备恢复 / 清除」
+> 这些用例，它必须真的 PUT 与 DELETE `/api/graph/colors` 与 `/api/graph/color-rules`。
+> 快照在**任何用例跑之前**取（G67 的「清除全部颜色」会连用户自己的配色一起清掉），
+> 收尾按快照的**精确状态**写回：有配色就 PUT 回来，原本「从未保存过」（`updatedAt === null`）
+> 就 DELETE 回出厂状态——PUT 空数组语义不同，它会留下一个空规则行，前端从此不再播种默认配色。
+> 最终还原在一个**没有前端应用**的同源页面（`/favicon.ico`）上执行：截图段的多次
+> `goto('/graph')` 会让客户端把播种出来的 10 条默认规则回推服务端，在应用页面上还原等于白做。
+> G110 / G111 就是这套安全网的自检（G111 在全部跳转之后再回读一次）。
 
 > 🚫 **`pnpm acceptance:api`（`e4-regression.mjs`）绝不能对生产跑**：它会 POST `/api/admin/keys`、POST `/api/vault/folders`、POST `/api/vault/notes`、PUT `/api/vault/rename`、POST `/api/vault/copy`，并 DELETE `/api/vault/nodes`（含 `KnowledgeBase/03_Knowledge`）——**会真实改动生产数据**。
 
