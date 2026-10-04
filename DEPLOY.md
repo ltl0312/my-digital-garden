@@ -33,6 +33,17 @@ https://liutianle.cn
 
 > **镜像在开发机构建，服务器只 `docker load` 后直接跑**——服务器 1.6G 内存不足以跑 `pnpm install && pnpm build`。
 
+### 线上版本与回滚链（服务器 classic store 的 ImageID）
+
+| tag | ImageID | 内容 |
+|---|---|---|
+| `latest` / `v1.3.0` | `b8a194bd4f43` | 图谱：缩略图重绘并着色、连线加深、节点自定义颜色、左栏可收起、右键菜单（**当前**） |
+| `v1.2.0` | `ec68377534dd` | 图谱：MOC 标签策略、聚焦斥力、控制面板、页面标题 |
+| `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
+| `v1.0.0` | `36800e565796` | 重构前基线 |
+
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar`、`/opt/garden-image-v1.3.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删）。
+
 ---
 
 ## 1. 本地构建镜像
@@ -182,7 +193,7 @@ pnpm acceptance:ui        # UI 51 项，只开对话框不提交
 
 ```bash
 cd /opt/garden-docker
-docker tag my-digital-garden-app:v1.0.0 my-digital-garden-app:latest
+docker tag my-digital-garden-app:v1.2.0 my-digital-garden-app:latest   # 回退一格；再退一格用 v1.1.0
 docker compose -f docker-compose.prod.yml up -d --force-recreate
 until [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:3000/login)" = "200" ]; do sleep 2; done
 ```
