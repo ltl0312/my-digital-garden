@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-10-06（v1.9.8 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-10-06（v1.9.9 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v1.9.8` | `27384584acc5` | **题名归一为字符串 + watcher 启动/周期对账**：修「新建数字标题的笔记后打不开、页面一片空白」（详见下方 v1.9.8 说明）（**当前**） |
+| `latest` / `v1.9.9` | `b131a85376fb` | **删除当前笔记后离开该页 + 新增错误页 + 新建路径统一**；部署文件移入 `deploy/`（详见下方 v1.9.9 说明）（**当前**） |
+| `v1.9.8` | `27384584acc5` | 题名归一为字符串 + watcher 启动/周期对账：修「新建数字标题的笔记后打不开、页面一片空白」 |
 | `v1.9.7` | `6a6a5fe43ba2` | 新建/重命名/删除三处缺陷修复（详见下方 v1.9.7 说明） |
 | `v1.9.6` | `6f20113277cf` | 补记：2026-10-05 上线，当时未在手册留记录（无 schema 变更） |
 | `v1.9.5` | `1739fc106190` | 修右侧目录（TocRail）**不跟随正文滚动**：IntersectionObserver 正常，但目录列表自身从不滚动（活动项在 437px 视口下方 1668px）→ 改为按 `activeIdx` 调整 `ul.scrollTop`；新增只读回归套件 `acceptance:toc` |
@@ -56,7 +57,7 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v1.9.8.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v1.9.9.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
@@ -74,6 +75,13 @@ https://liutianle.cn
 > —— 但通常**不必执行**：留着无害，重新升到 v1.9.0 时还能保住已审记录与已配好的 AI 设置。
 >
 > ⚠️ **AUTH_SECRET 轮换的连带影响（v1.9.0 起）**：AI 增强的 API 密钥以 AES-256-GCM 加密存在 `AppSetting` 里，加密密钥由 `AUTH_SECRET` 派生。轮换 `AUTH_SECRET` 会让**已存的 API 密钥解不开**（设置界面会提示「已存的密钥无法解密，请重新填写」，不会静默失效），同时所有登录 cookie 失效。轮换后重新在「管理后台 → AI 增强设置」里填一次密钥即可。
+
+> **v1.9.9 无 schema 变更**（纯前端 + 仓库布局），启动日志为 `No pending migrations to apply.`，与 v1.9.8 双向回滚都不丢数据。本次修掉三处体验缺陷、并整理仓库布局：
+> ① **删除正在查看的笔记后停在死页面**（用户报障）—— 结构树的删除（`app/components/ContextSidebar.vue` 的 `case 'delete'`）删完只刷新结构树，既不跳转也不提示，于是主界面继续显示一篇已经不存在于库里的笔记。现在删掉的正是当前笔记（或它所在文件夹里的笔记）时退回 `/notes`，并 `notesRev++` 让列表/图谱跟着刷新。详情页「更多操作 → 删除笔记」与列表长按删除这两条路径本来就有跳转，只有结构树这条漏了。
+> ② **新增 `app/error.vue`** —— 此前没有错误页，任何加载失败（最典型是详情页 404）都只看到 Nuxt 默认页，观感就是「一片空白、连标题和按钮都没有」。现在给出「这篇笔记打不开」+ 可能原因 + 重试 / 回到笔记列表 / 首页 三个出口，并把状态码与原始 message 放进弱化等宽块，便于对照容器日志。
+> ③ **新增 `app/composables/useCreateNote.ts`** —— 把「POST 新建 → 刷新结构树 → 等入库可读 → 跳详情页」收敛成一份实现，顶栏新建与结构树内联新建共用（此前只有顶栏加了等待）。附带发现：`FileTree` 的内联新建是不可达的死代码（`startCreate` 从未被调用），统一它只为不留第二份实现。
+> ④ **仓库布局**：`Dockerfile` / `entrypoint.sh` / `docker-compose.prod.yml` 移入 `deploy/`，构建命令改为 `docker build -f deploy/Dockerfile .`（见 §1）。根目录只剩 8 个已跟踪文件，且每个都被具体工具链直接读取。
+> ⑤ 验证：`pnpm typecheck` EXIT=0；本地 `delete-open-note-probe` 7/7、`errorpage-and-treecreate-probe` 9/9；生产端到端 9/9（错误页文案与三个按钮、结构树里删除正在查看的笔记后回到列表、该笔记接口确为 404）；`pnpm acceptance:prod` 19/19。
 
 > **v1.9.8 无 schema 变更**，启动日志为 `No pending migrations to apply.`，与 v1.9.7 双向回滚都不丢数据。本次修掉「新建的笔记打不开、页面一片空白」：
 > ① **根因：题名被 YAML 解析成非字符串** —— 新建模板写的是 `title: 111`（无引号），YAML 把 `111` 解析成 int（`true` / `2026-10-06` / `1.5` 同理）；`processMarkdownFile` 把这个值透传给 Prisma 时抛 `Argument \`title\`: Invalid value provided. Expected String, provided Int.`，**整篇入库失败且不重试** → DB 里永远没有这一行 → 结构树（按文件系统构建）里看得见、点开 `/api/notes/<slug>` 却是 404 → 详情页 `throw createError` → 一片空白（线上真实案例：标题「111」的笔记，创建于 v1.9.7 上线后 3 分钟）。
