@@ -12,6 +12,7 @@ import rehypeShiki from '@shikijs/rehype'
 import { prisma } from './db'
 import { invalidateGardenCache } from './cache'
 import { computeMaturityForNote } from './maturity-sync'
+import { normalizeNoteTitle } from './vault'
 
 type MaturityValue = 'SEEDLING' | 'GROWING' | 'EVERGREEN'
 
@@ -228,7 +229,10 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
       console.warn(`[garden] markdown: 内容比对失败，按变更处理 ${slug}:`, (e as Error).message)
     }
 
-    const title = frontmatter.title || path.basename(slug)
+    // 题名必须归一成字符串：`title: 111` 会被 YAML 解析成 int，直接透传给 Prisma
+    // 会抛 PrismaClientValidationError（Expected String, provided Int.）导致整篇入库失败。
+    // 口径只有这一处 + server/utils/vault.ts 的 normalizeNoteTitle。
+    const title = normalizeNoteTitle(frontmatter.title, slug)
     // 成熟度（文档 10.5 治理机制）：
     //   ① frontmatter 显式合法值 → 人工值，直接采用；
     //   ② 显式非法值 → 告警并改走自动判定（旧版静默回退 SEEDLING，会把整库填平成幼苗）；

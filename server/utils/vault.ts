@@ -17,18 +17,58 @@ export function stripNul(s: string): string {
   return s.replace(/\0/g, '')
 }
 
+// ---- 题名：YAML 与 Prisma 的类型安全（全站唯一归一入口）----
+
+/**
+ * 标题归一化 —— 全站唯一的题名归一入口。
+ *
+ * 为什么必须有：frontmatter 的 `title:` 经 YAML 解析后**不一定是字符串**——
+ * `title: 111` → int、`title: true` → bool、`title: 2026-10-06` → Date。
+ * 而 `Note.title` 是 String，把解析结果直接透传给 Prisma 会抛
+ * `Argument 'title': Invalid value provided. Expected String, provided Int.`，
+ * 整篇笔记入库失败；`processMarkdownFile` 只 console.error + return false、不重试，
+ * 于是这一行**永远不会进 DB** —— 文件在磁盘上、结构树里看得见，点开却 404，
+ * 详情页 throw createError，页面一片空白。线上真实案例：标题「111」的笔记。
+ */
+export function normalizeNoteTitle(value: unknown, slug: string): string {
+  const fallback = path.basename(slug)
+  if (value === null || value === undefined) return fallback
+  // Date（`title: 2026-10-06`）取日期部分，String(date) 会输出冗长的英文全称
+  const text = value instanceof Date ? value.toISOString().slice(0, 10) : String(value)
+  return text.trim() || fallback
+}
+
+/**
+ * 写 frontmatter 时的 YAML 标量安全写法：会被 YAML 解析成 int / bool / 日期的题名
+ * 加双引号，从源头上避免上面那类入库失败。例：`111` → `"111"`；
+ * `Rust 所有权模型` 原样输出（不加引号，保持既有文件的风格）。
+ */
+export function yamlTitleScalar(title: string): string {
+  const risky =
+    title === '' ||
+    /^(?:true|false|yes|no|on|off|null|~)$/i.test(title) ||
+    /^[-+]?(?:\d+|\d*\.\d+(?:[eE][-+]?\d+)?)$/.test(title) ||
+    /^\d{4}-\d{2}-\d{2}(?:[T ].*)?$/.test(title) ||
+    /^[!&*?|>%@`"'#\[\]{},:-]/.test(title) ||
+    /: | #/.test(title) ||
+    title !== title.trim()
+  if (!risky) return title
+  return `"${title.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
 // 新建笔记默认 frontmatter 模板
 export function noteTemplate(title: string): string {
+  const safe = normalizeNoteTitle(title, title)
   return [
     '---',
-    `title: ${title}`,
+    `title: ${yamlTitleScalar(safe)}`,
     'tags: []',
     // 不要预置 maturity：frontmatter 里的显式值会被当作「人工指定」永久锁定，
     // 自动生长判定（maturity-sync）就不会再介入（用户曾因此误以为笔记长不起来）。
     // 需要人工锁定的笔记再手动在 frontmatter 加这一行。
     '---',
     '',
-    `# ${title}`,
+    `# ${safe}`,
     '',
   ].join('\n')
 }
