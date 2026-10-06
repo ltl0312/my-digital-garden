@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-10-05（v1.9.1 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-10-06（v1.9.7 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,9 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v1.9.5` | `1739fc106190` | 修右侧目录（TocRail）**不跟随正文滚动**：IntersectionObserver 正常，但目录列表自身从不滚动（活动项在 437px 视口下方 1668px）→ 改为按 `activeIdx` 调整 `ul.scrollTop`；新增只读回归套件 `acceptance:toc`（**当前**） |
+| `latest` / `v1.9.7` | `6a6a5fe43ba2` | **新建/重命名/删除三处缺陷修复**（详见下方 v1.9.7 说明）（**当前**） |
+| `v1.9.6` | `6f20113277cf` | 补记：2026-10-05 上线，当时未在手册留记录（无 schema 变更） |
+| `v1.9.5` | `1739fc106190` | 修右侧目录（TocRail）**不跟随正文滚动**：IntersectionObserver 正常，但目录列表自身从不滚动（活动项在 437px 视口下方 1668px）→ 改为按 `activeIdx` 调整 `ul.scrollTop`；新增只读回归套件 `acceptance:toc` |
 | `v1.9.4` | `0e4da9da02fd` | 修「测试连接」假阳性：`/models` 返回 2xx 但**不校验响应体形状**时会把「地址指错」误报成「连接成功」（用户把 baseUrl 填成本站自身时正是如此）；改为要求 `data` 数组 / chat 响应含 `choices` |
 | `v1.9.3` | `8f75f6f750c3` | **建议质量修复**（生产 200 条建议被用户全部驳回）：候选必须有正文/标题证据（同目录共用只加分、不再单独入选）、链接目标不再算内容（`[[MOC]]` 不推 `type/MOC`）、**中文末段标签必须同时命中命名空间**（`Java/安全` 不再因正文出现「安全」而命中） |
 | `v1.9.2` | —（未记录服务器镜像 ID） | AI 开关**点击即保存**（此前翻开关不点保存、刷新即回原值）+ 状态文案区分未保存/缺密钥/缺模型；多选器确认后**先关弹窗再判定**（避免 60s 反代超时导致弹窗卡住并挡住审核面板）；结构树右键（目录与文件）与详情页「更多操作」增「标签 · 领域自动分配」 |
@@ -53,7 +55,7 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v1.8.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v1.9.7.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
@@ -71,6 +73,13 @@ https://liutianle.cn
 > —— 但通常**不必执行**：留着无害，重新升到 v1.9.0 时还能保住已审记录与已配好的 AI 设置。
 >
 > ⚠️ **AUTH_SECRET 轮换的连带影响（v1.9.0 起）**：AI 增强的 API 密钥以 AES-256-GCM 加密存在 `AppSetting` 里，加密密钥由 `AUTH_SECRET` 派生。轮换 `AUTH_SECRET` 会让**已存的 API 密钥解不开**（设置界面会提示「已存的密钥无法解密，请重新填写」，不会静默失效），同时所有登录 cookie 失效。轮换后重新在「管理后台 → AI 增强设置」里填一次密钥即可。
+
+> **v1.9.7 无 schema 变更**（只改服务端写文件/入库路径与前端组件），启动日志为 `No pending migrations to apply.`，与 v1.9.6 双向回滚都不丢数据。本次修掉五处问题：
+> ① **新建笔记正文空白** —— `ArticleReader` 的「去掉与标题重复的首个标题」原先无条件删除，而新建模板产出的唯一内容就是这个标题，正文区因此被清空；改为「确实还有其它内容时才移除」。
+> ② **新建后跳详情页被 404 中止**（地址栏已是新笔记、页面却停在列表页且永不恢复）—— 新建接口只写文件、入库交给 watcher，实测 `GET /api/notes/<slug>` 有 1–1.5 秒 404 窗口（t=48/343/836ms 返回 404，1513ms 才 200）；改为新建接口自己 `processMarkdownFile` 主动入库，前端再加有界等待兜底。
+> ③ **重命名只改文件名、不改题名** —— 显示名派生自 `frontmatter.title || 文件名`（`server/utils/markdown.ts`），而重命名只改磁盘文件名与 `DB.slug`，于是详情页文章头/笔记列表/图谱/选择器全部继续显示旧名。新增 `server/utils/vault.ts` 的 `rewriteNoteTitle`（同步 frontmatter `title:` 与正文首个标题，且**只在确认写的就是旧题名时才动**，绝不顶替用户的章节小标题）；题名与文件名相同时自动同步，人工题名时由重命名对话框询问；文件夹改名不动子笔记标题。
+> ④ **编辑保存 60 秒内不生效**（本轮修复过程中发现并修掉）—— `isRecentlyIngested` 原为 60s TTL 且命中不消费，watcher 命中即 `return` 不补发，导致刚被新建/改名处理过的文件在这 60 秒内的真实改动被永久忽略；改为命中即消费，并从新建/改名路径移除该标记（只保留批量导入使用）。
+> ⑤ **删除笔记/文件夹后 DB 行残留（孤儿行）** —— 删除只删文件，清行依赖 watcher 的 `unlink`，而 chokidar 的 `awaitWriteFinish(1000ms)` 会让「稳定窗口内就被删掉」的文件从未被登记、不产生 unlink（实测 3 轮里 2 轮残留，列表/搜索/图谱继续挂着、点开 404）；删除接口现在主动清行（`removeMarkdownFile` / `prisma.note.deleteMany`，幂等，watcher 稍后再删一次无害）。
 
 > **v1.9.1 无 schema 变更**（多选器只加了 `/api/notes` 的查询参数与响应字段 `hasPending`，以及前端组件），启动日志为 `No pending migrations to apply.`，与 v1.9.0 双向回滚都不丢数据。
 > 两点值得记下的教训：①把组件插进 `v-if` 的 `</template>` 与 `v-else` 之间会让 Vue 编译期报「v-else/v-else-if has no adjacent v-if or v-else-if」→ **`/admin` 整页 500，而 `nuxt typecheck` 照样通过**；②审核面板的 `onlyIds` 忘了从布局传下去，导致「对指定笔记重新判定」后面板展示全库待审。两者都只有**真正加载页面**才能发现，所以 `acceptance:picker` 的 U0/U14 就是钉住这两条的断言。
@@ -229,7 +238,7 @@ docker exec garden-app sh -c "grep -rl graph-minimap /app/.output/public/_nuxt/"
 ```bash
 # Windows PowerShell
 $env:GARDEN_BASE='https://liutianle.cn'
-pnpm acceptance:prod      # 只读部署校验 16 项：新端点存在 + 字段形状 + 权限仍生效（**全程只发 GET**）
+pnpm acceptance:prod      # 只读部署校验 19 项：新端点存在 + 字段形状 + 权限仍生效（**全程只发 GET**）
 pnpm acceptance:graph     # 图谱重构 120 项，配色部分会自动快照并还原
 pnpm acceptance:shell     # 外壳 47 项，只开对话框不提交
 pnpm acceptance:ui        # UI 51 项，只开对话框不提交
