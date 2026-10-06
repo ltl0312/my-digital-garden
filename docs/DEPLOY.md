@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-10-06（v1.9.7 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-10-06（v1.9.8 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v1.9.7` | `6a6a5fe43ba2` | **新建/重命名/删除三处缺陷修复**（详见下方 v1.9.7 说明）（**当前**） |
+| `latest` / `v1.9.8` | `27384584acc5` | **题名归一为字符串 + watcher 启动/周期对账**：修「新建数字标题的笔记后打不开、页面一片空白」（详见下方 v1.9.8 说明）（**当前**） |
+| `v1.9.7` | `6a6a5fe43ba2` | 新建/重命名/删除三处缺陷修复（详见下方 v1.9.7 说明） |
 | `v1.9.6` | `6f20113277cf` | 补记：2026-10-05 上线，当时未在手册留记录（无 schema 变更） |
 | `v1.9.5` | `1739fc106190` | 修右侧目录（TocRail）**不跟随正文滚动**：IntersectionObserver 正常，但目录列表自身从不滚动（活动项在 437px 视口下方 1668px）→ 改为按 `activeIdx` 调整 `ul.scrollTop`；新增只读回归套件 `acceptance:toc` |
 | `v1.9.4` | `0e4da9da02fd` | 修「测试连接」假阳性：`/models` 返回 2xx 但**不校验响应体形状**时会把「地址指错」误报成「连接成功」（用户把 baseUrl 填成本站自身时正是如此）；改为要求 `data` 数组 / chat 响应含 `choices` |
@@ -55,7 +56,7 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v1.9.7.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v1.9.8.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
@@ -73,6 +74,12 @@ https://liutianle.cn
 > —— 但通常**不必执行**：留着无害，重新升到 v1.9.0 时还能保住已审记录与已配好的 AI 设置。
 >
 > ⚠️ **AUTH_SECRET 轮换的连带影响（v1.9.0 起）**：AI 增强的 API 密钥以 AES-256-GCM 加密存在 `AppSetting` 里，加密密钥由 `AUTH_SECRET` 派生。轮换 `AUTH_SECRET` 会让**已存的 API 密钥解不开**（设置界面会提示「已存的密钥无法解密，请重新填写」，不会静默失效），同时所有登录 cookie 失效。轮换后重新在「管理后台 → AI 增强设置」里填一次密钥即可。
+
+> **v1.9.8 无 schema 变更**，启动日志为 `No pending migrations to apply.`，与 v1.9.7 双向回滚都不丢数据。本次修掉「新建的笔记打不开、页面一片空白」：
+> ① **根因：题名被 YAML 解析成非字符串** —— 新建模板写的是 `title: 111`（无引号），YAML 把 `111` 解析成 int（`true` / `2026-10-06` / `1.5` 同理）；`processMarkdownFile` 把这个值透传给 Prisma 时抛 `Argument \`title\`: Invalid value provided. Expected String, provided Int.`，**整篇入库失败且不重试** → DB 里永远没有这一行 → 结构树（按文件系统构建）里看得见、点开 `/api/notes/<slug>` 却是 404 → 详情页 `throw createError` → 一片空白（线上真实案例：标题「111」的笔记，创建于 v1.9.7 上线后 3 分钟）。
+> ② **修复**：`server/utils/vault.ts` 新增 `normalizeNoteTitle`（题名统一归一为字符串，Date 取日期部分）与 `yamlTitleScalar`（会被解析成 int/bool/日期的题名写 frontmatter 时加引号），`noteTemplate` 采用；`server/utils/markdown.ts` 的题名派生改为 `normalizeNoteTitle(frontmatter.title, slug)`。
+> ③ **自愈：watcher 新增对账** —— 启动时 + 每 5 分钟一次，把「磁盘有、DB 没有」的文件补入库（**只补不删**，避免 vault 挂载异常时清库）。生产用 `ignoreInitial: true`（重启不重同步，免得把 `updatedAt` 刷成当天），此前这类文件会永久缺席 DB。**本次上线启动日志实测**：`[garden] watcher: 对账发现 1 篇笔记未入库，开始补入库` → `[garden] watcher: 对账补入库成功 ltl/个人开发规范/111`，那篇打不开的笔记随即恢复；本地另用「删掉 DB 行再等 5 分钟」验证了周期对账同样生效。
+> ④ 验证：`pnpm typecheck` EXIT=0；`numeric-title-probe` 15/15（`111`/`true`/`2026-10-06`/`1.5` 四类标题新建后立即可读、磁盘 frontmatter 已引号包裹、直接写盘的同类文件也能经 watcher 入库）；生产端到端 9/9（「111」详情页有标题与「编辑」入口、可进编辑态、新建数字标题笔记立即可读）；`pnpm acceptance:prod` 19/19。
 
 > **v1.9.7 无 schema 变更**（只改服务端写文件/入库路径与前端组件），启动日志为 `No pending migrations to apply.`，与 v1.9.6 双向回滚都不丢数据。本次修掉五处问题：
 > ① **新建笔记正文空白** —— `ArticleReader` 的「去掉与标题重复的首个标题」原先无条件删除，而新建模板产出的唯一内容就是这个标题，正文区因此被清空；改为「确实还有其它内容时才移除」。
