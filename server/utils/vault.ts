@@ -82,3 +82,134 @@ export async function writeMarkdownAtomic(fullPath: string, content: string): Pr
   await fs.writeFile(tmp, content, 'utf-8')
   await fs.rename(tmp, fullPath)
 }
+
+// ── 标题同步（重命名笔记的唯一实现处）───────────────────────────────
+// 背景：重命名曾经只改「磁盘文件名 + DB.slug」，文件内的 frontmatter `title:` 与正文
+// `# 标题` 一字未动。而显示名全部派生自 frontmatter —— server/utils/markdown.ts:231
+// `const title = frontmatter.title || path.basename(slug)` —— 旧笔记 frontmatter 已有 title，
+// 于是详情页文章头、笔记列表、图谱、各种选择器永远显示旧名，只有结构树（按路径显示）变了。
+// 用户原话：「选择的重命名就是简单地修改列表名称而已」。
+
+/** 拆出 frontmatter 块与它之后的正文；没有 frontmatter 时返回 null */
+function splitFrontmatter(raw: string): { fm: string; body: string } | null {
+  const m = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(raw)
+  if (!m) return null
+  return { fm: m[1] ?? '', body: raw.slice(m[0].length) }
+}
+
+/** frontmatter 里显式声明且非空的标题（无声明时返回 null） */
+export function frontmatterTitle(raw: string): string | null {
+  const fm = splitFrontmatter(raw)?.fm
+  if (fm === undefined) return null
+  for (const line of fm.split(/\r?\n/)) {
+    const kv = /^title[ \t]*:[ \t]*(.*)$/i.exec(line)
+    if (!kv) continue
+    let v = (kv[1] ?? '').trim()
+    if (!v) continue
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+      v = v.slice(1, -1)
+    }
+    return v.trim() || null
+  }
+  return null
+}
+
+/**
+ * 正文里第一个标题行的位置（ATX `# 标题` / `## 标题`，或下一行是下划线的 setext 写法）。
+ * 范围与 ArticleReader 去重时认定的「文章标题行」一致（H1/H2），且跳过围栏代码块 ——
+ * 否则会给示例代码里的 `# 注释` 换标题。
+ */
+function firstHeadingLine(body: string): { index: number; text: string; setext: boolean } | null {
+  const lines = body.split(/\r?\n/)
+  let fence: string | null = null
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? ''
+    const f = /^[ \t]{0,3}(`{3,}|~{3,})/.exec(line)
+    if (f) {
+      const ch = (f[1] ?? '')[0] ?? null
+      if (fence === null) fence = ch
+      else if (ch === fence) fence = null
+      continue
+    }
+    if (fence !== null) continue
+    const atx = /^[ \t]{0,3}#{1,2}[ \t]+(.*?)[ \t]*#*[ \t]*$/.exec(line)
+    if (atx) return { index: i, text: (atx[1] ?? '').trim(), setext: false }
+    const next = lines[i + 1] ?? ''
+    if (line.trim() && /^[ \t]{0,3}(=+|-{2,})[ \t]*$/.test(next)) {
+      return { index: i, text: line.trim(), setext: true }
+    }
+  }
+  return null
+}
+
+/** 正文里第一个标题的文本（无则 null） */
+export function firstHeadingText(raw: string): string | null {
+  const body = splitFrontmatter(raw)?.body ?? raw
+  return firstHeadingLine(body)?.text ?? null
+}
+
+/**
+ * 把笔记的标题从 `oldTitle` 改成 `newTitle`：frontmatter 的 `title:` 与正文里那个
+ * 「文章标题行」一起改。**两处都只在确认它们写的就是 oldTitle 时才动**：
+ *  - 正文那个标题的文本不等于 oldTitle（用户拿首行当章节小标题、或正文标题与文件名不同）
+ *    → 正文一个字节都不碰，绝不冒名顶替；
+ *  - frontmatter 没有 title 行 → 不凭空补一行（那种笔记的显示名本来就派生自文件名，
+ *    改名之后自然跟上，不需要也不该替用户写一个他没写过的字段）。
+ *
+ * 返回新的原文与「是否真的改了」——`changed=false` 时调用方需要自己保证显示名跟上
+ * （重命名场景见 server/api/vault/rename.put.ts 的落库兜底）。
+ */
+export function rewriteNoteTitle(
+  raw: string,
+  opts: { oldTitle: string; newTitle: string }
+): { content: string; changed: boolean } {
+  const { oldTitle, newTitle } = opts
+  if (!oldTitle || !newTitle || oldTitle === newTitle) return { content: raw, changed: false }
+
+  const split = splitFrontmatter(raw)
+  const body = split ? split.body : raw
+  const head = firstHeadingLine(body)
+  const rewriteBody = !!head && head.text === oldTitle
+  const fmTitle = frontmatterTitle(raw)
+  const rewriteFm = !!split && fmTitle !== null && fmTitle === oldTitle
+  if (!rewriteBody && !rewriteFm) return { content: raw, changed: false }
+
+  const eol = raw.includes('\r\n') ? '\r\n' : '\n'
+  let nextBody = body
+  if (rewriteBody && head) {
+    const lines = body.split(/\r?\n/)
+    const original = lines[head.index] ?? ''
+    // setext 的级别由下一行的下划线决定，只换文字行；ATX 保留原级别与可能的收尾井号
+    lines[head.index] = head.setext
+      ? newTitle
+      : original.replace(/^([ \t]{0,3}#{1,2}[ \t]+).*?([ \t]*#*[ \t]*)$/, `$1${newTitle}$2`)
+    nextBody = lines.join(eol)
+  }
+
+  if (!split) return { content: nextBody, changed: true }
+  const fm = rewriteFm ? rewriteFrontmatterTitleLine(split.fm, newTitle) : split.fm
+  return { content: `---${eol}${fm}${eol}---${eol}${nextBody}`, changed: true }
+}
+
+/** 重写 frontmatter 块内的 title 行（保留其它行与原有引号风格；调用方已确保该行存在） */
+function rewriteFrontmatterTitleLine(fm: string, newTitle: string): string {
+  const eol = fm.includes('\r\n') ? '\r\n' : '\n'
+  const lines = fm.split(/\r?\n/)
+  const idx = lines.findIndex(l => /^title[ \t]*:/i.test(l))
+  if (idx < 0) return fm
+  const m = /^([ \t]*title[ \t]*:[ \t]*)(.*)$/i.exec(lines[idx] ?? '')
+  const prefix = m?.[1] ?? 'title: '
+  const value = (m?.[2] ?? '').trim()
+  const quote = value.startsWith('"') ? '"' : (value.startsWith("'") ? "'" : '')
+  lines[idx] = `${prefix}${titleScalar(newTitle, quote)}`
+  return lines.join(eol)
+}
+
+/** 按原引号风格输出 YAML 标量；没引号且内容需要引号时补双引号（标题里可能有 # : 等指示符） */
+function titleScalar(v: string, quote: string): string {
+  if (quote === '"') return `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  if (quote === "'") return `'${v.replace(/'/g, "''")}'`
+  const risky = /^[\s#&*!|>%@`\[\]{},'"]/.test(v) || /^-[ \t]/.test(v) || /:[ \t]/.test(v) || /\s#/.test(v)
+  if (!risky) return v
+  return `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}

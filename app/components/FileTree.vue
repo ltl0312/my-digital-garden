@@ -11,6 +11,9 @@ interface TreeNode {
   slug?: string
   /** 成熟度：/api/vault/tree 的文件节点会带上，用于行尾色点 */
   maturity?: string
+  /** 笔记题名（frontmatter.title 或文件名派生）：随节点透传给重命名对话框，
+   *  用于判断「改文件名是否连题名一起改」 */
+  title?: string
   children?: TreeNode[]
 }
 
@@ -29,7 +32,7 @@ const route = useRoute()
 const { nameProblem } = useNameRule()
 // 右键菜单：FileTree 是自递归组件，逐层 emit 会把事件停在中间层；
 // 由 ContextSidebar provide 一个 handler，任意层级直接调用（payload 带节点与鼠标坐标）
-type MenuPayload = { name: string; path: string; type: 'dir' | 'file'; slug?: string; x: number; y: number; children?: TreeNode[] }
+type MenuPayload = { name: string; path: string; type: 'dir' | 'file'; slug?: string; title?: string; x: number; y: number; children?: TreeNode[] }
 /** 'mouse' = 右键锚点菜单；'touch' = 触屏长按的底部面板。同一份菜单项，只是呈现范式不同 */
 type MenuMode = 'mouse' | 'touch'
 const openMenu = inject<((p: MenuPayload, mode?: MenuMode) => void) | null>('shell-tree-menu', null)
@@ -38,6 +41,7 @@ const payloadOf = (node: TreeNode, path: string, x: number, y: number): MenuPayl
   path,
   type: node.type,
   slug: node.slug,
+  title: node.title,
   x,
   y,
   children: node.children

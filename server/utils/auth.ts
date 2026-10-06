@@ -12,7 +12,11 @@ if (
   throw new Error('[garden] 生产环境必须配置 AUTH_SECRET（写入 .env，随机长字符串），禁止使用默认密钥')
 }
 
-const SECRET = process.env.AUTH_SECRET || 'dev-secret-change-me'
+// 导出给 server/utils/settings.ts 派生「设置表里敏感值」的加密密钥用（见该文件注释）。
+// 单一来源：会话签名与设置加密必须用同一个秘密，否则改了 AUTH_SECRET 会出现
+// 「登录还能用、但已存的 API 密钥解不开」这种半坏状态。
+export const AUTH_SECRET = process.env.AUTH_SECRET || 'dev-secret-change-me'
+const SECRET = AUTH_SECRET
 export const AUTH_COOKIE = 'garden_token'
 export const TOKEN_TTL_DAYS = 30
 
@@ -67,10 +71,21 @@ export async function requireAuth(event: H3Event) {
 export async function requireAdmin(event: H3Event) {
   const key = await requireAuth(event)
   // 管理动作的执行者 = root（初始管理员）或 admin（普通管理员）；user 一律 403
-  if (key.role !== 'admin' && key.role !== 'root') {
+  if (!isAdminRole(key.role)) {
     throw createError({ statusCode: 403, message: '当前身份为普通用户，没有管理权限' })
   }
   return key
+}
+
+/**
+ * 是否为管理身份（root = 初始管理员 / admin = 普通管理员）。
+ *
+ * 单独抽出来的原因：除了各写接口自己调 requireAdmin（第一道门），
+ * server/middleware/auth.ts 还用它做**全局兜底**（第二道门），两处必须同一判定，
+ * 否则会出现「中间件放行但接口拒绝」或反之的漂移。新增角色时只改这里。
+ */
+export function isAdminRole(role: unknown): boolean {
+  return role === 'admin' || role === 'root'
 }
 
 // ---- 阶段 B：三级角色（root / admin / user）二维校验 ----

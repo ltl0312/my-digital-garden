@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import { resolveVaultPath } from '../../../utils/vault'
 import { requireAdmin } from '../../../utils/auth'
 import { invalidateGardenCache } from '../../../utils/cache'
+import { removeMarkdownFile } from '../../../utils/markdown'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
@@ -30,6 +31,11 @@ export default defineEventHandler(async (event) => {
     }
   }
   if (lastErr) throw lastErr
+  // 主动清 DB 行，而不是等 watcher 的 unlink 事件：chokidar 配了 awaitWriteFinish(1000ms)，
+  // 文件在稳定窗口内就被删掉时它从未被「登记」，于是**不会产生 unlink** —— 文件没了、行还在，
+  // 列表/搜索/图谱继续挂着这篇笔记，点开却 404（实测新建后立刻删除，3 轮里 2 轮残留孤儿行）。
+  // 稍后 watcher 的 unlink 若真的到达，removeMarkdownFile 内部是 delete().catch() → 幂等。
+  await removeMarkdownFile(full)
   // 删除笔记后立即失效 tree/graph 缓存（否则树里文件仍在，需等 TTL 过期才消失）
   invalidateGardenCache()
   return { ok: true }

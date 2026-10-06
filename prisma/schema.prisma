@@ -26,14 +26,31 @@ model Note {
   readingTime  Int        @default(0)    // 预计阅读时长
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  /**
+   * 显式一级领域（即知识区 NN_Knowledge 下的那一层名称）。
+   *
+   * 为什么要有这个字段：领域原先唯一由「路径段」派生（shared/graph-domain.ts domainOfSlug），
+   * 于是「给笔记分配领域」就等于「移动文件 + 改 slug」，会让旧 URL 失效。
+   * 改为独立字段后：分配领域只写属性，路径与 URL 都不动。
+   * 解析优先级：本字段（非空）> 路径派生 > 兜底「其他」。
+   *
+   * 谁写它：仅 Suggestion 审核通过时（server/utils/suggest.ts），或 PATCH 笔记元数据接口。
+   * watcher 重入库**必须原样保留**（server/utils/markdown.ts 的显式领域保护），
+   * 否则用户改一次正文就会丢掉手工指定的领域。
+   */
+  domainLevel1 String?
+  /** 领域分配方式：auto=由路径派生（默认）｜manual=人工/审核指定 */
+  domainSource String     @default("auto")
 
   tags         NoteTag[]
   outgoing     NoteLink[] @relation("OutgoingLinks")
   incoming     NoteLink[] @relation("IncomingLinks")
+  suggestions  Suggestion[]
 
   @@index([slug])
   @@index([isPublished])
   @@index([maturity])
+  @@index([domainLevel1])
 }
 
 model Tag {
@@ -95,6 +112,52 @@ model GraphColor {
 }
 
 /**
+ * 标签 / 领域分配建议 —— 自动化判定与「用户审核通过」之间的**待审区**。
+ *
+ * 为什么需要独立表而不是直接改 Note：需求明确要求「需要用户审核通过才行」。
+ * 自动判定（规则引擎或可选的 LLM）先落成一行 Suggestion，任何写操作
+ * （NoteTag 替换 / Note.domainLevel1 / vault frontmatter）只在审核动作里发生，
+ * 因此「机器判定」与「生效的事实」之间始终有一道人工闸门。
+ *
+ * 已审核的行**不删除**（approved / rejected 都留着）作为审计轨迹：
+ * 谁在什么时候把什么改成了什么，可从 reviewedBy / reviewedAt / appliedValue 还原。
+ * 同一篇笔记同时只有一条 pending（迁移里有部分唯一索引兜底，应用层先删后插）。
+ *
+ * 所有字段写入前都过一遍服务端白名单：标签 ≤40 字、领域必须落在已知领域集合内
+ * —— 理由与 GraphColorRules 的 normalizeRule 一致，这些值最终会进 vault 文件与前端渲染。
+ */
+model Suggestion {
+  id             String    @id @default(uuid())
+  noteId         String
+  /** 建议新增的标签（不含笔记现有标签） */
+  tags           Json
+  /** true = 建议保持当前领域（此时 domain 为 null） */
+  keepCurrentDir Boolean   @default(true)
+  /** 建议领域（一级领域名，如「前端」）；null = 不提领域建议 */
+  domain         String?
+  /** 判定引擎：rules | rules+llm */
+  engine         String    @default("rules")
+  /** 判定依据（人话，展示在审核卡片上，让审核者能判断而不是盲点通过） */
+  rationale      Json      @default("[]")
+  /** 置信度 0-100：低置信度排在审核列表前面，最需要人工看的先看 */
+  confidence     Int       @default(0)
+  /** pending | approved | rejected */
+  status         String    @default("pending")
+  /** 审核人密钥 id（走 AccessKey 自引用，展示时解析 label） */
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  /** 审核时的最终落值快照（可能与建议不同：审核者可以删/加标签），{ tags, domainLevel1 } */
+  appliedValue   Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([noteId])
+}
+
+/**
  * 图谱颜色规则 —— 同样按「访问密钥（= 用户身份）」隔离，一行一份有序规则表。
  *
  * 为什么是单行 JSON 而不是多行表：规则是**有序**的（数组顺序即优先级），
@@ -109,3 +172,26 @@ model GraphColorRules {
 
   key AccessKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
 }
+
+/**
+ * 应用级设置（单例键值表）——目前只承载「AI 增强（标签/领域判定）」的配置。
+ *
+ * 为什么需要它：LLM 的地址 / 模型 / 密钥原先只能从进程环境变量读，改一次要上服务器
+ * 编辑 `.env` 并重建容器。改成落库后，管理员可以直接在「管理后台 → AI 增强设置」里
+ * 开关增强、填密钥、点测试连接，**不需要动 .env 也不需要重启**。
+ *
+ * 通用键值（`key` 为业务键，`value` 为 jsonb）而不是给 LLM 建专用表：设置项还会继续长
+ * （判定阈值、领域词表、批量上限…），每加一项都建表/建迁移不划算；设置总量极小，
+ * 单表 jsonb 的读写成本可忽略。读取方**必须逐字段过白名单与长度校验**，理由与
+ * GraphColorRules 一致：库里的值不可信。
+ *
+ * 密钥**加密后**才写进 value（见 server/utils/settings.ts）：
+ * 加密密钥由 AUTH_SECRET 派生，而 AUTH_SECRET 只在 `.env` / 容器环境里、**不在数据库中**。
+ * 这样即使数据库被导出或备份泄露，第三方 API 密钥也不会以明文暴露。
+ */
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+

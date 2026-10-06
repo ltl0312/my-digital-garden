@@ -16,7 +16,12 @@
     "acceptance:api": "node scripts/acceptance/e4-regression.mjs",
     "acceptance:shots": "node scripts/acceptance/e-shots.mjs m-final",
     "acceptance:graph": "node scripts/acceptance/graph-verify.mjs",
-    "acceptance:all": "node scripts/acceptance/m-verify.mjs && node scripts/acceptance/m34-verify.mjs && node scripts/acceptance/e4-check.mjs && node scripts/acceptance/e4-regression.mjs && node scripts/acceptance/graph-verify.mjs"
+    "acceptance:suggest": "node scripts/acceptance/suggest-verify.mjs",
+    "acceptance:picker": "node scripts/acceptance/picker-verify.mjs",
+    "acceptance:entries": "node scripts/acceptance/suggest-entries-verify.mjs",
+    "acceptance:toc": "node scripts/acceptance/toc-verify.mjs",
+    "acceptance:prod": "node scripts/acceptance/prod-readonly.mjs",
+    "acceptance:all": "node scripts/acceptance/m-verify.mjs && node scripts/acceptance/m34-verify.mjs && node scripts/acceptance/e4-check.mjs && node scripts/acceptance/e4-regression.mjs && node scripts/acceptance/graph-verify.mjs && node scripts/acceptance/suggest-verify.mjs && node scripts/acceptance/picker-verify.mjs && node scripts/acceptance/suggest-entries-verify.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",

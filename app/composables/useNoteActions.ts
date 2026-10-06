@@ -5,7 +5,7 @@
 // 与结构树长按、详情页「更多操作」共用同一套权限收敛规则（服务端始终是权威）。
 //
 // 面板实例挂在布局根部（NoteActionSheet），任意页面触发后都能弹出。
-import { Link2, FileText, FolderTree, Trash2 } from 'lucide-vue-next'
+import { Link2, FileText, FolderTree, Trash2, Sparkles } from 'lucide-vue-next'
 
 export interface NoteActionRef {
   slug: string
@@ -38,6 +38,7 @@ export function useNoteActions() {
   const toast = useToast()
   const { confirm } = useConfirm()
   const route = useRoute()
+  const { reviewForSlugs } = useSuggestionReview()
 
   const sidebarOpen = useState<boolean>('shell-sidebar-open', () => true)
   const sidebarPanel = useState<'tree' | 'domain' | 'tag'>('shell-sidebar-panel', () => 'tree')
@@ -60,6 +61,9 @@ export function useNoteActions() {
     ]
     if (canManage.value) {
       out.push({ key: 'reveal', label: '在结构树中定位', icon: FolderTree })
+      // 「指定的笔记」入口（需求原文）：对当前这一篇重新判定标签/领域，然后只审这一篇的结果。
+      // 位置在删除之前、以 divider 与破坏性操作分隔。
+      out.push({ key: 'suggest', label: '重新判定标签与领域', icon: Sparkles, divider: true })
       out.push({ key: 'delete', label: '删除笔记', icon: Trash2, danger: true, divider: true })
     }
     return out
@@ -88,6 +92,10 @@ export function useNoteActions() {
         sidebarOpen.value = true
         revealSlug.value = note.slug
         toast.success('已在结构树中定位')
+      } else if (key === 'suggest') {
+        // 「指定的笔记」路径：统一走 reviewForSlugs（分片提交 + 生成后把面板收敛到这一篇）。
+        // 分片是为了避开生产 Nginx 默认 60s 读超时 —— 见 useSuggestionReview 的注释。
+        await reviewForSlugs([note.slug])
       } else if (key === 'delete') {
         const ok = await confirm({
           title: '删除笔记',

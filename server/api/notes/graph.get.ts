@@ -1,8 +1,9 @@
 import { defineEventHandler } from 'h3'
 import { prisma } from '../../utils/db'
 import { createCache } from '../../utils/cache'
-// 领域派生规则唯一份在 shared/graph-domain.ts（与 app/composables/useFacets.ts 同源）
-import { domainOfSlug, normalizeDomain } from '#shared/graph-domain'
+// 领域规则唯一份在 shared/graph-domain.ts（与 app/composables/useFacets.ts 同源）
+// resolveDomain = 显式领域（Note.domainLevel1，人工/审核指定）优先，其次才是路径派生
+import { resolveDomain } from '#shared/graph-domain'
 
 export interface GraphNode {
   id: string
@@ -13,8 +14,10 @@ export interface GraphNode {
   primaryTag: string | null
   /** 全部标签名（原实现只留 tags[0]，多标签信息丢失） */
   tags: string[]
-  /** 由 slug 派生，与列表页同规则；解析不出时落「其他」 */
+  /** 生效领域（显式领域优先，否则由 slug 派生；都解析不出落「其他」） */
   domain: string
+  /** manual = 人工/审核指定；path = 目录派生；fallback = 两者皆无 */
+  domainFrom: 'manual' | 'path' | 'fallback'
   /** vault 内相对目录路径，供树布局与详情栏路径行使用 */
   dirPath: string
   /** 显式链接入度 */
@@ -60,7 +63,7 @@ export default defineEventHandler(async () => {
     where: { isPublished: true },
     select: {
       id: true, title: true, slug: true, maturity: true,
-      summary: true, readingTime: true, updatedAt: true,
+      summary: true, readingTime: true, updatedAt: true, domainLevel1: true,
       tags: { include: { tag: true } }
     }
   })
@@ -108,7 +111,7 @@ export default defineEventHandler(async () => {
 
   const data: GraphData = {
     nodes: notes.map((n) => {
-      const meta = domainOfSlug(n.slug)
+      const d = resolveDomain(n.slug, n.domainLevel1)
       const tags = n.tags.map(t => t.tag?.name).filter((t): t is string => !!t).sort()
       return {
         id: n.id,
@@ -117,8 +120,9 @@ export default defineEventHandler(async () => {
         maturity: n.maturity,
         primaryTag: tags[0] ?? null,
         tags,
-        domain: normalizeDomain(meta.domain),
-        dirPath: meta.dirPath,
+        domain: d.domain,
+        domainFrom: d.from,
+        dirPath: d.dirPath,
         inDegree: inDeg.get(n.id) || 0,
         outDegree: outDeg.get(n.id) || 0,
         updatedAt: n.updatedAt.toISOString(),

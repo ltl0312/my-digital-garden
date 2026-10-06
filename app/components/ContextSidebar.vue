@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import {
   Filter, FolderTree, Grid2x2, Tags, X, Upload, FolderPlus,
-  FilePlus, Pencil, Files, ClipboardPaste, Trash2, Link2, SquareArrowOutUpRight
+  FilePlus, Pencil, Files, ClipboardPaste, Trash2, Link2, SquareArrowOutUpRight, Sparkles
 } from 'lucide-vue-next'
 import type { DomainFacet, TagGroup, GraphStats } from '~/composables/useFacets'
 import type { MenuItem } from './TreeContextMenu.vue'
 
 // ContextSidebar（spec ch.4/6）：头部（Vault 名 + 计数 + 过滤）· 分段面板（结构 / 领域 / 标签）
 // · 剪贴板提示条插槽 · 底部同步状态；宽度由 AppShell 持有并持久化。
-interface TreeNode { name: string; type: 'dir' | 'file'; slug?: string; maturity?: string; children?: TreeNode[] }
+interface TreeNode { name: string; type: 'dir' | 'file'; slug?: string; title?: string; maturity?: string; children?: TreeNode[] }
 
 const props = defineProps<{
   tree: TreeNode[]
@@ -66,6 +66,13 @@ const filteredTree = computed(() => {
 const { actorRole } = useRoles()
 const toast = useToast()
 const { confirm } = useConfirm()
+// 结构树右键的「标签 · 领域自动分配」也走统一入口（分片提交 + 生成后打开审核面板并只看这几篇）
+const { reviewForSlugs, collectSlugsInDir } = useSuggestionReview()
+// 重命名收尾要用到：notesRev 触发列表页重取（列表页数据不是 useAsyncData 托管的）、
+// editorOpen 用于判断「正在编辑」时不要跳走（草稿只在组件内存里，跳走就丢）
+const route = useRoute()
+const { notesRev } = useNoteActions()
+const editorOpen = useState<boolean>('shell-editor-open', () => false)
 const requestFetch = useRequestFetch()
 
 /** 结构目录：vault 根 + KnowledgeBase 本身 + KnowledgeBase/NN_* 一层，任何人（含 root）禁改禁删。
@@ -89,8 +96,11 @@ const menu = ref<{ open: boolean; x: number; y: number; target: any | null; mode
   open: false, x: 0, y: 0, target: null, mode: 'mouse'
 })
 const renameOpen = ref(false)
-// 重命名目标（对话框需要 isDir / 同级节点做重名校验）
+// 重命名目标（对话框需要 isDir / 同级节点做重名校验，以及原题名用于确认文案）
 const renameTarget = ref<any | null>(null)
+// 重命名前拉取的题名：tree 节点只有 name/slug 没有 title，而「是否弹标题确认」要在提交前
+// 就把新题名讲清楚，所以打开对话框时先取一次当前题名（失败就退回文件名）
+const renameTitle = ref<string>('')
 const renameSiblings = computed(() => findSiblings(props.tree, renameTarget.value?.path || ''))
 function findSiblings(nodes: TreeNode[], path: string, base = ''): TreeNode[] {
   for (const n of nodes) {
@@ -105,7 +115,7 @@ function findSiblings(nodes: TreeNode[], path: string, base = ''): TreeNode[] {
 }
 
 const openMenu = (
-  p: { name: string; path: string; type: 'dir' | 'file'; slug?: string; x: number; y: number; children?: any[] },
+  p: { name: string; path: string; type: 'dir' | 'file'; slug?: string; title?: string; x: number; y: number; children?: any[] },
   mode: 'mouse' | 'touch' = 'mouse'
 ) => {
   menu.value = { open: true, x: p.x, y: p.y, target: p, mode }
@@ -152,6 +162,17 @@ const menuItems = computed<MenuItem[]>(() => {
       disabled: !canWrite || !clip, hint: clip ? '' : '剪贴板为空，请先复制一个文件或文件夹'
     })
   }
+  // 标签 · 领域自动分配：文件 = 只判这一篇；文件夹 = 判该目录下全部笔记。
+  // 放在内容操作之后、破坏性操作之前（divider 由下面的 delete 提供，这里不再加，避免两条分隔线相邻）。
+  items.push({
+    key: 'suggest',
+    label: '标签 · 领域自动分配',
+    icon: Sparkles,
+    disabled: !canWrite,
+    hint: canWrite
+      ? (isDir ? '对该文件夹下全部笔记生成标签/领域建议（待审）' : '对这一篇生成标签/领域建议（待审）')
+      : '仅管理员可执行'
+  })
   items.push({
     key: 'delete', label: '删除', icon: Trash2, danger: true, divider: true,
     disabled: !canWrite || structural || (isDir && !dirEmpty && !isRootUser),
@@ -166,6 +187,29 @@ const menuItems = computed<MenuItem[]>(() => {
 const closeMenu = () => { menu.value = { ...menu.value, open: false } }
 
 const refreshTree = async () => { await refreshNuxtData('vault-tree') }
+
+// 重命名收尾（对话框只负责提交，跳转与刷新在这里决定）：
+// · 结构树与「最近更新」重新取数；列表页的数据不是 useAsyncData 托管的，靠 notesRev 自增重取；
+// · 若改的正是用户当前打开的那篇笔记，必须跟着跳到新 slug —— 旧地址此刻已经不存在，
+//   停在上面会让后续保存/加载全部 404（客户端路由会被 createError 中止，页面卡在半渲染状态）。
+// · 例外：编辑器开着时不跳。草稿只存在组件内存里，跳走就丢了 —— 让人自己重新打开更安全。
+const onRenamed = async (result: { newPath: string; isDir: boolean; wasOpen: boolean }) => {
+  await refreshTree()
+  await refreshNuxtData(['notes-recent', 'graph-data', 'sidebar-graph'])
+  notesRev.value++
+  if (!result.wasOpen) return
+  if (editorOpen.value) {
+    toast.warn('这篇笔记正在编辑中：重命名后请从目录重新打开（旧地址已失效）')
+    return
+  }
+  // 文件夹改名时，用户打开的是它里面的某篇笔记 —— 路径前缀换了、文件名没换
+  const openedName = renameTarget.value?.name || ''
+  const target = result.isDir ? (openedName ? `${result.newPath}/${openedName}` : '') : result.newPath
+  if (!target) return
+  const next = `/notes/${target.split('/').map(encodeURIComponent).join('/')}`
+  if (decodeURIComponent(route.path) === next) return
+  await navigateTo(next)
+}
 
 const onMenuSelect = async (key: string) => {
   const t = menu.value.target
@@ -183,10 +227,21 @@ const onMenuSelect = async (key: string) => {
       case 'new-folder':
         emit('new-folder', t.path)
         break
-      case 'rename':
+      case 'rename': {
         renameTarget.value = t
+        // tree 节点带着题名（server/api/vault/tree.get.ts 从 DB 补的），有就直接用：
+        // 没有了才退成一次详情请求，省掉打开对话框时的一次往返。
+        renameTitle.value = t.title || ''
         renameOpen.value = true
+        if (!t.title && t.type !== 'dir') {
+          try {
+            const slug = (t.slug || t.path || '').split('/').map(encodeURIComponent).join('/')
+            const d = await requestFetch<{ note?: { title?: string } }>(`/api/notes/${slug}`)
+            renameTitle.value = d?.note?.title || ''
+          } catch { /* 预取失败只是少了确认文案，不影响重命名本身 */ }
+        }
         break
+      }
       case 'copy':
         clipboard.value = { path: t.path, name: t.name, isDir: t.type === 'dir' }
         toast.success(`已复制「${t.name}」，到目标文件夹右键粘贴`)
@@ -215,6 +270,16 @@ const onMenuSelect = async (key: string) => {
         toast.success(`已删除「${t.name}」`)
         break
       }
+      case 'suggest': {
+        // 文件 → 只判这一篇；文件夹 → 判该目录下全部笔记（分页收集 slug）
+        const slugs = t.type === 'dir' ? await collectSlugsInDir(t.path) : [(t.slug || t.path)]
+        if (!slugs.length) {
+          toast.warn(t.type === 'dir' ? '该文件夹下没有笔记' : '这篇笔记没有可判定的路径')
+          break
+        }
+        await reviewForSlugs(slugs)
+        break
+      }
       case 'copy-path':
         await navigator.clipboard.writeText(t.type === 'dir' ? t.path : (t.slug || t.path))
         toast.success('路径已复制到剪贴板')
@@ -225,7 +290,7 @@ const onMenuSelect = async (key: string) => {
   }
 }
 
-// 重命名对话框的提交结果由 RenameDialog 内部负责 toast 与树刷新
+// 重命名完成后的收尾就在上面的 onRenamed（对话框只负责提交，跳转与刷新在这里决定）。
 </script>
 
 <template>
@@ -336,7 +401,9 @@ const onMenuSelect = async (key: string) => {
       v-model:open="renameOpen"
       :path="renameTarget?.path || ''"
       :is-dir="renameTarget?.type === 'dir'"
+      :old-title="renameTitle"
       :siblings="renameSiblings"
+      @renamed="onRenamed"
     />
 
     <!-- 底部同步状态 -->

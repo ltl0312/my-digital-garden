@@ -383,7 +383,8 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
       // 否则每次重启所有笔记时间都被重置为当天。仅内容真实变化才更新时间戳。
       const existing = await tx.note.findUnique({
         where: { slug },
-        select: { content: true, htmlContent: true }
+        // domainLevel1 / domainSource 一并取出：写入时要原样带回（见下方 update 注释）
+        select: { content: true, htmlContent: true, domainLevel1: true, domainSource: true }
       })
       const contentChanged = !existing || existing.content !== rawMarkdown || existing.htmlContent !== htmlContent
 
@@ -398,6 +399,13 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
           maturity,
           isPublished,
           metadata: metaWithRv,
+          // 显式领域保护：domainLevel1 / domainSource 由「人工或审核通过」写入，
+          // vault 里没有对应的 frontmatter 字段，watcher 无法重新推导出来。
+          // 若这里不带上原值，用户改一次正文就会把手工指定的领域静默清空。
+          // 注意只在取到旧值时写入（existing 为 null 即首次入库），避免给 update 塞 undefined。
+          ...(existing
+            ? { domainLevel1: existing.domainLevel1, domainSource: existing.domainSource }
+            : {}),
           ...(contentChanged ? { updatedAt: new Date() } : {})
         },
         create: {

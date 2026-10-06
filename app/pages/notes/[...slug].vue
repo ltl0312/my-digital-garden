@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { Pencil, MoreHorizontal, Link2, FolderTree, FileText, Trash2, Save, X, Info, Tags as TagsIcon, ListTree } from 'lucide-vue-next'
+import { Pencil, MoreHorizontal, Link2, FolderTree, FileText, Trash2, Save, X, Info, Tags as TagsIcon, ListTree, Sparkles } from 'lucide-vue-next'
 
 const route = useRoute()
 const { canManage } = useRoles()
 const toast = useToast()
 const { confirm } = useConfirm()
+// 「标签 · 领域自动分配」：统一入口（分片提交 + 生成后打开审核面板并只看这一篇）
+const { reviewForSlugs } = useSuggestionReview()
 
 // 「在结构树中定位」所需的跨组件状态（spec 5.4）
 const sidebarOpen = useState<boolean>('shell-sidebar-open', () => true)
@@ -145,6 +147,13 @@ const menuItems = computed(() => [
   { key: 'copy-path', label: '复制文件路径', icon: FileText },
   { key: 'reveal', label: '在结构树中定位', icon: FolderTree },
   { key: 'meta', label: '标签与成熟度', icon: TagsIcon },
+  {
+    key: 'suggest',
+    label: '标签 · 领域自动分配',
+    icon: Sparkles,
+    disabled: !canManage.value,
+    reason: canManage.value ? '' : '仅管理员'
+  },
   { key: '__sep', label: '' },
   {
     key: 'delete',
@@ -244,6 +253,9 @@ const onMenuSelect = async (key: string) => {
     toast.success('已在结构树中定位')
   } else if (key === 'meta') {
     openMeta()
+  } else if (key === 'suggest') {
+    // 对这一篇重新判定标签与领域 → 生成待审 → 打开审核面板并只看这一篇
+    await reviewForSlugs([slug.value])
   } else if (key === 'delete') {
     await removeNote()
   }

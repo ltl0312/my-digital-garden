@@ -4,6 +4,7 @@ import { defineNitroPlugin } from '#imports'
 import { processMarkdownFile, removeMarkdownFile } from '../utils/markdown'
 import { recomputeAllMaturity } from '../utils/maturity-sync'
 import { isRecentlyIngested } from '../utils/import-job'
+import { autoSuggestRecent } from '../utils/suggest'
 
 export default defineNitroPlugin((nitroApp) => {
   // PM2 cluster 多实例下仅主实例（NODE_APP_INSTANCE=0）启动 watcher：
@@ -23,6 +24,20 @@ export default defineNitroPlugin((nitroApp) => {
   const enqueue = (fn: () => Promise<void>) => {
     queue = queue.then(fn).catch((e) => console.error('[garden] watcher: 队列任务失败', e))
     return queue
+  }
+
+  // 新增/修改笔记后的「标签·领域建议」自动排队。
+  // 节流 10 秒：autoSuggestRecent 内部是一次 DB 查询，批量事件下没必要每篇都扫一遍
+  // （它的判据是「最近 2 分钟内入库」的时间窗，一次扫描天然覆盖同批文件）。
+  let suggestScanAt = 0
+  const scheduleSuggestScan = () => {
+    if (Date.now() - suggestScanAt < 10_000) return
+    suggestScanAt = Date.now()
+    try {
+      void autoSuggestRecent()
+    } catch (e) {
+      console.error('[garden] watcher: 自动建议排队失败', e)
+    }
   }
 
   const watcher = chokidar.watch(vaultPath, {
@@ -49,6 +64,7 @@ export default defineNitroPlugin((nitroApp) => {
           const changed = await processMarkdownFile(filePath)
           if (changed) console.log(`[garden] watcher: 已写入笔记 ${filePath}`)
         })
+        scheduleSuggestScan()
       }
     })
     .on('change', async (filePath) => {
@@ -59,6 +75,7 @@ export default defineNitroPlugin((nitroApp) => {
           // 内容未变（仅时间戳被触碰 / 编辑器重写）时不刷日志，避免批量事件刷屏
           if (changed) console.log(`[garden] watcher: 已更新笔记 ${filePath}`)
         })
+        scheduleSuggestScan()
       }
     })
     .on('unlink', async (filePath) => {

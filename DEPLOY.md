@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-10-04。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-10-05（v1.9.1 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,13 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v1.8.0` | `a75d6e46d80f` | 图谱：修复 Canvas 分级（>150 节点）下**连线完全不绘制**、邻域聚焦失灵；连线配色加深（**当前**） |
+| `latest` / `v1.9.5` | `1739fc106190` | 修右侧目录（TocRail）**不跟随正文滚动**：IntersectionObserver 正常，但目录列表自身从不滚动（活动项在 437px 视口下方 1668px）→ 改为按 `activeIdx` 调整 `ul.scrollTop`；新增只读回归套件 `acceptance:toc`（**当前**） |
+| `v1.9.4` | `0e4da9da02fd` | 修「测试连接」假阳性：`/models` 返回 2xx 但**不校验响应体形状**时会把「地址指错」误报成「连接成功」（用户把 baseUrl 填成本站自身时正是如此）；改为要求 `data` 数组 / chat 响应含 `choices` |
+| `v1.9.3` | `8f75f6f750c3` | **建议质量修复**（生产 200 条建议被用户全部驳回）：候选必须有正文/标题证据（同目录共用只加分、不再单独入选）、链接目标不再算内容（`[[MOC]]` 不推 `type/MOC`）、**中文末段标签必须同时命中命名空间**（`Java/安全` 不再因正文出现「安全」而命中） |
+| `v1.9.2` | —（未记录服务器镜像 ID） | AI 开关**点击即保存**（此前翻开关不点保存、刷新即回原值）+ 状态文案区分未保存/缺密钥/缺模型；多选器确认后**先关弹窗再判定**（避免 60s 反代超时导致弹窗卡住并挡住审核面板）；结构树右键（目录与文件）与详情页「更多操作」增「标签 · 领域自动分配」 |
+| `v1.9.1` | `79791c95c01c` | **笔记多选器**：可搜索/按领域与标签筛选/只看还没判定的/跨页多选，指定任意笔记做标签·领域判定；`/api/notes` 增 `hasPending`（仅管理员）与 `pending`/`domain` 筛选；修 `/admin` 模板编译错误与审核面板未按 `onlyIds` 收敛 |
+| `v1.9.0` | `4e59e5013e23` | 标签 · 领域自动分配与人工审核（`Suggestion` 待审表 + `Note.domainLevel1` 显式领域）+ 「AI 增强设置」（`AppSetting`，API 密钥加密落库、界面可开关）；新增迁移 `20261020000000_tag_domain_suggestions` / `20261021000000_app_settings` |
+| `v1.8.0` | `a75d6e46d80f` | 图谱：修复 Canvas 分级（>150 节点）下**连线完全不绘制**、邻域聚焦失灵；连线配色加深 |
 | `v1.7.0` | `72f0b4acbd8a` | 图谱：颜色选择器改为**调色盘**（饱和度/明度方阵 + 色相条 + 透明度条） |
 | `v1.6.0` | `886e72ddc5a4` | 图谱：自定义颜色支持任意色与透明度（`ColorPicker.vue`，hex/rgb/hsl/rgba 全放行） |
 | `v1.5.0` | `45d7d52720d4` | 图谱：拖拽与布局持久化修复、固定只由右键触发、上色改成可排序的颜色规则系统 |
@@ -58,6 +64,16 @@ https://liutianle.cn
 > **v1.7.0 无 schema 变更**（只重写前端 `ColorPicker.vue` 并给 `shared/graph-colors.ts` 补 `rgbToHsv`/`hsvToRgb`），启动日志同样 `No pending migrations to apply.`。颜色值的**存储格式与 v1.6.0 完全一致**（`formatColor()` 没动：不透明写 `#RRGGBB`、半透明写 `rgba(r, g, b, a)`），所以 v1.6.0 ⇄ v1.7.0 双向回滚都不会丢任何用户配色或规则。
 
 > **v1.8.0 无 schema 变更**（只改前端 `GraphView.vue` 的端点归一化 + 连线配色/线宽常量 + 验收脚本），启动日志同样 `No pending migrations to apply.`，双向回滚不丢数据。注意这是**纯前端 bug 修复**：回滚到 v1.7.0 会连带把「大图连线看不见」的问题带回来（SVG 分级的小图不受影响）。
+
+> **v1.9.0 有 schema 变更（两个纯新增迁移）**：`20261020000000_tag_domain_suggestions`（新增 `Suggestion` 待审表 + `Note.domainLevel1` / `Note.domainSource` 两列 + `pending` 部分唯一索引）与 `20261021000000_app_settings`（新增 `AppSetting` 键值表）。首次启动日志会打印 `Applying migration ...` 两行，之后 `All migrations have been successfully applied.`。
+> **回滚到 v1.8.0**：两张表与新列**保留但旧代码不读**，无需手动 drop，双向升级/降级都不丢用户数据。若确要清干净，降级 SQL 为
+> `DROP TABLE "Suggestion"; DROP TABLE "AppSetting"; ALTER TABLE "Note" DROP COLUMN "domainLevel1", DROP COLUMN "domainSource";`
+> —— 但通常**不必执行**：留着无害，重新升到 v1.9.0 时还能保住已审记录与已配好的 AI 设置。
+>
+> ⚠️ **AUTH_SECRET 轮换的连带影响（v1.9.0 起）**：AI 增强的 API 密钥以 AES-256-GCM 加密存在 `AppSetting` 里，加密密钥由 `AUTH_SECRET` 派生。轮换 `AUTH_SECRET` 会让**已存的 API 密钥解不开**（设置界面会提示「已存的密钥无法解密，请重新填写」，不会静默失效），同时所有登录 cookie 失效。轮换后重新在「管理后台 → AI 增强设置」里填一次密钥即可。
+
+> **v1.9.1 无 schema 变更**（多选器只加了 `/api/notes` 的查询参数与响应字段 `hasPending`，以及前端组件），启动日志为 `No pending migrations to apply.`，与 v1.9.0 双向回滚都不丢数据。
+> 两点值得记下的教训：①把组件插进 `v-if` 的 `</template>` 与 `v-else` 之间会让 Vue 编译期报「v-else/v-else-if has no adjacent v-if or v-else-if」→ **`/admin` 整页 500，而 `nuxt typecheck` 照样通过**；②审核面板的 `onlyIds` 忘了从布局传下去，导致「对指定笔记重新判定」后面板展示全库待审。两者都只有**真正加载页面**才能发现，所以 `acceptance:picker` 的 U0/U14 就是钉住这两条的断言。
 
 ---
 
@@ -159,6 +175,24 @@ Listening on http://[::]:3000
 
 `entrypoint.sh` 的流程是：`npx prisma migrate deploy`（最多 10 次、每次 sleep 5）→ `exec node scripts/start-prod.mjs`。
 
+### 4.1 用脚本一次做完 §3–§4（推荐）
+
+仓库里的 `scripts/deploy/deploy-image.sh` 把「备份编排与 .env → 记回滚点 → load → 重建 → 轮询就绪 → 打印状态与资源」串成一步，版本无关、可重复执行：
+
+```bash
+# 本地：导出并上传（注意是**裸 tar**，不要 tar 套 tar，见 §2）
+docker save -o garden-image-v1.9.1.tar my-digital-garden-app:v1.9.1 my-digital-garden-app:latest
+scp -i ~/.ssh/garden.pem garden-image-v1.9.1.tar root@8.163.35.246:/opt/garden-image-v1.9.1.tar
+scp -i ~/.ssh/garden.pem scripts/deploy/deploy-image.sh root@8.163.35.246:/opt/deploy-image.sh
+
+# 服务器
+ssh -i ~/.ssh/garden.pem root@8.163.35.246
+sha256sum /opt/garden-image-v1.9.1.tar          # 与本地 Get-FileHash 比对
+bash /opt/deploy-image.sh v1.9.1
+```
+
+> ⚠️ `deploy-image.sh` 里带 `set -e`：任一步失败即中止（不会留下半完成的容器状态）。回滚见 §6。
+
 ---
 
 ## 5. 部署后验证
@@ -195,6 +229,7 @@ docker exec garden-app sh -c "grep -rl graph-minimap /app/.output/public/_nuxt/"
 ```bash
 # Windows PowerShell
 $env:GARDEN_BASE='https://liutianle.cn'
+pnpm acceptance:prod      # 只读部署校验 16 项：新端点存在 + 字段形状 + 权限仍生效（**全程只发 GET**）
 pnpm acceptance:graph     # 图谱重构 120 项，配色部分会自动快照并还原
 pnpm acceptance:shell     # 外壳 47 项，只开对话框不提交
 pnpm acceptance:ui        # UI 51 项，只开对话框不提交
@@ -209,7 +244,10 @@ pnpm acceptance:ui        # UI 51 项，只开对话框不提交
 > `goto('/graph')` 会让客户端把播种出来的 10 条默认规则回推服务端，在应用页面上还原等于白做。
 > G110 / G111 就是这套安全网的自检（G111 在全部跳转之后再回读一次）。
 
-> 🚫 **`pnpm acceptance:api`（`e4-regression.mjs`）绝不能对生产跑**：它会 POST `/api/admin/keys`、POST `/api/vault/folders`、POST `/api/vault/notes`、PUT `/api/vault/rename`、POST `/api/vault/copy`，并 DELETE `/api/vault/nodes`（含 `KnowledgeBase/03_Knowledge`）——**会真实改动生产数据**。
+> 🚫 **`pnpm acceptance:api`（`e4-regression.mjs`）与 `pnpm acceptance:suggest`（`suggest-verify.mjs`）绝不能对生产跑**：
+> 前者会 POST `/api/admin/keys`、POST `/api/vault/folders`、POST `/api/vault/notes`、PUT `/api/vault/rename`、POST `/api/vault/copy`，并 DELETE `/api/vault/nodes`（含 `KnowledgeBase/03_Knowledge`）；
+> 后者同样会建/删临时密钥与测试笔记，还会**改写笔记的 frontmatter**（标签写回）并临时建/删知识区领域目录 —— **都会真实改动生产数据**。
+> 生产上线后要断言新功能，用 `pnpm acceptance:prod`（只读）。
 
 ---
 

@@ -22,6 +22,11 @@ const domainOf = (slug: string) => domainOfSlug(slug).domain
 // 正文若以「与标题同名」的 H1/H2 开头（Obsidian 等导出的笔记很常见，标题取自 frontmatter
 // 而正文首行又写了一遍），会与上方文章头标题重复显示成两个一样的标题。
 // v-html 直接注入 HTML，这里在渲染后把首部那个重复标题移除（内容不变，仅去掉视觉重复）。
+//
+// ⚠️ 只有当它**确实是重复**时才移除：若正文除这个标题外再无内容，移除就会把整篇笔记
+// 渲染成空白 —— 新建笔记的模板正文恰好只有 `# <title>`（server/utils/vault.ts 的
+// noteTemplate），实测新建后正文区全空，用户看到的是「一篇什么都没有的笔记」。
+// 判据用去掉 H1 后的实际内容，而不是元素个数：`# 标题` + 空段落同样属于「只有标题」。
 const articleEl = ref<HTMLElement | null>(null)
 
 const dedupeLeadingTitle = () => {
@@ -29,7 +34,11 @@ const dedupeLeadingTitle = () => {
   const title = String(props.note?.title || '').trim()
   if (!el || !title) return
   const first = Array.from(el.children).find(c => /^H[12]$/.test(c.tagName) && (c.textContent || '').trim())
-  if (first && (first.textContent || '').trim() === title) first.remove()
+  if (!first || (first.textContent || '').trim() !== title) return
+  const rest = Array.from(el.children).filter(c => c !== first)
+  const hasRest = rest.some(c => (c.textContent || '').trim() || c.querySelector('img, video, audio, iframe, pre, table'))
+  if (!hasRest) return
+  first.remove()
 }
 
 onMounted(() => nextTick(dedupeLeadingTitle))

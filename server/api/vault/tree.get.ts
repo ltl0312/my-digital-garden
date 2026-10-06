@@ -9,11 +9,15 @@ interface TreeNode {
   name: string
   type: 'dir' | 'file'
   slug?: string
+  /** 笔记题名（frontmatter.title 或文件名派生）。文件系统上没有这个东西，所以由 DB 补齐：
+   *  仅凭 name 无法判断「重命名是只改文件名还是连题名一起改」，重命名对话框要据此决定
+   *  是否先弹一次确认（见 server/api/vault/rename.put.ts 的口径说明）。 */
+  title?: string
   maturity?: string
   children?: TreeNode[]
 }
 
-async function buildTree(dir: string, rel: string, maturityMap: Map<string, string>): Promise<TreeNode[]> {
+async function buildTree(dir: string, rel: string, metaMap: Map<string, { title: string; maturity: string }>): Promise<TreeNode[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true })
   entries.sort((a, b) => {
     if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1
@@ -30,10 +34,17 @@ async function buildTree(dir: string, rel: string, maturityMap: Map<string, stri
       isDir = await fs.stat(full).then(s => s.isDirectory()).catch(() => false)
     }
     if (isDir) {
-      nodes.push({ name: e.name, type: 'dir', children: await buildTree(full, path.join(rel, e.name), maturityMap) })
+      nodes.push({ name: e.name, type: 'dir', children: await buildTree(full, path.join(rel, e.name), metaMap) })
     } else if (e.name.endsWith('.md')) {
       const slug = path.join(rel, e.name).replace(/\\/g, '/').replace(/\.md$/, '')
-      nodes.push({ name: e.name.replace(/\.md$/, ''), type: 'file', slug, maturity: maturityMap.get(slug) })
+      const meta = metaMap.get(slug)
+      nodes.push({
+        name: e.name.replace(/\.md$/, ''),
+        type: 'file',
+        slug,
+        title: meta?.title,
+        maturity: meta?.maturity
+      })
     }
   }
   return nodes
@@ -46,10 +57,10 @@ export default defineEventHandler(async () => {
   const cached = treeCache.get()
   if (cached) return { tree: cached }
 
-  // 一次查询全部笔记的 slug → maturity 映射（避免每文件一次查询）
-  const notes = await prisma.note.findMany({ select: { slug: true, maturity: true } })
-  const maturityMap = new Map(notes.map(n => [n.slug, n.maturity]))
-  const tree = await buildTree(VAULT_DIR, '', maturityMap)
+  // 一次查询全部笔记的 slug → 题名/maturity 映射（避免每文件一次查询）
+  const notes = await prisma.note.findMany({ select: { slug: true, title: true, maturity: true } })
+  const metaMap = new Map(notes.map(n => [n.slug, { title: n.title, maturity: n.maturity }]))
+  const tree = await buildTree(VAULT_DIR, '', metaMap)
   treeCache.set(tree)
   return { tree }
 })

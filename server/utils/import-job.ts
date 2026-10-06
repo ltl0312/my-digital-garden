@@ -80,13 +80,27 @@ export async function rollbackImportJob(job: ImportJob): Promise<void> {
   jobs.delete(job.id)
 }
 
-/** 标记本批文件已入库：watcher 的 add/change 事件命中后直接跳过 */
+/**
+ * 标记本批文件已入库：watcher 的 add/change 事件命中后直接跳过。
+ * 只用于「批量导入」这类我们自己刚写完、事件必然紧随其后的场景。
+ */
 export function markIngested(paths: string[]): void {
   const now = Date.now()
   for (const p of paths) recentlyIngested.set(p.replace(/\\/g, '/'), now)
 }
 
+/**
+ * 命中即「消费」：标记的语义是「我们自己刚写完这个文件，它紧随其后的那一次事件不必再解析」，
+ * 而不是「这个路径在 60 秒内一律无视」。
+ *
+ * 早先的实现只 `has()` 不 `delete()`，于是标记会持续抑制该路径的**所有**事件到 TTL 到期为止；
+ * 而 watcher 命中即 `return`、不重排不补发，用户在窗口内的真实编辑就被永久丢弃
+ * （表现为「新建笔记后立刻编辑保存，正文没生效」）。TTL 只作为「事件始终没来」时的兜底回收。
+ */
 export function isRecentlyIngested(filePath: string): boolean {
   sweep()
-  return recentlyIngested.has(filePath.replace(/\\/g, '/'))
+  const key = filePath.replace(/\\/g, '/')
+  const hit = recentlyIngested.has(key)
+  if (hit) recentlyIngested.delete(key)
+  return hit
 }

@@ -27,9 +27,34 @@ const toc = computed<{ title: string; level: number }[]>(() => {
 
 const activeIdx = ref(-1)
 const progress = ref(0)
+/** 目录列表容器（用于让活动项跟随滚动） */
+const listEl = ref<HTMLElement | null>(null)
 
 let io: IntersectionObserver | null = null
 let scroller: HTMLElement | null = null
+
+/**
+ * 活动项跟随：**目录列表自身也要滚动**。
+ *
+ * 实测（87 个标题的笔记，正文滚到 60%）：高亮确实从 -1 变到 47、进度环也到 60%，
+ * 但列表的 `scrollTop` 恒为 0，活动项已在 437px 高的列表视口**下方 1668px** ——
+ * 于是列表可见部分永远不变，用户看到的就是「正文在滚，右边目录不跟着动」。
+ *
+ * 刻意**不用 `scrollIntoView`**：它会连带滚动所有可滚祖先，正文会被一起带走（页面跳动）。
+ * 这里只按差值改 `ul.scrollTop`，影响面严格限制在列表内部。
+ * 已经完整可见时直接返回，避免连续滚动时列表来回抖动。
+ */
+watch(activeIdx, async (i) => {
+  if (i < 0) return
+  await nextTick()
+  const ul = listEl.value
+  const btn = ul?.querySelectorAll('button')[i] as HTMLElement | undefined
+  if (!ul || !btn) return
+  const ub = ul.getBoundingClientRect()
+  const bb = btn.getBoundingClientRect()
+  if (bb.top >= ub.top && bb.bottom <= ub.bottom) return
+  ul.scrollTop += bb.top < ub.top ? bb.top - ub.top : bb.bottom - ub.bottom
+})
 
 const bind = () => {
   const root = document.querySelector('[data-scroll-root]') as HTMLElement | null
@@ -115,7 +140,7 @@ const dash = computed(() => `${(progress.value / 100) * C} ${C}`)
       <p class="text-[12px] font-semibold text-ink-3 mb-2 flex items-center gap-1.5">
         <ListTree class="w-3.5 h-3.5" />目录
       </p>
-      <ul class="space-y-0.5 max-h-[46vh] overflow-y-auto">
+      <ul ref="listEl" class="space-y-0.5 max-h-[46vh] overflow-y-auto">
         <li v-for="(it, i) in toc" :key="i">
           <button
             class="w-full text-left py-1 leading-snug rounded-ctl transition-colors duration-micro border-l-2"

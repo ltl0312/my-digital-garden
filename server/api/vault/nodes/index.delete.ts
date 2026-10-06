@@ -4,6 +4,7 @@ import { resolveVaultPath, normalizeVaultRel, isStructuralPath, isDirEffectively
 import { requireAdmin } from '../../../utils/auth'
 import { prisma } from '../../../utils/db'
 import { invalidateGardenCache } from '../../../utils/cache'
+import { removeMarkdownFile } from '../../../utils/markdown'
 
 // C4 删除节点（spec 8.8/8.9）：文件直接删；文件夹按破坏面分档——
 // 空文件夹 admin 可删，非空文件夹仅 root（二次确认由前端承担，篇数在此返回）；
@@ -60,10 +61,14 @@ export default defineEventHandler(async (event) => {
     if (!empty && actor.role !== 'root') {
       throw createError({ statusCode: 403, message: '越权操作：非空文件夹仅初始管理员可删除' })
     }
-    const noteCount = await prisma.note.count({
-      where: { OR: [{ slug: rel }, { slug: { startsWith: `${rel}/` } }] }
-    })
+    const subtreeWhere = { OR: [{ slug: rel }, { slug: { startsWith: `${rel}/` } }] }
+    const noteCount = await prisma.note.count({ where: subtreeWhere })
     await rmWithRetry(full, true)
+    // 主动清子孙笔记的 DB 行，而不是等 watcher 逐个 unlink：后者是串行队列，
+    // 目录越大越慢（几百篇要排队很久），且任何一个 unlink 事件漏掉都会留下孤儿行
+    // （chokidar 的 awaitWriteFinish 让「刚写入就被删掉」的文件根本不产生 unlink）。
+    // watcher 稍后真到达的 unlink 走 removeMarkdownFile → delete().catch() → 幂等。
+    await prisma.note.deleteMany({ where: subtreeWhere })
     // 目录分支也必须失效缓存：此前只有文件分支调用了 invalidateGardenCache()，
     // 导致删完文件夹后前端 refresh 拿到 10s 内的旧树 —— 侧栏里目录还在，用户会以为删除失败。
     invalidateGardenCache()
@@ -71,6 +76,8 @@ export default defineEventHandler(async (event) => {
   }
 
   await rmWithRetry(fileFull, false)
+  // 同 notes/[...slug].delete.ts：删文件后主动清行，不依赖 watcher 的 unlink（见那边的注释）
+  await removeMarkdownFile(fileFull)
   // 写操作后立即失效 tree/graph 缓存，避免前端刷新拿到 10s 内的旧树
   invalidateGardenCache()
   return { ok: true, type: 'file', slug: fileRel.replace(/\.md$/i, '') }
