@@ -316,5 +316,5 @@ until [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:
 
 - `/opt/digital-garden`：PM2 时代源码与 `.output`。**其 `content/vault` 仍被当前容器 bind mount**，不可删除。
 - `/root/.pm2/dump.pm2`：历史 dump（PM2 当前未运行，探针里的 `pm2 list` 会意外拉起 God Daemon，用完请 `pm2 kill`）。
-- `ecosystem.config.cjs`、`docker-compose.yml`（postgres + syncthing 基础编排）、`docker-compose.local.yml`（本机演示）仍在仓库中，但**线上均未使用**。
+- `ecosystem.config.cjs`、`docker-compose.yml`（postgres + syncthing 基础编排）、`docker-compose.local.yml`（本机演示）、`nginx.conf`（服务器实际配置的副本）**已于 2026-10-06 从仓库移除**（线上均未使用；需要查阅时用 `git show <删除前的提交>:<路径>` 从历史取回）。
 - `/opt/garden-src`：2026-09-24 在服务器上用 `docker build` 产出 v1.0.0 的源码树，现已弃用（服务器内存不足以再构建）。

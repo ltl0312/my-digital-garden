@@ -1,7 +1,7 @@
 # 拾光 · Digital Garden — REST API 文档
 
 > 本文档基于 `server/api/` 源码整理，描述「拾光」数字花园的全部 HTTP 接口。
-> 配套文档：[README.md](./README.md) ｜ [PROJECT_NOTES.md](./PROJECT_NOTES.md)
+> 配套文档：[README.md](../README.md) ｜ [PROJECT_NOTES.md](./PROJECT_NOTES.md)
 
 ---
 

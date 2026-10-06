@@ -5,7 +5,7 @@
  *   node --experimental-strip-types scripts/verify-maturity.ts
  *
  * 前置：先用 audit 工具导出基准
- *   python design-preview/tools/maturity-audit.py --json design-preview/tools/maturity-baseline.json
+ *   python scripts/maturity/maturity-audit.py --json scripts/maturity/maturity-baseline.json
  *
  * 通过标准：289 篇逐篇 maturity 值完全一致（reason 文案允许中英实现差异，不参与比对）。
  */
@@ -14,7 +14,7 @@ import path from 'node:path'
 import { classifyMaturity, computeInDegrees } from '../server/utils/maturity.ts'
 
 const ROOT = path.resolve(process.cwd(), 'content/vault')
-const BASELINE = path.resolve(process.cwd(), 'design-preview/tools/maturity-baseline.json')
+const BASELINE = path.resolve(process.cwd(), 'scripts/maturity/maturity-baseline.json')
 const TODAY = process.env.AUDIT_TODAY ? new Date(process.env.AUDIT_TODAY) : new Date()
 
 function walk(dir: string, out: string[] = []): string[] {

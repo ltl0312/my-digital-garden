@@ -1,7 +1,7 @@
 # 「拾光」数字花园 · 项目认知记录
 
 > 本文件由 AI 调研项目源码后整理，用于快速了解项目全貌，供开发者 / AI 代理后续协作时参考。
-> 整理日期：2026-08-08 ｜ 与本仓库内 `README.md`（项目主页）、`API.md`（接口参考）、`PROJECT-SUMMARY.md`（项目总结）、`PROJECT_PLAN.md`（实施计划书）、`DEPLOY.md`（部署手册）互为补充。
+> 整理日期：2026-08-08 ｜ 与本仓库内 `../README.md`（项目主页）、`API.md`（接口参考）、`PROJECT-SUMMARY.md`（项目总结）、`PROJECT_PLAN.md`（实施计划书）、`DEPLOY.md`（部署手册）互为补充（除项目主页外，这些文档现均在本 `docs/` 目录下）。
 
 ---
 
@@ -99,10 +99,9 @@ my-digital-garden/
 ├── nuxt.config.ts              # 字体预加载、FOUC 防护内联脚本、Tailwind/KaTeX CSS
 ├── tailwind.config.js
 ├── prisma.config.ts            # Prisma 7 配置（datasource url 等）
-├── ecosystem.config.cjs        # PM2 cluster 配置
-├── nginx.conf / Dockerfile / docker-compose*.yml / entrypoint.sh  # 部署文件（容器方案已弃用）
-├── ui.md                       # Lumina UI 设计稿（HTML 原型，改版时参照）
-└── PROJECT_PLAN.md / PROJECT-SUMMARY.md / DEPLOY.md / PROJECT_NOTES.md  # 项目文档
+├── Dockerfile / entrypoint.sh / docker-compose.prod.yml  # 部署文件（线上走 Docker 镜像路径）
+├── docs/                       # 项目文档：API.md / PROJECT-*.md / DEPLOY.md / BACKUP.md / SECURITY-ACTIONS.md / ui.md
+└── README.md                   # 项目主页（根目录唯一保留的文档）
 ```
 
 ---

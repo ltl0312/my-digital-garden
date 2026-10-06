@@ -41,15 +41,11 @@ prisma/generated
 # 成熟度自动回写前生成的本地备份（运行时产物）
 content/vault/.maturity-backup/
 
-# vault 内的本地工具与工作区目录（Obsidian 插件 / AI 会话 / 同步工具，不入库）
-# 注意：content/vault 是指向本地笔记根（E:\Vault）的 junction，vault 根级同样要排除
-# 同步工具自身与两个双击启动脚本，否则它们会被 git 跟踪/误入库
-content/vault/.sync/
-content/vault/*.bat
-content/vault/KnowledgeBase/.obsidian/
-content/vault/KnowledgeBase/.claudian/
-content/vault/KnowledgeBase/.sync/
-content/vault/KnowledgeBase/_sync/
+# vault 内容整体不入库：笔记是本地内容，不随代码仓库发布。
+# 注意：content/vault 是指向本地笔记根（E:\Vault）的 junction。
+# 历史上只跟踪了 KnowledgeBase，现已全部移出仓库（git rm -r --cached），
+# 这里整目录忽略，避免笔记再被误入库。
+content/vault/
 
 # 未展开环境变量被当成路径创建出来的字面量目录（如 %SystemDrive%/ProgramData/...）
 %SystemDrive%/

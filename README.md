@@ -27,13 +27,13 @@
 | 类别 | 技术 |
 |---|---|
 | 框架 | Nuxt 4（SSR 全栈）、Vue 3、Vue Router |
-| 样式 | Tailwind CSS v3、@tailwindcss/typography、Lumina 设计语言（见 `ui.md`） |
+| 样式 | Tailwind CSS v3、@tailwindcss/typography、Lumina 设计语言（见 `docs/ui.md`） |
 | 数据库 | PostgreSQL 15+、Prisma 7（`prisma-client` + `@prisma/adapter-pg`） |
 | Markdown 管道 | unified 11、remark-parse / remark-gfm / remark-math / remark-rehype、rehype-katex / rehype-shiki / rehype-stringify、gray-matter |
 | 文件监听 | chokidar |
 | 图谱 | d3 v7（力导向 SVG） |
 | 认证 | 自研 HMAC-SHA256 token + httpOnly Cookie |
-| 部署 | Nginx + PM2（cluster）× PostgreSQL（详见 `DEPLOY.md`） |
+| 部署 | Docker 容器（`network_mode: host`）+ Nginx + acme.sh × 宿主原生 PostgreSQL（详见 `docs/DEPLOY.md`） |
 
 ---
 
@@ -110,10 +110,12 @@ my-digital-garden/
 ├── nuxt.config.ts            # Nuxt 配置（主题 FOUC 防护、字体、CSS）
 ├── tailwind.config.js        # garden / obsidian 色板
 ├── prisma.config.ts          # Prisma 7 CLI 配置
-└── ecosystem.config.cjs      # PM2 生产进程配置
+├── Dockerfile / entrypoint.sh / docker-compose.prod.yml   # 生产镜像与编排
+├── docs/                     # 项目文档（API / 部署 / 总结 / 日志 / 设计稿 …）
+└── README.md                 # 根目录唯一保留的文档
 ```
 
-详细说明见 [`PROJECT_NOTES.md`](./PROJECT_NOTES.md)。
+详细说明见 [`docs/PROJECT_NOTES.md`](./docs/PROJECT_NOTES.md)。
 
 ---
 
@@ -146,7 +148,7 @@ Vue 3 SSR 渲染（阅读 / 图谱 / 编辑）
 - 服务端所有 `/api/*` 均需有效 token（白名单：`/api/auth/verify`、`/api/auth/me`、`/api/auth/logout`），管理员接口另有 `requireAdmin` 二次校验
 - 管理后台：`/admin`（仅 admin 可见）
 
-详见 [`API.md`](./API.md) 与 [`PROJECT_NOTES.md`](./PROJECT_NOTES.md)「认证体系要点」。
+详见 [`docs/API.md`](./docs/API.md) 与 [`docs/PROJECT_NOTES.md`](./docs/PROJECT_NOTES.md)「认证体系要点」。
 
 ---
 
@@ -166,9 +168,10 @@ pnpm start
 pnpm preview
 ```
 
-> ⚠️ **重要**：`.output` 依赖 pnpm 符号链接结构，**不可从 Windows 构建后拷贝到 Linux 运行**，生产构建必须在服务器（Linux）上执行。
+> ⚠️ **重要**：`.output` 依赖 pnpm 符号链接结构，**不可从 Windows 构建后拷贝到 Linux 运行**。
+> 线上采用的是「本地 `docker build` 出镜像 → `docker save` 传裸 tar → 服务器 `docker load`」的路径（服务器仅 1.6G 内存，跑不动 `pnpm build`），因此**搬运镜像安全，搬运裸 `.output` 不安全**。
 
-生产部署（Nginx + PM2 + PostgreSQL + HTTPS）完整步骤见 [`DEPLOY.md`](./DEPLOY.md)；线上实际架构与运维速查见 [`PROJECT-SUMMARY.md`](./PROJECT-SUMMARY.md)。
+生产部署（Docker 镜像 + Nginx + 宿主原生 PostgreSQL + HTTPS）完整步骤见 [`docs/DEPLOY.md`](./docs/DEPLOY.md)；线上实际架构与运维速查见 [`docs/PROJECT-SUMMARY.md`](./docs/PROJECT-SUMMARY.md)。
 
 ---
 
@@ -176,12 +179,12 @@ pnpm preview
 
 | 文档 | 内容 |
 |---|---|
-| [`PROJECT_NOTES.md`](./PROJECT_NOTES.md) | 项目认知记录：源码级架构、数据流、API 清单、踩坑决策、审查修复记录（AI 协作速查） |
-| [`PROJECT_LOG.md`](./PROJECT_LOG.md) | **项目进程日志**：按时间线记录全部问题/bug/代码问题/优化细节（含历史） |
-| [`API.md`](./API.md) | 完整 REST API 参考（参数 / 响应 / 错误码 / 示例） |
-| [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) | 原始实施计划书（架构选型、六阶段路线图） |
-| [`PROJECT-SUMMARY.md`](./PROJECT-SUMMARY.md) | 项目总结：需求演进、生产架构、踩坑记录、运维速查 |
-| [`DEPLOY.md`](./DEPLOY.md) | 本地到云服务器一键部署手册 |
-| [`BACKUP.md`](./BACKUP.md) | 备份策略（vault 为准，DB 可重建） |
-| [`SECURITY-ACTIONS.md`](./SECURITY-ACTIONS.md) | ⚠️ 待执行：生产数据库密码轮换操作清单（执行后可删除） |
-| [`ui.md`](./ui.md) | Lumina 界面设计稿（HTML 原型） |
+| [`docs/PROJECT_NOTES.md`](./docs/PROJECT_NOTES.md) | 项目认知记录：源码级架构、数据流、API 清单、踩坑决策、审查修复记录（AI 协作速查） |
+| [`docs/PROJECT_LOG.md`](./docs/PROJECT_LOG.md) | **项目进程日志**：按时间线记录全部问题/bug/代码问题/优化细节（含历史） |
+| [`docs/API.md`](./docs/API.md) | 完整 REST API 参考（参数 / 响应 / 错误码 / 示例） |
+| [`docs/PROJECT_PLAN.md`](./docs/PROJECT_PLAN.md) | 原始实施计划书（架构选型、六阶段路线图） |
+| [`docs/PROJECT-SUMMARY.md`](./docs/PROJECT-SUMMARY.md) | 项目总结：需求演进、生产架构、踩坑记录、运维速查 |
+| [`docs/DEPLOY.md`](./docs/DEPLOY.md) | 本地到云服务器一键部署手册 |
+| [`docs/BACKUP.md`](./docs/BACKUP.md) | 备份策略（vault 为准，DB 可重建） |
+| [`docs/SECURITY-ACTIONS.md`](./docs/SECURITY-ACTIONS.md) | ⚠️ 待执行：生产数据库密码轮换操作清单（执行后可删除） |
+| [`docs/ui.md`](./docs/ui.md) | Lumina 界面设计稿（HTML 原型） |

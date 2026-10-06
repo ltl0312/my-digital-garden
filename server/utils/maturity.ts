@@ -1,7 +1,7 @@
 /**
  * maturity 判定 —— 纯函数（零依赖，可被脚本/测试直接导入对账）
  *
- * 与 design-preview/tools/maturity-audit.py 是同一套标准（设计方案文档第 10 章）：
+ * 与 scripts/maturity/maturity-audit.py 是同一套标准（设计方案文档第 10 章）：
  *   · 适用范围：模板 / 附件 / 工具文档 / 绘图文件 → EXCLUDED（不参与评价）
  *   · 索引页：文件名 MOC-* 或含 type/MOC → INDEXED（按收录条数分档，不进成熟度色阶）
  *   · 常青：五块齐全 + 关联≥4维无空缺 + 有跨学科溯源 + 内容充实 + 被引用≥2 + 存在≥14天
