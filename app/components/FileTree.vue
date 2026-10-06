@@ -3,8 +3,12 @@ import { Folder, FolderOpen, ChevronRight, FileText } from 'lucide-vue-next'
 import { useLongPress, LONG_PRESS_CLASS } from '~/composables/useLongPress'
 
 // FileTree（spec ch.6）：单根提升 · 递归计数徽章 · 折叠双重信号（箭头旋转 90° + 文件夹实底着色）
-// · 过滤时保留命中子树的父级 · 当前笔记高亮 · 目录内联新建
-// 业务函数（新建笔记、名称规则）保持与原实现一致，仅重做视图层。
+// · 过滤时保留命中子树的父级 · 当前笔记高亮
+// 本组件**只负责展示与折叠**，不负责新建：这里曾有一套「目录内联新建」（startCreate + 输入框），
+// 但没有任何入口能把 creating 置上，属于不可达的死代码（2026-10 清理）。新建笔记的真实路径是
+// 结构树右键 → ContextSidebar 的 'new-note' → layouts/default.vue 的 startCreateNoteIn（顶栏弹窗），
+// 因此名称规则（useNameRule）与 useCreateNote 都不需要出现在这里。
+
 interface TreeNode {
   name: string
   type: 'dir' | 'file'
@@ -19,7 +23,6 @@ interface TreeNode {
 
 const props = defineProps<{
   nodes: TreeNode[]
-  canCreate?: boolean
   /** 过滤词：过滤态下自动展开命中路径 */
   query?: string
   /** 当前打开的笔记 slug（用于高亮） */
@@ -29,7 +32,6 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
-const { nameProblem } = useNameRule()
 // 右键菜单：FileTree 是自递归组件，逐层 emit 会把事件停在中间层；
 // 由 ContextSidebar provide 一个 handler，任意层级直接调用（payload 带节点与鼠标坐标）
 type MenuPayload = { name: string; path: string; type: 'dir' | 'file'; slug?: string; title?: string; x: number; y: number; children?: TreeNode[] }
@@ -55,11 +57,6 @@ const onContextMenu = (node: TreeNode, path: string, ev: MouseEvent) => {
 const expandedArr = useState<string[]>('shell-tree-expanded', () => [])
 const expanded = computed(() => new Set(expandedArr.value))
 const setExpanded = (s: Set<string>) => { expandedArr.value = [...s] }
-const creating = ref<string | null>(null)
-const newTitle = ref('')
-const createError = ref('')
-// 新建并打开：与顶栏「新建」共用同一实现（含等入库可读再跳转的兜底）
-const { createAndOpen } = useCreateNote()
 // 「在结构树中定位」（spec 5.4）：由外部写入 slug，本组件展开全部祖先并滚动高亮
 const revealSlug = useState<string>('shell-reveal-slug', () => '')
 const flashSlug = ref('')
@@ -192,29 +189,6 @@ const countFiles = (children?: TreeNode[]): number => {
   if (!children) return 0
   return children.reduce((acc, c) => acc + (c.type === 'file' ? 1 : countFiles(c.children)), 0)
 }
-
-const startCreate = (dir: string) => {
-  creating.value = dir
-  newTitle.value = ''
-  createError.value = ''
-}
-
-const submitCreate = async (dir: string, siblings: TreeNode[] = []) => {
-  const title = newTitle.value.trim()
-  if (!title) return
-  // 与导入 / 重命名 / 粘贴共用同一条「同目录不可重名」规则
-  const prob = nameProblem(title, siblings as any)
-  if (prob) { createError.value = prob; return }
-  try {
-    // 与顶栏「新建」共用同一条路径：POST → 刷新结构树 → 等入库可读 → 跳详情页。
-    // 此前这里 POST 后直接 navigateTo，遇到入库未完成就会被 404 中止（停在一个空白的列表页）。
-    await createAndOpen(dir, title)
-    creating.value = null
-    createError.value = ''
-  } catch (e: any) {
-    createError.value = e?.data?.message || '创建失败'
-  }
-}
 </script>
 
 <template>
@@ -275,22 +249,9 @@ const submitCreate = async (dir: string, siblings: TreeNode[] = []) => {
             <span class="text-xs font-mono text-ink-3 tabular-nums px-1.5 rounded-full bg-surface-3">{{ countFiles(node.children) }}</span>
           </div>
 
-          <div v-if="creating === pathOf(node)" class="pl-6 pr-2 pb-1">
-            <input
-              v-model="newTitle"
-              class="w-full px-2 py-1 rounded-ctl text-ds-sm bg-surface border outline-none"
-              :class="createError ? 'border-danger' : 'border-line'"
-              placeholder="新笔记标题"
-              @keyup.enter="submitCreate(pathOf(node), node.children)"
-              @keyup.esc="creating = null"
-            />
-            <p v-if="createError" class="mt-0.5 text-xs text-danger">{{ createError }}</p>
-          </div>
-
           <div v-if="isExpanded(pathOf(node))" class="mt-0.5 ml-2.5 pl-2.5 border-l border-line">
             <FileTree
               :nodes="node.children || []"
-              :can-create="canCreate"
               :query="query"
               :current-slug="currentSlug"
               :base="pathOf(node)"

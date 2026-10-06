@@ -371,7 +371,6 @@ const onMenuSelect = async (key: string) => {
       <FileTree
         v-if="panel === 'tree'"
         :nodes="filteredTree"
-        :can-create="canManage"
         :query="query"
         :current-slug="currentSlug"
       />
