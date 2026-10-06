@@ -110,7 +110,7 @@ my-digital-garden/
 ├── nuxt.config.ts            # Nuxt 配置（主题 FOUC 防护、字体、CSS）
 ├── tailwind.config.js        # garden / obsidian 色板
 ├── prisma.config.ts          # Prisma 7 CLI 配置
-├── Dockerfile / entrypoint.sh / docker-compose.prod.yml   # 生产镜像与编排
+├── deploy/                   # 生产镜像与编排（Dockerfile / entrypoint.sh / docker-compose.prod.yml）
 ├── docs/                     # 项目文档（API / 部署 / 总结 / 日志 / 设计稿 …）
 └── README.md                 # 根目录唯一保留的文档
 ```

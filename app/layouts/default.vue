@@ -168,31 +168,15 @@ const startCreateRoot = () => {
   newNoteOpen.value = true
 }
 
-/** 等到新建的笔记真的可读（入库完成）再跳转详情页，避免客户端路由被 404 中止后
- *  停在列表页（现象：地址栏是新笔记、内容却是列表，且不会自行恢复）。
- *  正常路径由服务端主动入库而几乎立刻返回；超时则放行 —— 宁可让详情页以可重试的
- *  错误页收场，也好过静默停在一个伪装成「空笔记」的列表页。 */
-const waitNoteReadable = async (slug: string, timeoutMs = 8000) => {
-  const enc = slug.split('/').map(encodeURIComponent).join('/')
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    try {
-      await $fetch(`/api/notes/${enc}`)
-      return true
-    } catch {
-      await new Promise(r => setTimeout(r, 250))
-    }
-  }
-  return false
-}
+/** 新建/打开的统一实现（含「等入库可读再跳转」的兜底），与结构树内联新建共用一份。 */
+const { createNote, openNote } = useCreateNote()
 
 const submitCreateRoot = async () => {
   const title = newNoteTitle.value.trim()
   if (!title) return
   newNoteSubmitting.value = true
   try {
-    const { slug } = await $fetch<{ slug: string }>('/api/vault/notes', { method: 'POST', body: { path: newNoteParent.value, title } })
-    await refreshNuxtData('vault-tree')
+    const slug = await createNote(newNoteParent.value, title)
     newNoteOpen.value = false
     toast.success(`已创建「${title}」`)
     if (createNoteReturn.value === 'graph') {
@@ -201,14 +185,9 @@ const submitCreateRoot = async () => {
       await navigateTo(`/graph?focus=${encodeURIComponent(slug)}`)
       return
     }
-
-    // 新建只写 vault 文件，**入库由 watcher 串行队列完成**（见 server/api/vault/notes/index.post.ts），
-    // 因此刚返回的 slug 在 /api/notes/<slug> 上会短暂 404（实测 1–1.5s）。此时若直接跳转详情页，
-    // 客户端路由会被这个 404 中止：地址栏变成新笔记，页面内容却停在列表页、之后再也不会恢复
-    // （实测 12s 后仍是列表，新建弹窗连同刚创建的内容一起销毁）。
-    // 服务端现已主动入库，这里再兜一层等待，覆盖 watcher 兜底路径与慢盘。
-    await waitNoteReadable(slug)
-    await navigateTo(`/notes/${slug.split('/').map(encodeURIComponent).join('/')}`)
+    // 服务端已在 POST 返回前主动入库，这里再兜一层等待（覆盖 watcher 兜底路径与慢盘），
+    // 否则客户端路由会被 404 中止：地址栏是新笔记、内容却停在列表页且不会恢复。
+    await openNote(slug)
   } catch (e: any) {
     toast.error(e?.data?.message || '创建失败')
   } finally {

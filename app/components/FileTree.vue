@@ -58,6 +58,8 @@ const setExpanded = (s: Set<string>) => { expandedArr.value = [...s] }
 const creating = ref<string | null>(null)
 const newTitle = ref('')
 const createError = ref('')
+// 新建并打开：与顶栏「新建」共用同一实现（含等入库可读再跳转的兜底）
+const { createAndOpen } = useCreateNote()
 // 「在结构树中定位」（spec 5.4）：由外部写入 slug，本组件展开全部祖先并滚动高亮
 const revealSlug = useState<string>('shell-reveal-slug', () => '')
 const flashSlug = ref('')
@@ -204,11 +206,11 @@ const submitCreate = async (dir: string, siblings: TreeNode[] = []) => {
   const prob = nameProblem(title, siblings as any)
   if (prob) { createError.value = prob; return }
   try {
-    const { slug } = await $fetch('/api/vault/notes', { method: 'POST', body: { path: dir, title } })
+    // 与顶栏「新建」共用同一条路径：POST → 刷新结构树 → 等入库可读 → 跳详情页。
+    // 此前这里 POST 后直接 navigateTo，遇到入库未完成就会被 404 中止（停在一个空白的列表页）。
+    await createAndOpen(dir, title)
     creating.value = null
     createError.value = ''
-    await refreshNuxtData('vault-tree')
-    await navigateTo(`/notes/${slug.split('/').map(encodeURIComponent).join('/')}`)
   } catch (e: any) {
     createError.value = e?.data?.message || '创建失败'
   }

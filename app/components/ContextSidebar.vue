@@ -267,7 +267,20 @@ const onMenuSelect = async (key: string) => {
         if (!ok) break
         await requestFetch('/api/vault/nodes', { method: 'DELETE', body: { path: t.path } })
         await refreshTree()
+        notesRev.value++ // 列表 / 最近更新 / 图谱等跟着刷新
         toast.success(`已删除「${t.name}」`)
+        // 删掉的正是当前打开的笔记（或它所在的文件夹）→ 退回列表。
+        // 否则主界面会继续停在已经不存在的 slug 上：正文还在、实际已删，
+        // 用户既看不到提示也留在一个死页面上（详情页菜单删除走的是 removeNote，
+        // 那里已有同样的跳转；结构树这条路径此前漏了）。
+        const opened = decodeURIComponent(route.path)
+        if (opened.startsWith('/notes/')) {
+          const openSlug = opened.slice('/notes/'.length)
+          const gone = t.type === 'dir'
+            ? (openSlug === t.path || openSlug.startsWith(`${t.path}/`))
+            : openSlug === (t.slug || t.path)
+          if (gone) await navigateTo('/notes')
+        }
         break
       }
       case 'suggest': {

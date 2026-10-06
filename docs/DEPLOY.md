@@ -96,14 +96,15 @@ https://liutianle.cn
 ## 1. 本地构建镜像
 
 ```bash
-# 仓库根目录
-docker build --progress=plain -t my-digital-garden-app:v1.1.0 -t my-digital-garden-app:latest .
+# 仓库根目录（Dockerfile 在 deploy/，构建上下文仍是仓库根）
+docker build --progress=plain -f deploy/Dockerfile -t my-digital-garden-app:v1.1.0 -t my-digital-garden-app:latest .
 ```
 
-`Dockerfile` 为多阶段构建（`node:24-alpine`）：
+`deploy/Dockerfile` 为多阶段构建（`node:24-alpine`）：
 
 - **build 阶段**：先只 COPY `package.json` / `pnpm-lock.yaml` / `pnpm-workspace.yaml` / `prisma/` / `prisma.config.ts` → `pnpm install --frozen-lockfile` → 用占位 `DATABASE_URL` 跑 `prisma generate`（仅为让 schema 类型可用）→ 再 `COPY . .` → `pnpm build`。分层顺序是为了让依赖层吃缓存。
-- **runtime 阶段**：`pnpm install --frozen-lockfile --prod` → `COPY --from=build /app/.output` + `scripts/` + `entrypoint.sh`，`EXPOSE 3000`，`CMD ["./entrypoint.sh"]`。
+- **runtime 阶段**：`pnpm install --frozen-lockfile --prod` → `COPY --from=build /app/.output` + `scripts/` + `deploy/entrypoint.sh`，`EXPOSE 3000`，`CMD ["./entrypoint.sh"]`。
+- 注意：Docker 的 `COPY` 路径始终相对于**构建上下文**（仓库根），所以 Dockerfile 移进 `deploy/` 之后，其中写的是 `COPY deploy/entrypoint.sh ./`；`docker build` 必须带 `-f deploy/Dockerfile`。
 
 `.dockerignore` 已排除 `node_modules`/`.nuxt`/`.output`/`.env.*`/`content`/`.git`/`*.md` 等，构建上下文很小。
 

@@ -99,7 +99,7 @@ my-digital-garden/
 ├── nuxt.config.ts              # 字体预加载、FOUC 防护内联脚本、Tailwind/KaTeX CSS
 ├── tailwind.config.js
 ├── prisma.config.ts            # Prisma 7 配置（datasource url 等）
-├── Dockerfile / entrypoint.sh / docker-compose.prod.yml  # 部署文件（线上走 Docker 镜像路径）
+├── deploy/                     # 生产镜像与编排（Dockerfile / entrypoint.sh / docker-compose.prod.yml）
 ├── docs/                       # 项目文档：API.md / PROJECT-*.md / DEPLOY.md / BACKUP.md / SECURITY-ACTIONS.md / ui.md
 └── README.md                   # 项目主页（根目录唯一保留的文档）
 ```

@@ -38,7 +38,9 @@ RUN pnpm install --frozen-lockfile --prod
 # 构建产物与启动脚本
 COPY --from=build /app/.output ./.output
 COPY scripts ./scripts
-COPY entrypoint.sh ./
+# 本文件已移入 deploy/，但 Docker 的 COPY 路径始终相对于**构建上下文**（仓库根），
+# 因此这里写 deploy/entrypoint.sh；构建命令为 `docker build -f deploy/Dockerfile .`
+COPY deploy/entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 
 EXPOSE 3000
