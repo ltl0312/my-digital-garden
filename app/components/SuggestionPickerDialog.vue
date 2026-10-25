@@ -104,6 +104,16 @@ const load = async () => {
 watch([domainName, tag, pendingFilter], () => { page.value = 1; void load() })
 watch(page, () => void load())
 watch(() => props.open, (v) => {
+  // 每次打开都从「零勾选」开始。
+  //
+  // 用户 m04288：「生成完建议之后，再次打开选择笔记生成界面，之前生成过的仍然是勾选的」。
+  // 原因是 selected 是组件自身状态、AppDialog 只 v-if 了内容，关闭并不会卸载它；
+  // 而上一轮那 49 篇此刻已经生成了待审建议，再打开时默认筛选是「还没有待审」——
+  // 它们根本不在列表里，勾选却还在，于是「已选 49 篇」指向一批看不见的笔记，
+  // 一不小心再点一次就是整批重复判定。
+  //
+  // 注意不能把清理放在 `if (!v) return` 之后：打开时清才对得上「每次进来都是新的一轮」。
+  if (v) selected.value = {}
   if (!v) return
   page.value = 1
   void load()
@@ -157,8 +167,9 @@ const generate = async () => {
   // 一旦把「关闭」写在成功分支之后，任何失败路径（反代 504、某片抛错）都会让
   // 弹窗卡在屏幕上，继续挡住随后要打开的审核面板。
   //
-  // 取消确认不会丢选择：`selected` 是组件自己的状态，AppDialog 只是 v-if 了内容，
-  // 重新打开时勾选还在。
+  // 取消确认后勾选仍留在组件里（不丢当前这一轮的进度），但**下次重新打开会清空**
+  // —— 见上面 `watch(() => props.open)` 的说明：上一轮的笔记已经生成了待审建议，
+  // 默认筛选「还没有待审」根本不会列出它们，留着勾选只会指向一批看不见的笔记。
   emit('update:open', false)
 
   const ok = await confirm({

@@ -123,6 +123,63 @@ export interface SuggestResult {
   rationale: string[]
 }
 
+// ── 命名空间约束 ──────────────────────────────────────────────────────────
+
+/**
+ * 标签名是否带命名空间（形如 `前端/Vue`）。
+ *
+ * 为什么要有这条硬规则（用户 m04288 原话）：「需要杜绝生成没有命名空间的标签」。
+ * 库里有 13 个历史遗留的无前缀标签（`Java` 49 次、`后端` 47 次、`前端` 40 次…），
+ * 它们和 `Java/基础`、`前端/Vue` 是**两套并存**的体系：侧栏把它们全塞进「未分组」，
+ * 图谱的标签共有边也因此分裂。只要引擎继续把裸标签当候选推荐，这套分裂就会一直扩散。
+ */
+export function hasNamespace(tag: string): boolean {
+  const t = tag.trim()
+  const i = t.indexOf('/')
+  return i > 0 && i < t.length - 1
+}
+
+/** 标签的命名空间段（`前端/Vue3` → `前端`）；裸标签返回空串 */
+export function namespaceOf(tag: string): string {
+  const t = tag.trim()
+  const i = t.indexOf('/')
+  return i > 0 ? t.slice(0, i) : ''
+}
+
+/**
+ * 给一个裸标签推断命名空间：统计「库里同样带这个裸标签的笔记，还用了哪些命名空间」，
+ * 取支撑篇数最多的那个（并列时取标签名更短的，避免选到过窄的命名空间）。
+ *
+ * 数据驱动而非拍脑袋：`Java` 的持有者里若多数还用了 `后端/*`，那 `后端/Java` 就是有据可依的
+ * 补全。返回三种情况，调用方必须区别对待：
+ *   · `{ namespace, support }` —— 有据可依，可补全成 `namespace/裸标签`
+ *   · `{ namespace: bare, selfNamespace: true }` —— 这个词**本身就是命名空间前缀**
+ *     （`Java`、`前端`、`运维`… 库里同时存在 `Java/基础`、`前端/Vue`、`运维/Git`）。
+ *     此时补全成 `Java/Java` 毫无意义，正确做法是**跳过**并说明原因。
+ *   · `null` —— 库里没有任何共存证据，不猜。
+ */
+export function inferNamespace(
+  bare: string,
+  ctx: VaultContext
+): { namespace: string; support: number; selfNamespace: boolean } | null {
+  const target = bare.trim().toLowerCase()
+  if (!target || hasNamespace(bare)) return null
+  const tally = new Map<string, number>()
+  for (const n of ctx.notes) {
+    const hit = n.tags.some(t => t.trim().toLowerCase() === target)
+    if (!hit) continue
+    for (const t of n.tags) {
+      const ns = namespaceOf(t)
+      if (!ns) continue
+      tally.set(ns, (tally.get(ns) ?? 0) + 1)
+    }
+  }
+  if (!tally.size) return null
+  const ranked = [...tally.entries()].sort((a, b) => b[1] - a[1] || a[0].length - b[0].length || a[0].localeCompare(b[0]))
+  const [namespace, support] = ranked[0]!
+  return { namespace, support, selfNamespace: namespace.trim().toLowerCase() === target }
+}
+
 // ── 文本 → 词集合 ──────────────────────────────────────────────────────────
 
 /** 剥离 YAML frontmatter（只用于分词，不改写原文） */
@@ -261,6 +318,17 @@ export function suggestForNote(input: SuggestInput, ctx: VaultContext): SuggestR
   const currentLeaves = new Set([...current].map(leafOf))
 
   const scored: TagSuggestion[] = []
+  /**
+   * 被跳过的裸标签（无命名空间）：写进 rationale 让审核者知道「引擎看到了但没推」，
+   * 以及为什么没推。不静默丢弃 —— 静默会让用户以为引擎漏判。
+   */
+  const bareSkipped: { bare: string; score: number; namespace: string | null; support: number; why: string }[] = []
+  /** 库里已在使用的命名空间集合：用来区分「新建命名空间」与「归入已有命名空间」 */
+  const existingNamespaces = new Set<string>()
+  for (const c of ctx.candidates) {
+    const ns = namespaceOf(c.name)
+    if (ns) existingNamespaces.add(ns.trim().toLowerCase())
+  }
   for (const c of ctx.candidates) {
     const name = c.name.trim()
     if (!name) continue
@@ -293,7 +361,64 @@ export function suggestForNote(input: SuggestInput, ctx: VaultContext): SuggestR
       score += Math.min(1, Math.log2(1 + c.count) / 10)
     }
     if (score < SUGGEST_TH.tagMinScore) continue
-    scored.push({ name, score: Math.round(score * 100) / 100, reason: why.join(' · ') })
+
+    // ── 命名空间硬约束（用户 m04288）────────────────────────────────────────
+    //
+    // 裸标签（`Java` / `后端` / `前端`…）一律不直接推荐：它们是历史遗留的第二套体系，
+    // 侧栏归进「未分组」、图谱标签边分裂。分五级处理，每一级都给出可读依据：
+    //
+    //   ① 已带命名空间            → 原样推荐
+    //   ② 裸标签 + 有共存证据      → 补全成 `后端/Java`（依据里写清几篇支撑）
+    //   ③ 裸标签 + 它本身就是命名空间（`Java`、`前端`、`运维`：库里已有 `Java/基础`）
+    //                             → **跳过**。补成 `Java/Java` 是废标签，而该归到哪个子类
+    //                               属于内容判断，引擎不该替人拍板。
+    //   ④ 裸标签 + 毫无共存证据    → 退回本篇领域名当命名空间（`运维/Docker`）；
+    //                               该命名空间库里还没有时，依据里写明「新建命名空间（需审核同意）」
+    //   ⑤ 连领域名都没有          → 跳过并记进 rationale
+    //
+    // 「需要我同意」的落点就是审核面板的逐条通过：建议本身不写任何笔记，
+    // 只有人点了通过、看见 `新建命名空间「X」` 这句说明，新命名空间才会真的落库。
+    let finalName = name
+    if (!hasNamespace(name)) {
+      const guess = inferNamespace(name, ctx)
+      if (guess && !guess.selfNamespace) {
+        finalName = `${guess.namespace}/${name}`
+        why.push(`补全命名空间（同库 ${guess.support} 篇同时用「${guess.namespace}/」下的标签）`)
+      } else if (guess?.selfNamespace) {
+        bareSkipped.push({
+          bare: name,
+          score: Math.round(score * 100) / 100,
+          namespace: guess.namespace,
+          support: guess.support,
+          why: `「${name}」本身已是命名空间前缀（库里已有「${guess.namespace}/」下的标签），裸标签属历史遗留；该归到哪个子类属于内容判断，未自动推荐`
+        })
+        continue
+      } else {
+        // 领域名当兜底命名空间。**但要排除兜底值本身**：`DOMAIN_FALLBACK`（「其他」）代表
+        // 「判不出领域」，拿它当前缀会造出 `其他/Docker` 这种比裸标签更没信息量的废标签 ——
+        // 那种情况下宁可跳过并说明，也不要往库里塞新垃圾。
+        const rawNs = (input.explicitDomain || '').trim() || domainOfSlug(input.slug).domain || ''
+        const fallbackNs = rawNs && rawNs !== DOMAIN_FALLBACK ? rawNs : ''
+        if (!fallbackNs) {
+          bareSkipped.push({
+            bare: name,
+            score: Math.round(score * 100) / 100,
+            namespace: null,
+            support: 0,
+            why: `「${name}」无命名空间，且本篇判不出领域名（路径与内容都没给出可用前缀），已跳过`
+          })
+          continue
+        }
+        finalName = `${fallbackNs}/${name}`
+        why.push(
+          existingNamespaces.has(fallbackNs.trim().toLowerCase())
+            ? `归入已有命名空间「${fallbackNs}/」（库里没有共存证据可推断更细的前缀，取本篇领域名）`
+            : `新建命名空间「${fallbackNs}」（库里没有共存证据可推断，取本篇领域名；审核通过后才会创建）`
+        )
+      }
+    }
+
+    scored.push({ name: finalName, score: Math.round(score * 100) / 100, reason: why.join(' · ') })
   }
   scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
   // 候选之间同一末段只保留得分最高者：`Java` 与 `后端/Java` 不该同时入选。
@@ -329,6 +454,27 @@ export function suggestForNote(input: SuggestInput, ctx: VaultContext): SuggestR
     }
   }
   rationale.push(domain.reason)
+
+  // ── ⑤ 被跳过的裸标签：不静默丢弃，写清原因 ────────────────────────────────
+  //
+  // 用户 m04288：「需要杜绝生成没有命名空间的标签」。跳过后必须让人知道引擎看见了它、
+  // 为什么没推 —— 否则用户会以为是漏判，转头手工又加一个裸标签回去。
+  const skippedBare = bareSkipped
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(b => `${b.why}（得分 ${b.score}）`)
+  for (const s of skippedBare) rationale.push(s)
+
+  // ── ⑥ 入选标签的命名空间说明 ──────────────────────────────────────────────
+  //
+  // `TagSuggestion.reason` 只活在内存里，落库时 tags 是纯名字数组（`string[]`）——
+  // 所以「这条 `type/excalidraw` 是从裸标签补全来的」「这条会新建命名空间」这些话
+  // 若不搬进 rationale，审核者在界面上就完全看不到依据，只能看到一个陌生的标签名。
+  // 用户 m04288 要求「自行创建命名空间需要我同意」—— 同意的前提是看得见自己在批准什么。
+  const nsNotes = tags
+    .filter(t => t.reason.includes('命名空间'))
+    .map(t => `「${t.name}」：${t.reason}`)
+  for (const s of nsNotes.slice(0, 5)) rationale.push(s)
 
   return { tags, domain, confidence, rationale }
 }

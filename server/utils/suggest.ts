@@ -23,7 +23,7 @@ import { invalidateGardenCache } from './cache'
 import { computeMaturityForNote } from './maturity-sync'
 import { llmSuggest, llmStatus } from './llm'
 import {
-  suggestForNote, termsOf, toVaultNotes,
+  suggestForNote, termsOf, toVaultNotes, hasNamespace,
   type VaultContext, type VaultNoteLike, type SuggestResult
 } from './tag-suggest'
 import { DOMAIN_FALLBACK, isKnownDomain, resolveDomain } from '#shared/graph-domain'
@@ -243,7 +243,12 @@ async function generateOne(
       content: full.content.slice(0, LLM_CONTENT_CHARS),
       currentTags,
       currentDomain: base.domain.currentDomain,
-      candidateTags: ctx.candidates.slice(0, LLM_CANDIDATE_TAGS).map(c => c.name),
+      // 只把带命名空间的标签交给模型做候选：裸标签（`Java`/`后端`…）是历史遗留的第二套体系，
+      // 让模型在两者之间选，等于让它把分裂继续写进笔记（用户 m04288）。
+      candidateTags: ctx.candidates
+        .filter(c => hasNamespace(c.name))
+        .slice(0, LLM_CANDIDATE_TAGS)
+        .map(c => c.name),
       candidateDomains: ctx.knownDomains
     })
     if (llm) {
@@ -270,6 +275,18 @@ async function generateOne(
     } else {
       stats.llmFallback++
     }
+  }
+
+  // ③ 命名空间兜底：无论结果来自规则引擎、模型，还是两者的并集，落库前再筛一遍。
+  //
+  // 这里不是「防御性冗余」而是**唯一出口的硬约束**（用户 m04288：「杜绝生成没有命名空间的标签」）：
+  // 规则引擎已经在候选打分时补全或跳过裸标签，但并集分支会把模型返回的标签原样拼进来，
+  // 而模型的返回值虽然过白名单，白名单本身来自 `ctx.candidates`（含裸标签）。
+  // 两道口子都堵在出口，比在每一条分支上各修一次可靠。
+  const droppedBare = tags.filter(t => !hasNamespace(t))
+  if (droppedBare.length) {
+    tags = tags.filter(t => hasNamespace(t))
+    rationale.push(`已丢弃 ${droppedBare.length} 个无命名空间的标签（${droppedBare.slice(0, 3).join('、')}）：标签必须形如「命名空间/名称」，裸标签会被归入侧栏「未分组」并让图谱的标签边分裂`)
   }
 
   if (!tags.length) stats.emptyTags++
