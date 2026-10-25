@@ -28,5 +28,14 @@ services:
       NODE_ENV: production
       PORT: "3000"
       NODE_OPTIONS: "--max-old-space-size=384"
+      # 库备份与 AI 审计报告的落盘位置（相对应用工作目录 /app）。
+      # 显式声明有两个作用：① 与下面的 bind mount 对应，改路径只改一处；
+      # ② server/utils/backup.ts 用「是否显式配置」判断备份是否持久
+      #    （未配置时会当作容器内临时路径，在界面上警告「容器重建就会丢」）。
+      GARDEN_BACKUP_DIR: /app/data/backups
+      GARDEN_AUDIT_DIR: /app/data/audits
     volumes:
       - /opt/digital-garden/content/vault:/app/content/vault
+      # 备份与审计报告必须落在宿主上：容器 --force-recreate 会丢弃容器内文件，
+      # 而「备份」的唯一价值就是跨重启仍能恢复。目录首次启动自动创建。
+      - /opt/digital-garden/data:/app/data

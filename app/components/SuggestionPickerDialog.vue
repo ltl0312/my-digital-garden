@@ -146,6 +146,21 @@ const generate = async () => {
   if (!slugs.length) { toast.warn('请先选择笔记'); return }
 
   const overwrite = slugs.filter(s => selected.value[s]?.hasPending)
+
+  // ⚠️ **先关面板，再弹确认**（顺序不能反）。
+  //
+  // 用户反馈：「点生成建议之后，该弹窗不会消失，而是继续占据顶部，挡住了确认标签，
+  // 需要手动叉掉才行」。原因就是确认框是在面板还开着的时候弹出的 —— 两个浮层
+  // 叠在同一个 z 层，确认框被多选器压住，用户点不到「开始生成」。
+  //
+  // 关闭动作也不依赖任何网络请求的结果：判定可能要几十秒（量大时分片），
+  // 一旦把「关闭」写在成功分支之后，任何失败路径（反代 504、某片抛错）都会让
+  // 弹窗卡在屏幕上，继续挡住随后要打开的审核面板。
+  //
+  // 取消确认不会丢选择：`selected` 是组件自己的状态，AppDialog 只是 v-if 了内容，
+  // 重新打开时勾选还在。
+  emit('update:open', false)
+
   const ok = await confirm({
     title: `为 ${slugs.length} 篇笔记生成建议`,
     message: overwrite.length
@@ -156,15 +171,13 @@ const generate = async () => {
   })
   if (!ok) return
 
-  // ⚠️ **先关面板，再判定**。
-  // 判定可能要几十秒（选择量大时还会分片），若把「关闭」放在成功分支之后，
-  // 一旦某片失败或被反代超时（生产 Nginx 未设 proxy_read_timeout，默认 60s），
-  // 这个弹窗就会**卡住不关**，并挡住随后要打开的审核面板 —— 用户反馈的
-  // 「点生成建议之后弹窗并不会消失，反而阻挡了新弹窗的生成」正是这个成因。
-  emit('update:open', false)
-
-  await reviewForSlugs(slugs)
-  emit('generated', slugs)
+  try {
+    await reviewForSlugs(slugs)
+    emit('generated', slugs)
+  } catch {
+    // reviewForSlugs 内部已按分片 toast 过失败原因；这里只兜底，绝不让异常
+    // 冒泡到 unhandled rejection（那会让「已关闭」的状态看起来又反悔了）
+  }
 }
 
 const tagsOf = (row: NoteRow) =>

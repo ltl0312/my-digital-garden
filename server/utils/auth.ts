@@ -78,6 +78,25 @@ export async function requireAdmin(event: H3Event) {
 }
 
 /**
+ * 仅「初始管理员」可执行的动作（库备份 / 恢复 / AI 全库审计）。
+ *
+ * 为什么不用 requireAdmin：admin（普通管理员）日常可以管笔记、管标签，
+ * 但**备份、恢复、让 AI 批量改全库**是能一次性毁掉整个知识库的动作，
+ * 需求明确要求「以上只有初始管理员可以操作」。判定用 role 与 isBuiltin 双条件，
+ * 与 isRootTarget 同口径 —— 单看 role 会被一条脏数据（role 被写成 root 但非内置）绕过。
+ */
+export async function requireBuiltinAdmin(event: H3Event) {
+  const key = await requireAuth(event)
+  if (key.role !== 'root' || key.isBuiltin !== true) {
+    throw createError({
+      statusCode: 403,
+      message: '仅初始管理员可执行此操作（库备份与 AI 全库审计）'
+    })
+  }
+  return key
+}
+
+/**
  * 是否为管理身份（root = 初始管理员 / admin = 普通管理员）。
  *
  * 单独抽出来的原因：除了各写接口自己调 requireAdmin（第一道门），

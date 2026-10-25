@@ -6,6 +6,7 @@ import { processMarkdownFile, removeMarkdownFile } from '../utils/markdown'
 import { recomputeAllMaturity } from '../utils/maturity-sync'
 import { isRecentlyIngested } from '../utils/import-job'
 import { autoSuggestRecent } from '../utils/suggest'
+import { isVaultBusy, vaultBusyReason } from '../utils/vault-busy'
 import { prisma } from '../utils/db'
 
 export default defineNitroPlugin((nitroApp) => {
@@ -78,6 +79,9 @@ export default defineNitroPlugin((nitroApp) => {
   // （它的判据是「最近 2 分钟内入库」的时间窗，一次扫描天然覆盖同批文件）。
   let suggestScanAt = 0
   const scheduleSuggestScan = () => {
+    // 整库操作（恢复备份）期间不排队：那一刻全库文件的 createdAt/updatedAt 都是新的，
+    // autoSuggestRecent 会认为「524 篇都是刚导入的」并给每一篇生成建议。
+    if (isVaultBusy()) return
     if (Date.now() - suggestScanAt < 10_000) return
     suggestScanAt = Date.now()
     try {
@@ -105,6 +109,9 @@ export default defineNitroPlugin((nitroApp) => {
   watcher
     .on('add', async (filePath) => {
       if (filePath.endsWith('.md')) {
+        // 整库操作（恢复备份）触发的事件一律丢弃：它自己会把每篇重跑一遍，
+        // 这里再走一遍只会让 createdAt 被重新分配、并顺带把建议队列刷成 500 条
+        if (isVaultBusy()) return
         // 批量导入完成后已由 import-ingest 主动入库的文件：跳过事件，避免二次解析
         if (isRecentlyIngested(filePath)) return
         await enqueue(async () => {
@@ -116,6 +123,7 @@ export default defineNitroPlugin((nitroApp) => {
     })
     .on('change', async (filePath) => {
       if (filePath.endsWith('.md')) {
+        if (isVaultBusy()) return
         if (isRecentlyIngested(filePath)) return
         await enqueue(async () => {
           const changed = await processMarkdownFile(filePath)
@@ -127,6 +135,12 @@ export default defineNitroPlugin((nitroApp) => {
     })
     .on('unlink', async (filePath) => {
       if (filePath.endsWith('.md')) {
+        // 最关键的一条：恢复备份会先清空 vault，若让 unlink 照常处理，
+        // removeMarkdownFile 会把**整库 Note 行删掉**（行没了、文件又回来了 → 全部重建）
+        if (isVaultBusy()) {
+          console.log(`[garden] watcher: 跳过删除事件（${vaultBusyReason() || '整库操作'}进行中） ${filePath}`)
+          return
+        }
         await enqueue(async () => {
           await removeMarkdownFile(filePath)
           console.log(`[garden] watcher: 已删除笔记 ${filePath}`)

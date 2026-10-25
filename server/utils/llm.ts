@@ -192,6 +192,65 @@ export async function llmSuggest(req: LlmSuggestRequest): Promise<LlmSuggestResu
   }
 }
 
+/**
+ * 通用「要一段 JSON 回来」的调用（AI 全库审计用）。
+ *
+ * 与 llmSuggest 分开的原因：llmSuggest 的返回值是**白名单收敛过的标签/领域**，
+ * 审计要的是自由文本的建议（补什么、改什么），约束完全不同。
+ * 共同点是失败语义 —— 未配置 / 超时 / 非 2xx / 解析不出 JSON，一律返回 null，
+ * 由调用方决定「跳过这一篇」而不是让整次审计崩掉。
+ */
+export async function llmJson<T = unknown>(
+  system: string,
+  user: string,
+  opts: { maxTokens?: number; timeoutMs?: number } = {}
+): Promise<T | null> {
+  const cfg = await llmConfig()
+  if (!cfg.enabled) return null
+
+  const timeoutMs = Math.max(1000, opts.timeoutMs || cfg.timeoutMs)
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${cfg.apiKey}`
+      },
+      body: JSON.stringify({
+        model: cfg.model,
+        temperature: 0.3,
+        max_tokens: opts.maxTokens || 1200,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user }
+        ]
+      }),
+      signal: controller.signal
+    })
+    if (!res.ok) {
+      console.warn(`[garden] llm-json: 调用失败 HTTP ${res.status}（model=${cfg.model}）`)
+      return null
+    }
+    const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> }
+    const text = data?.choices?.[0]?.message?.content || ''
+    const parsed = extractJson(text)
+    if (!parsed || typeof parsed !== 'object') {
+      console.warn('[garden] llm-json: 返回内容无法解析为 JSON')
+      return null
+    }
+    return parsed as T
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.warn(`[garden] llm-json: 调用异常（${msg}）`)
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 /** 给审核界面/设置界面用的状态描述（**不含任何密钥信息**，只回模型名与地址） */
 export async function llmStatus(): Promise<{ enabled: boolean; model: string; baseUrl: string }> {
   const cfg = await llmConfig()

@@ -798,6 +798,15 @@ useHead({ title: '管理后台 · 拾光' })
       </div>
     </section>
 
+    <!-- 库备份与 AI 全库审计：只给**初始管理员**（role=root 且 isBuiltin）。
+         与下面「AI 增强设置」不同 —— 那两个能力会改整库文件，admin 不给。
+         ⚠️ 这里插在上一段 </section> 之后、下一段 v-if 之前是安全的：`<DeniedState v-else />`
+         配对的是它**紧邻**的上一个元素（AI 增强设置段），不能在这两者之间插东西。 -->
+    <template v-if="isRoot">
+      <BackupPanel />
+      <AuditPanel />
+    </template>
+
     <!-- AI 增强设置：开关与密钥都在这里配，不用改 .env、也不用重启 -->
     <section v-if="canManage" class="mb-6 rounded-card border border-line bg-surface p-5">
       <h2 class="text-ds-lg font-semibold text-ink mb-1 flex items-center gap-2">

@@ -51,3 +51,7 @@ content/vault/
 %SystemDrive%/
 %USERPROFILE%/
 %TEMP%/
+
+# 运行时产物：库备份（含整库笔记副本）与 AI 审计报告。
+# 备份里是笔记全文，属于内容而非代码，绝不能入库；审计报告同理。
+/data/

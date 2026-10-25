@@ -1,7 +1,12 @@
 <script setup lang="ts">
 // 确认对话框宿主：挂在布局根部，由 useConfirm() 驱动（替换原生 confirm）
-const { state, settle } = useConfirm()
+const { state, settle, cancelPending } = useConfirm()
 const o = computed(() => state.value.opts)
+
+// 宿主被卸载（路由切换/布局重建）时把还悬着的 Promise 结束掉。
+// 否则调用方 `await confirm()` 永不返回，它后面「关闭自己的弹窗」也就永不执行 ——
+// 用户看到的就是「确认框没了，但原来的弹窗一直挂着，只能手动叉掉」。
+onBeforeUnmount(() => cancelPending())
 </script>
 
 <template>
