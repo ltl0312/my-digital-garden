@@ -45,8 +45,13 @@ const emit = defineEmits<{
 const toast = useToast()
 const { confirm } = useConfirm()
 const { domains } = useFacets()
+// 面板挂在布局根部、`open` 是跨页 useState，所以「本来就开着」时再 open=true 不会触发
+// 下面的 watch —— 判定结束后必须靠 reloadToken 主动重拉，否则界面停在判定前的名单。
+const { reloadToken, generating, progress, pendingTotal } = useSuggestionReview()
 
 const rows = ref<SuggestRow[]>([])
+/** 服务端回报的**全库**待审数（可能大于 rows.length：接口有 500 条上限） */
+const totalPending = ref(0)
 const loading = ref(false)
 const busy = ref(false)
 const selected = ref<Set<string>>(new Set())
@@ -77,13 +82,26 @@ const domainOptions = computed(() => {
 const load = async () => {
   loading.value = true
   try {
-    const res = await $fetch<{ items: SuggestRow[]; pending: number }>('/api/admin/suggestions')
+    // limit=500 是服务端上限（server/api/admin/suggestions/index.get.ts）。不传就只有 200 条，
+    // 而徽标显示的是**全库**待审数 —— 待审超过 200 时「徽标 500、列表 200」就是同一类
+    // 「数字对不上」的错觉，所以这里要上限 + 下面把被截断的事实说出来。
+    const res = await $fetch<{ items: SuggestRow[]; pending: number }>('/api/admin/suggestions?limit=500')
     rows.value = res.items
+    totalPending.value = res.pending ?? res.items.length
+    // 徽标与本名单同源（见 useSuggestionReview 的 pendingTotal 注释）
+    pendingTotal.value = totalPending.value
     const d: Record<string, Draft> = {}
     const t: Record<string, string> = {}
     for (const r of res.items) {
       d[r.id] = {
-        tags: [...r.tags],
+        // draft.tags 是「通过后这篇笔记的完整标签列表」，不是「要新增的标签」。
+        //
+        // 必须把现有标签并进来：下面模板里「现有标签（取消勾选即从笔记中移除）」是按
+        // `draftOf(id).tags.includes(t)` 判断保留与否的，若这里只放建议标签，那么每一条
+        // 现有标签都会被渲染成「已移除」，点通过就把笔记原有标签整批删掉、只留建议的那几个。
+        // 线上实测后果：`Java`(49 篇) / `后端`(47) / `数据库`(26) / `跨学科纵深`(10) 这些
+        // 裸标签的引用被清空，变成标签页里「0 条笔记」的幽灵标签。
+        tags: [...new Set([...r.currentTags, ...r.tags])],
         domainMode: r.keepCurrentDir ? 'keep' : 'set',
         domain: r.domain || r.currentDomain
       }
@@ -100,6 +118,8 @@ const load = async () => {
 }
 
 watch(() => props.open, (v) => { if (v) void load() })
+// 判定流程会先 open、后出结果：结果回来时 reloadToken 自增，这里重拉一次名单。
+watch(reloadToken, () => { if (props.open) void load() })
 
 const toggleSel = (id: string) => {
   const next = new Set(selected.value)
@@ -197,10 +217,18 @@ const submit = async (ids: string[], action: 'approve' | 'reject') => {
         domain: d.domainMode === 'keep' ? null : d.domain
       }
     })
-    const res = await $fetch<{ approved: number; rejected: number; failed: number; results: Array<{ ok: boolean; error?: string; slug?: string }> }>(
+    const res = await $fetch<{
+      approved: number
+      rejected: number
+      failed: number
+      results: Array<{ ok: boolean; error?: string; slug?: string; removedTags?: string[] }>
+    }>(
       '/api/admin/suggestions/review',
       { method: 'POST', body: { items } }
     )
+    // 被移除的标签必须说出来：draft 一旦初始化错，通过就会把笔记原有标签整批删掉，
+    // 而界面「通过成功」的绿色提示完全不会暴露这件事（线上就这样静默丢过 Java/后端/数据库）。
+    const removed = res.results.flatMap(r => (r.ok && r.removedTags ? r.removedTags : []))
     if (res.failed) {
       const first = res.results.find(r => !r.ok)
       toast.warn(`${res.approved} 条通过、${res.rejected} 条驳回，${res.failed} 条失败：${first?.error || '未知原因'}`)
@@ -208,6 +236,9 @@ const submit = async (ids: string[], action: 'approve' | 'reject') => {
       toast.success(`已通过 ${res.approved} 条，笔记标签与领域已更新`)
     } else {
       toast.success(`已驳回 ${res.rejected} 条，笔记未改动`)
+    }
+    if (removed.length) {
+      toast.warn(`这次审核从笔记里移除了 ${removed.length} 个标签：${removed.slice(0, 6).join('、')}${removed.length > 6 ? '…' : ''}（如属误删，重新勾选它们再通过一次即可加回）`)
     }
     emit('applied')
     await load()
@@ -242,6 +273,14 @@ const domainFromLabel = (f: string) =>
 
     <div v-if="loading" class="py-10 text-center text-ds-sm text-ink-3">正在读取待审名单…</div>
 
+    <!-- 判定进行中：面板是「先打开、后出结果」的，所以空名单要区分「真的没有」和「还在算」，
+         否则用户看到「没有待审建议」会以为判定没生效。 -->
+    <div v-else-if="!focused.length && generating" class="py-10 text-center">
+      <RefreshCw class="w-8 h-8 mx-auto mb-3 text-accent animate-spin" />
+      <p class="text-ds-sm text-ink-2">正在判定{{ progress ? `（${progress}）` : '' }}…</p>
+      <p class="mt-1 text-[12px] text-ink-3">结果出来后会立刻显示在这里，不用关掉重开。</p>
+    </div>
+
     <div v-else-if="!focused.length" class="py-10 text-center">
       <ShieldQuestion class="w-8 h-8 mx-auto mb-3 text-ink-3" />
       <p class="text-ds-sm text-ink-2">没有待审建议</p>
@@ -251,6 +290,16 @@ const domainFromLabel = (f: string) =>
     </div>
 
     <template v-else>
+      <!-- 名单被接口上限截断时必须说出来：徽标显示全库待审数，列表只载入前 500 条，
+           不解释就成了「显示 500 条、点进去还是这些」的另一种数字对不上。 -->
+      <div
+        v-if="totalPending > focused.length"
+        data-testid="review-truncated"
+        class="mb-3 rounded-ctl border border-line bg-surface-2 px-3 py-2 text-[12px] text-ink-2"
+      >
+        待审共 <strong class="text-ink">{{ totalPending }}</strong> 条，这里载入前
+        <strong class="text-ink">{{ focused.length }}</strong> 条（接口上限 500）。处理完这批后重新打开会载入剩余部分。
+      </div>
       <!-- 全选（只作用于当前可见条目） -->
       <div class="flex items-center justify-between gap-3 pb-3 mb-1 border-b border-line sticky top-0 bg-surface z-10">
         <button

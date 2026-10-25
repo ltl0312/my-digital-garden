@@ -17,8 +17,26 @@ export const useSuggestionReview = () => {
   const generating = useState<boolean>('suggest-generating', () => false)
   /** 分片进度文案（如 "100/260"）；单片时为空串 */
   const progress = useState<string>('suggest-progress', () => '')
+  /**
+   * 「请重新拉一次待审名单」的信号（自增计数）。
+   *
+   * 面板挂在布局根部、`open` 是跨页 `useState`，所以「已经开着」时再 `open = true` 不会触发
+   * 它的 `watch` → 不会重新 load。判定完成后要看到新结果、或徽标数字变了要对齐，都靠这个信号。
+   */
+  const reloadToken = useState<number>('suggest-review-reload', () => 0)
+  /**
+   * 全库待审数（徽标与面板共用的**唯一**来源）。
+   *
+   * 用户报「待审核建议显示十条但是点进去却没有」：徽标读 `/meta`、名单读 `/suggestions`，
+   * 两条路径各有各的时机，数字必然会对不上。改成面板每次 load 都把这个数字写回来，
+   * 徽标直接读它 —— 两者同源，就不会再出现「数字说有、点进去没有」。
+   */
+  const pendingTotal = useState<number>('suggest-pending-total', () => 0)
 
   const toast = useToast()
+
+  /** 让审核面板重新读一次待审名单（面板已开着也生效） */
+  const reload = () => { reloadToken.value++ }
 
   /** 打开并只看指定的建议 id（空数组 = 看全部待审） */
   const openReview = (ids: string[] = []) => {
@@ -81,6 +99,14 @@ export const useSuggestionReview = () => {
     const list = [...new Set(slugs.map(s => s.trim()).filter(Boolean))]
     if (!list.length) { toast.warn('没有可判定的笔记'); return }
 
+    // 先把面板打开，再开始判定。
+    //
+    // 用户原话：「点击开始生成之后，审核界面并不会立刻打开，而是过一会才会弹出」——
+    // 因为判定要走 LLM，几十秒才返回，而面板原本只在 `await` 之后才 open，等于让用户
+    // 对着没反应的按钮等。现在面板立刻出现并显示「正在判定…」，结果回来后再刷新名单。
+    openReview()
+    reload()
+
     const { ok, failed, emptyTags } = await generateForSlugs(list)
 
     if (!ok.length) {
@@ -105,6 +131,8 @@ export const useSuggestionReview = () => {
       // 映射失败就退回「看全部待审」，至少不让入口变成死路
       openReview()
     }
+    // 结果已就绪：让面板重新拉一次（面板从判定开始就开着，不刷新的话还停在判定前的名单）
+    reload()
   }
 
   /** 目录 → 该目录下全部笔记的 slug（供结构树右键对文件夹判定） */
@@ -123,5 +151,5 @@ export const useSuggestionReview = () => {
     return out
   }
 
-  return { open, onlyIds, openReview, generateForSlugs, reviewForSlugs, collectSlugsInDir, generating, progress }
+  return { open, onlyIds, openReview, generateForSlugs, reviewForSlugs, collectSlugsInDir, generating, progress, reloadToken, reload, pendingTotal }
 }

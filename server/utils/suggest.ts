@@ -22,6 +22,7 @@ import { resolveVaultPath, writeMarkdownAtomic, VAULT_DIR } from './vault'
 import { invalidateGardenCache } from './cache'
 import { computeMaturityForNote } from './maturity-sync'
 import { llmSuggest, llmStatus } from './llm'
+import { pruneOrphanTags } from './tags-gc'
 import {
   suggestForNote, termsOf, toVaultNotes, hasNamespace,
   type VaultContext, type VaultNoteLike, type SuggestResult
@@ -101,8 +102,15 @@ export async function buildContext(): Promise<VaultContext> {
   const notes: VaultNoteLike[] = toVaultNotes(rows)
 
   // 候选标签 = Tag 表（有使用计数）∪ 全库 frontmatter tags（防 Tag 表与 metadata 不同步时漏候选）
+  //
+  // 只取**有笔记引用**的 Tag 行：孤儿标签（count=0）是历史遗留的幽灵行，
+  // 若混进候选池，自动判定就会把「J标签A」「status/待处理」这类没有任何笔记在用的名字
+  // 当成「库里既有标签」推荐给用户。
   const counts = new Map<string, number>()
-  const tagRows = await prisma.tag.findMany({ select: { name: true, _count: { select: { notes: true } } } })
+  const tagRows = await prisma.tag.findMany({
+    where: { notes: { some: {} } },
+    select: { name: true, _count: { select: { notes: true } } }
+  })
   for (const t of tagRows) counts.set(t.name, t._count.notes)
   for (const n of notes) {
     for (const t of n.tags) {
@@ -444,6 +452,15 @@ export interface ApplyOutcome {
   domainLevel1: string | null
   keptDomain: boolean
   fileWritten: boolean
+  /**
+   * 这次审核从笔记里移除掉的标签（文件里原本有、通过后的列表里没有）。
+   *
+   * 为什么要回传：审核界面的 `draft.tags` 是「通过后的完整标签列表」，
+   * 一旦前端把它初始化错（只放建议标签、不含现有标签），通过就等于把笔记原有标签整批删掉。
+   * 前端已经修好，但这类错误**静默**发生时用户完全看不出来 —— 所以每次审核都把
+   * 「移除了哪些」明明白白回报出去，让它在 toast / 接口响应里可见。
+   */
+  removedTags: string[]
 }
 
 /**
@@ -542,6 +559,9 @@ export async function approveSuggestion(decision: ApproveDecision, reviewerKeyId
     throw new Error('frontmatter 解析失败，请先修复文件头部格式')
   }
   const fm: Record<string, unknown> = { ...(parsed.data || {}) }
+  // 覆盖前先记住文件里原本有哪些标签 —— 后面要算「这次移除了什么」并回报给审核者。
+  const beforeTags = asStringArray(fm.tags)
+  const removedTags = beforeTags.filter(t => !tags.includes(t))
   if (tags.length) fm.tags = tags
   else delete fm.tags
   const finalContent = Object.keys(fm).length ? matter.stringify(parsed.content, fm) : parsed.content
@@ -572,7 +592,7 @@ export async function approveSuggestion(decision: ApproveDecision, reviewerKeyId
       })
       await tx.suggestion.update({
         where: { id: row.id },
-        data: { appliedValue: { tags, domainLevel1 } }
+        data: { appliedValue: { tags, domainLevel1, removedTags } }
       })
     }, { maxWait: 10000, timeout: 30000 })
   } catch (e) {
@@ -604,13 +624,17 @@ export async function approveSuggestion(decision: ApproveDecision, reviewerKeyId
   }
 
   invalidateGardenCache()
+  // 通过审核会重挂这篇笔记的全部标签 → 被移除的那些可能刚好失去最后一个引用。
+  // 清掉它们，否则标签页里会出现「0 条笔记」的幽灵标签。
+  void pruneOrphanTags()
   return {
     suggestionId: row.id,
     slug: row.note.slug,
     tags,
     domainLevel1,
     keptDomain,
-    fileWritten
+    fileWritten,
+    removedTags
   }
 }
 

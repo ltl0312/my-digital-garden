@@ -50,6 +50,8 @@ export default defineEventHandler(async (event) => {
     domainLevel1?: string | null
     keptDomain?: boolean
     fileWritten?: boolean
+    /** 这次审核从笔记里移除掉的标签（空数组 = 一个都没删）。前端据此在 toast 里如实提示。 */
+    removedTags?: string[]
     error?: string
   }> = []
 
@@ -91,7 +93,8 @@ export default defineEventHandler(async (event) => {
         tags: out.tags,
         domainLevel1: out.domainLevel1,
         keptDomain: out.keptDomain,
-        fileWritten: out.fileWritten
+        fileWritten: out.fileWritten,
+        removedTags: out.removedTags
       })
     } catch (e) {
       results.push({ id, ok: false, action, error: e instanceof Error ? e.message : String(e) })

@@ -183,8 +183,9 @@ const roleOptions = computed(() =>
 // 审核面板的开关放在 useSuggestionReview（跨页面单源），因为同一面板还要被
 // 笔记操作面板的「重新判定」打开 —— 各持一个 ref 会互相打不开。
 interface SuggestStats { pending: number; llm: { enabled: boolean; model: string } }
-const { openReview } = useSuggestionReview()
-const pendingCount = ref(0)
+const { openReview, reload, pendingTotal } = useSuggestionReview()
+/** 徽标数字直接读 useSuggestionReview 的共享状态：与审核面板名单同源，不会再「说有却没有」 */
+const pendingCount = pendingTotal
 const generating = ref(false)
 const pickerOpen = ref(false)
 const llmStatus = ref<{ enabled: boolean; model: string }>({ enabled: false, model: '' })
@@ -208,8 +209,51 @@ await loadSuggestMeta()
  *   missing = 当前没有待审建议的笔记（整库补跑，已有建议的不覆盖）
  *   picked  = 指定的若干篇（这里用「当前待审列表为空」的整库路径代替多选）
  */
+/**
+ * 等后台生成真正落定再刷新徽标。
+ *
+ * 为什么不能只 `await loadSuggestMeta()` 一次：`POST /api/admin/suggestions` 返回时
+ * 后台队列可能还在继续写待审行（实测返回 processed=500，而同一时刻读 meta 只有 330）——
+ * 于是徽标显示的是「生成中途」的快照，与面板名单、与库里真实数量三者脱节。
+ * 用户报的「待审核建议显示十条但是点进去却没有」就是这种脱节。
+ *
+ * 判据：**连续三次**读到同一个数字（最多等 30s）。三点讲究：
+ *   · 不能因为一次读失败就放弃 —— 判定期间 dev/单核机器上偶发 fetch 失败很常见，
+ *     放弃就会把中途值（实测 296）当成最终值留在徽标上；
+ *   · 要连续三次而不是两次 —— 队列是分批写的，两次相同可能只是批间空隙；
+ *   · 到点仍未稳定就退回「再读一次」，宁可显示最后一次读到的真实值，也不留中途快照。
+ */
+const settlePending = async (maxMs = 30_000) => {
+  let last = -1
+  let stable = 0
+  const t0 = Date.now()
+  while (Date.now() - t0 < maxMs) {
+    await new Promise(r => setTimeout(r, 1000))
+    let n: number | null = null
+    try {
+      const res = await requestFetch<SuggestStats>('/api/admin/suggestions/meta')
+      n = typeof res?.pending === 'number' ? res.pending : null
+    } catch {
+      n = null // 读失败：不算稳定，也不放弃
+    }
+    if (n === null) continue
+    pendingCount.value = n
+    if (n === last) {
+      if (++stable >= 2) return n
+    } else {
+      last = n
+      stable = 0
+    }
+  }
+  await loadSuggestMeta()
+  return pendingCount.value
+}
+
 const generate = async (scope: 'recent' | 'missing') => {
   generating.value = true
+  // 先开面板再判定（用户原话：「点击开始生成之后，审核界面并不会立刻打开，而是过一会才会弹出」）。
+  // 面板会显示「正在判定…」，结果回来后再靠 reloadToken 刷新名单。
+  openReview()
   try {
     const body = scope === 'recent'
       ? { scope: 'recent', withinMinutes: 1440, immediate: true }
@@ -225,7 +269,8 @@ const generate = async (scope: 'recent' | 'missing') => {
       toast.warn(scope === 'recent' ? '最近没有新入库或变更的笔记' : '所有笔记都已有待审建议')
     }
     await loadSuggestMeta()
-    openReview()
+    await settlePending()
+    reload()
   } catch (e: any) {
     toast.error(e?.data?.message || '生成失败')
   } finally {
@@ -236,6 +281,12 @@ const generate = async (scope: 'recent' | 'missing') => {
 const onReviewed = async () => {
   await loadSuggestMeta()
   await refreshNuxtData(['vault-tree', 'sidebar-tags', 'sidebar-graph', 'graph-data', 'notes-recent'])
+}
+
+/** 打开审核面板时顺手把徽标对齐一次：徽标是进页面时读的，中途可能已被后台判定改过 */
+const openReviewAndSync = () => {
+  openReview()
+  void loadSuggestMeta()
 }
 
 /**
