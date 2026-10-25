@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-10-06（v1.9.9 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-10-25（v2.0.0 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v1.9.9` | `b131a85376fb` | **删除当前笔记后离开该页 + 新增错误页 + 新建路径统一**；部署文件移入 `deploy/`（详见下方 v1.9.9 说明）（**当前**） |
+| `latest` / `v2.0.0` | `e1858be940c1` | **库备份与恢复 + AI 全库审计 + 「未分组」说明 + 弹窗残留修复**；新增宿主 bind mount `/opt/digital-garden/data`（详见下方 v2.0.0 说明）（**当前**） |
+| `v1.9.9` | `481d354475df` | 删除当前笔记后离开该页 + 新增错误页 + 新建路径统一；部署文件移入 `deploy/`（详见下方 v1.9.9 说明） |
 | `v1.9.8` | `27384584acc5` | 题名归一为字符串 + watcher 启动/周期对账：修「新建数字标题的笔记后打不开、页面一片空白」 |
 | `v1.9.7` | `6a6a5fe43ba2` | 新建/重命名/删除三处缺陷修复（详见下方 v1.9.7 说明） |
 | `v1.9.6` | `6f20113277cf` | 补记：2026-10-05 上线，当时未在手册留记录（无 schema 变更） |
@@ -57,7 +58,7 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v1.9.9.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.0.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
@@ -76,7 +77,19 @@ https://liutianle.cn
 >
 > ⚠️ **AUTH_SECRET 轮换的连带影响（v1.9.0 起）**：AI 增强的 API 密钥以 AES-256-GCM 加密存在 `AppSetting` 里，加密密钥由 `AUTH_SECRET` 派生。轮换 `AUTH_SECRET` 会让**已存的 API 密钥解不开**（设置界面会提示「已存的密钥无法解密，请重新填写」，不会静默失效），同时所有登录 cookie 失效。轮换后重新在「管理后台 → AI 增强设置」里填一次密钥即可。
 
+> **v2.0.0 无 schema 变更**（新增功能 + 两处体验修复 + 一个新增宿主目录），启动日志为 `No pending migrations to apply.`，与 v1.9.9 双向回滚都不丢数据。**但回滚前请先看 §2 的目录说明**：v2.0.0 起容器多挂一个 `/opt/digital-garden/data`，回滚到 v1.9.9 时那份编排里没有这个挂载（备份文件仍留在宿主上，只是界面读不到）。
+> ① **库备份与恢复（仅初始管理员）** —— `server/utils/backup.ts` 自研容器格式 `GMZ1`（**不用 tar/zip**：本地 `content/vault` 是 Windows junction，系统 `tar` 不跟随会静默打出空包；恢复时全量读进内存又会撞 640M 容器 / 384M 堆限制），`createGzip` 流式写、`createGunzip` 流式读；每份备份同时含 `vault.gmz`（全库 Markdown）+ `db.json`（`Note` 的 maturity/isPublished/domainLevel1/domainSource/时间戳 + 标签名 + 图谱颜色 + `AppSetting`）—— **必须含 DB 元数据**，因为领域的事实源是 `Note.domainLevel1` 而不在 frontmatter 里。保留最近 10 份，可看清单/差异（按 sha256 对比，不解压）/一键恢复；恢复前自动再备一份（kind=`pre-restore`）。
+> ② **恢复的两个坑（本轮实测踩到并修掉）** —— 清空 vault 再复制回会触发 524 个 `unlink`，watcher 把整库 Note 行删光又全量重建，`createdAt` 全部变成恢复当天、`updatedAt` 全被刷成同一秒，进而 `scheduleSuggestScan` 认为「全库刚导入」而排队生成 514 条建议。修法：新增 `server/utils/vault-busy.ts`（`beginVaultBusy`/`endVaultBusy`/`isVaultBusy`），watcher 的 `add`/`change`/`unlink` 与 `scheduleSuggestScan` 在整库操作期间直接跳过（结束留 5s 宽限，因为 chokidar 的 `awaitWriteFinish` 稳定窗口是 1s）；重建索引后用 `$executeRawUnsafe` 写回原始时间戳（Prisma 的 `update` 会强行把 `updatedAt` 设为 `now()`）。
+> ③ **AI 全库审计（仅初始管理员）** —— `server/utils/audit.ts`：范围可按文件夹/标签/领域/关键词任意组合，先「看看会扫多少篇」再真正跑；每篇交给模型产出**建议**（`append-section` / `add-tags` / `set-domain` 三种动作，刻意不提供「重写正文」），建议与执行分离，**执行前强制整库备份**（备份失败则一条都不执行）。报告按文件存在 `data/audits/<id>.json`，不进数据库（恢复备份时不该带回旧报告）。
+> ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。
+> ⑤ **多选器弹窗挡住确认框**（用户报障）—— `generate()` 里 `await confirm(...)` 排在 `emit('update:open', false)` 之前，两个浮层同 z 层互相遮挡，用户点不到「开始生成」只能手动叉掉；改为先关多选器再弹确认。
+> ⑥ **权限** —— 备份/审计/恢复全部走新增的 `requireBuiltinAdmin`（`role === 'root' && isBuiltin === true`），普通管理员与普通用户均 403。
+> ⑦ 部署侧：`deploy/docker-compose.prod.yml` 增加 `GARDEN_BACKUP_DIR: /app/data/backups`、`GARDEN_AUDIT_DIR: /app/data/audits` 与 bind mount `- /opt/digital-garden/data:/app/data`（容器 `--force-recreate` 会丢容器内文件，而备份的唯一价值就是跨重启可恢复；显式声明同时让界面判为「持久存储」）。**上线前需在服务器 `mkdir -p /opt/digital-garden/data` 并更新该文件**（见 §3）。
+> ⑧ 验证：`pnpm typecheck` EXIT=0；本地 `backup-audit-probe` 32/32（起假模型 `127.0.0.1:3199`，含备份→改文件→差异→恢复→审计→执行→权限 403 全链路）、`admin-panels-probe` 11/11、`ui-fixes-probe` 13/13；生产 `prod-backup-verify` 15/15（`persistent=true`、`keep=10`、首次整库备份 `files=531 bytes=4749499 noteCount=526`）、`pnpm acceptance:prod` 19/19。
+> ⑨ **已知未修**：`acceptance:graph` 的 `G99 刷新后节点位置保持`（graph-verify 119/120）—— 刷新后存档里 `pos` 为空、位置全部重排。已确认不是本轮引入（`.workbuddy/acceptance-all2.log` 在 10-06 时是 120/120），试过「空 `nodeData` 时不 persist」，虽能让 G99 通过却把 G92/G93/G98/G100–G106 打挂，已回退，留待单独排查。
+
 > **v1.9.9 无 schema 变更**（纯前端 + 仓库布局），启动日志为 `No pending migrations to apply.`，与 v1.9.8 双向回滚都不丢数据。本次修掉三处体验缺陷、并整理仓库布局：
+
 > ① **删除正在查看的笔记后停在死页面**（用户报障）—— 结构树的删除（`app/components/ContextSidebar.vue` 的 `case 'delete'`）删完只刷新结构树，既不跳转也不提示，于是主界面继续显示一篇已经不存在于库里的笔记。现在删掉的正是当前笔记（或它所在文件夹里的笔记）时退回 `/notes`，并 `notesRev++` 让列表/图谱跟着刷新。详情页「更多操作 → 删除笔记」与列表长按删除这两条路径本来就有跳转，只有结构树这条漏了。
 > ② **新增 `app/error.vue`** —— 此前没有错误页，任何加载失败（最典型是详情页 404）都只看到 Nuxt 默认页，观感就是「一片空白、连标题和按钮都没有」。现在给出「这篇笔记打不开」+ 可能原因 + 重试 / 回到笔记列表 / 首页 三个出口，并把状态码与原始 message 放进弱化等宽块，便于对照容器日志。
 > ③ **新增 `app/composables/useCreateNote.ts`** —— 把「POST 新建 → 刷新结构树 → 等入库可读 → 跳详情页」收敛成一份实现，顶栏新建与结构树内联新建共用（此前只有顶栏加了等待）。附带发现：`FileTree` 的内联新建是不可达的死代码（`startCreate` 从未被调用），统一它只为不留第二份实现。
@@ -162,6 +175,12 @@ ssh -i ~/.ssh/garden.pem root@8.163.35.246
 STAMP=$(date +%Y%m%d-%H%M%S); BK=/opt/garden-backup; mkdir -p "$BK"
 cp -a /opt/garden-docker/docker-compose.prod.yml "$BK/docker-compose.prod.yml.$STAMP"
 cp -a /opt/garden-docker/.env "$BK/env.$STAMP"; chmod 600 "$BK"/env.*
+
+# v2.0.0 起：编排里多了 /opt/digital-garden/data 挂载（备份与审计报告落盘）。
+# 首次升级到 v2.0.0 时先把服务器上的编排换成仓库这份，并建好目录（已有备份则跳过 cp）。
+mkdir -p /opt/digital-garden/data
+scp -i ~/.ssh/garden.pem deploy/docker-compose.prod.yml root@8.163.35.246:/opt/garden-docker/docker-compose.prod.yml.new
+# 在服务器上：sed -i 's/\r$//' …new && mv …new …prod.yml
 
 # 记录回滚点
 docker inspect garden-app --format '{{.Image}}' | tee "$BK/rollback-image-id.$STAMP.txt"
