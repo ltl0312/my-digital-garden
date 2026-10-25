@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-10-25（v2.0.1 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-10-25（v2.0.2 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v2.0.1` | `d097c1f11aaf` | 杜绝无命名空间标签（裸标签五级处理，新建命名空间需在审核面板逐条同意）+ 多选器重开后勾选归零（详见下方 v2.0.1 说明）（**当前**） |
+| `latest` / `v2.0.2` | `6c37a5483402` | 审核通过不再覆盖笔记原有标签（数据损坏修复）+ 徽标/名单同源 + 零引用标签清理；并用备份回灌了被覆盖的标签（详见下方 v2.0.2 说明）（**当前**） |
+| `v2.0.1` | `d097c1f11aaf` | 杜绝无命名空间标签（裸标签五级处理，新建命名空间需在审核面板逐条同意）+ 多选器重开后勾选归零（详见下方 v2.0.1 说明） |
 | `v2.0.0` | `e1858be940c1` | 库备份与恢复 + AI 全库审计 + 「未分组」说明 + 弹窗残留修复；新增宿主 bind mount `/opt/digital-garden/data`（详见下方 v2.0.0 说明） |
 | `v1.9.9` | `481d354475df` | 删除当前笔记后离开该页 + 新增错误页 + 新建路径统一；部署文件移入 `deploy/`（详见下方 v1.9.9 说明） |
 | `v1.9.8` | `27384584acc5` | 题名归一为字符串 + watcher 启动/周期对账：修「新建数字标题的笔记后打不开、页面一片空白」 |
@@ -59,7 +60,7 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.0.1.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.0.2.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
@@ -83,6 +84,19 @@ https://liutianle.cn
 > ② **恢复的两个坑（本轮实测踩到并修掉）** —— 清空 vault 再复制回会触发 524 个 `unlink`，watcher 把整库 Note 行删光又全量重建，`createdAt` 全部变成恢复当天、`updatedAt` 全被刷成同一秒，进而 `scheduleSuggestScan` 认为「全库刚导入」而排队生成 514 条建议。修法：新增 `server/utils/vault-busy.ts`（`beginVaultBusy`/`endVaultBusy`/`isVaultBusy`），watcher 的 `add`/`change`/`unlink` 与 `scheduleSuggestScan` 在整库操作期间直接跳过（结束留 5s 宽限，因为 chokidar 的 `awaitWriteFinish` 稳定窗口是 1s）；重建索引后用 `$executeRawUnsafe` 写回原始时间戳（Prisma 的 `update` 会强行把 `updatedAt` 设为 `now()`）。
 > ③ **AI 全库审计（仅初始管理员）** —— `server/utils/audit.ts`：范围可按文件夹/标签/领域/关键词任意组合，先「看看会扫多少篇」再真正跑；每篇交给模型产出**建议**（`append-section` / `add-tags` / `set-domain` 三种动作，刻意不提供「重写正文」），建议与执行分离，**执行前强制整库备份**（备份失败则一条都不执行）。报告按文件存在 `data/audits/<id>.json`，不进数据库（恢复备份时不该带回旧报告）。
 > ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。
+> **v2.0.2 无 schema 变更**（纯业务逻辑 + 前端状态修复 + 一次数据回灌），启动日志为 `No pending migrations to apply.`，与 v2.0.1 双向回滚都不丢数据。
+>
+> 本次修掉三处「数字对不上」并处理一个**正在损坏数据**的缺陷：
+>
+> ① **审核通过会用建议标签整体覆盖笔记原有标签（数据损坏）**：审核面板的 `draft.tags` 语义是「通过后这篇笔记的完整标签列表」（模板里「现有标签（取消勾选即从笔记中移除）」按 `draft.tags.includes(t)` 判保留），但初始化时只放了建议标签、没并入现有标签 —— 于是每条现有标签都被渲染成「已移除」，点通过就把它们整批删掉。线上后果：`Java`(49 篇)、`后端`(47)、`前端`(40)、`数据库`(26)、`跨学科纵深`(10) 等裸标签的引用被清空，变成标签页里「0 条笔记」的幽灵标签。修复：draft 初始化改为「现有 ∪ 建议」；服务端把 `removedTags` 写进 `appliedValue` 与响应；面板检测到非空时 `toast.warn` 并告诉用户如何加回。
+> ② **徽标 / 名单 / 库三者数字对不上**（用户原话「待审核建议显示十条但是点进去却没有」）：徽标读 `/meta`、名单读 `/suggestions`，两条路径各有各的时机。现在面板每次 load 把全库待审数写回 `useSuggestionReview` 的 `pendingTotal`，徽标直接读它 —— 同源之后不会再「说有却没有」。名单改按服务端上限 `limit=500` 拉取，被上限截断时界面明说（`data-testid="review-truncated"`）；生成结束后用 `settlePending` 等队列落定（连续三次读数相同、最多 30s，读失败不放弃）。
+> ③ **点「开始生成」后审核面板要等判定完才弹**：`generate()` 原本 POST → `loadSuggestMeta` → `openReview` 串行（实测 2620ms）。改为先 `openReview` 再 POST，判定期间面板显示「正在判定…」，结果回来靠 `reloadToken` 自动刷新。实测 20ms。
+> ④ **0 条笔记的标签还留着**：`Tag` 行只在标签第一次写进笔记时创建，失去最后一个引用时从不删除。现在 `GET /api/tags` 过滤 `_count.notes > 0`，新增 `server/utils/tags-gc.ts` 的 `pruneOrphanTags()` 在审核末尾异步清理，自动判定的候选池也加 `where notes.some` 避免把没人用的名字当「既有标签」推荐。
+>
+> **数据回灌（一次性，已执行）**：用生产备份 `20261025-040116-5oj7/db.json`（2026-10-25T04:01Z，即 12:01 北京时间）以**并集**方式补回被覆盖的标签 —— 77 篇笔记、308 处引用，**只补不删**。回灌前后：`Java 0→49`、`后端 0→47`、`前端 0→40`、`数据库 0→26`、`跨学科纵深 0→10`、`运维 0→20`、`status/进行中 230→251`。回灌走生产自己的 `PATCH /api/vault/notes/<slug>`，因此 frontmatter 与 DB 一起更新；动手前另存了备份 `20261025-081532-y349`（kind=manual）。**12:01 之前发生的覆盖不在任何备份里，无法回灌**（当时还没有备份功能）。
+>
+> **验证**：`pnpm typecheck` EXIT=0；`tag-keep-probe` 12/12、`tag-drop-probe` 6/6、`panel-open-probe` 6/6；`pnpm acceptance:all` 除已知噪声 `G99` 外全绿（`m-verify` 47/47、`m34-verify` 43/43、`graph-verify` 119/120、`picker-verify` 16/16、`suggest-entries-verify` 13/13，`suggest-verify` 仅 `D2` 一项环境噪声）；生产只读 `pnpm acceptance:prod` **19/19**，另有只读核对 7/7（`meta` 与名单待审数一致、`/api/tags` 零引用 0 个、五个裸标签引用数已恢复）。
+
 > **v2.0.1 无 schema 变更**（纯标签生成策略 + 一个前端状态修复），启动日志为 `No pending migrations to apply.`，与 v2.0.0 双向回滚都不丢数据。
 > ① **杜绝无命名空间标签**（用户报障）—— 线上 13 个无前缀裸标签（`Java` 49 次、`后端` 47、`前端` 40…）与 `Java/基础`、`前端/Vue` 是两套并存体系：侧栏把它们全塞进「未分组」、图谱标签边分裂。只在候选池过滤不够（模型返回值也过同一份白名单），所以在 `server/utils/tag-suggest.ts` 的打分与 `server/utils/suggest.ts` 的落库出口两处都设硬约束，裸标签分五级、每级都写可读依据：已带命名空间 → 原样；有共存证据 → 补成 `后端/Java`；它本身就是命名空间（`Java`/`前端`/`运维`）→ 跳过（补成 `Java/Java` 是废标签）；无证据 → 退回**本篇领域名**当命名空间；连领域名都判不出 → 跳过并写明原因。兜底领域值「其他」不当前缀（`其他/Docker` 比裸标签更没信息量）。
 > ② **「自行创建命名空间需要我同意」如何落实** —— 建议本身不写任何笔记：`新建命名空间「X」` 只是理由里的一句话，只有审核面板逐条通过、审核者看见这句话，该命名空间才会随标签落库。为此把命名空间说明从内存态的 `reason` 搬进落库的 `rationale`（否则界面上根本看不到自己在批准什么）。
