@@ -200,10 +200,70 @@ export async function llmSuggest(req: LlmSuggestRequest): Promise<LlmSuggestResu
  * 共同点是失败语义 —— 未配置 / 超时 / 非 2xx / 解析不出 JSON，一律返回 null，
  * 由调用方决定「跳过这一篇」而不是让整次审计崩掉。
  */
+/**
+ * 从被截断的 JSON 文本里切出某个数组字段中**已经写完**的元素。
+ *
+ * 为什么不用「首个 { 到末个 }」：那招对被截断的数组完全无效 —— 末个 } 是第 3 条的
+ * 残骸，拼出来的仍然不是合法 JSON。这里按字符串转义 + 括号配对扫一遍，
+ * 逐个 JSON.parse，只留下完整的那些。
+ */
+function salvageArray(text: string, key: string): unknown[] | null {
+  const src = String(text || '')
+  const keyAt = src.indexOf(`"${key}"`)
+  if (keyAt < 0) return null
+  const arrStart = src.indexOf('[', keyAt)
+  if (arrStart < 0) return null
+
+  const items: unknown[] = []
+  let depth = 0
+  let inStr = false
+  let esc = false
+  let start = -1
+  for (let i = arrStart + 1; i < src.length; i++) {
+    const ch = src[i] as string
+    if (inStr) {
+      if (esc) esc = false
+      else if (ch === '\\') esc = true
+      else if (ch === '"') inStr = false
+      continue
+    }
+    if (ch === '"') { inStr = true; continue }
+    if (ch === '{' || ch === '[') {
+      if (depth === 0) start = i
+      depth++
+      continue
+    }
+    if (ch === '}' || ch === ']') {
+      if (depth === 0) break // 数组自己的 ]
+      depth--
+      if (depth === 0 && start >= 0) {
+        try { items.push(JSON.parse(src.slice(start, i + 1))) } catch { /* 这条不完整，跳过 */ }
+        start = -1
+      }
+      continue
+    }
+    if (ch === ',' && depth === 0) start = -1
+  }
+  return items.length ? items : null
+}
+
 export async function llmJson<T = unknown>(
   system: string,
   user: string,
-  opts: { maxTokens?: number; timeoutMs?: number; retries?: number; onError?: (reason: string) => void } = {}
+  opts: {
+    maxTokens?: number
+    timeoutMs?: number
+    retries?: number
+    onError?: (reason: string) => void
+    /**
+     * 允许从「被截断的 JSON」里抢救这个数组字段
+     *
+     * 线上实测：模型经常把 2 条建议写完整、第 3 条写到一半就撞上 max_tokens。
+     * 这时整段既不是合法 JSON、也过不了 extractJson 的兜底，整篇白跑 —— 可那 2 条
+     * 是完好的。给了这个键就会在放弃之前按括号配对切出已写完的元素，逐个解析后返回。
+     */
+    salvageArrayKey?: string
+  } = {}
 ): Promise<T | null> {
   const cfg = await llmConfig()
   if (!cfg.enabled) return null
@@ -215,11 +275,12 @@ export async function llmJson<T = unknown>(
   const attempts = Math.max(1, Math.min(3, opts.retries ?? 2))
   let lastReason = '未知原因'
   let lastHead = ''
+  let lastText = ''
 
   for (let i = 0; i < attempts; i++) {
     const big = i > 0
     const timeoutMs = Math.max(1000, (big ? Math.max(opts.timeoutMs || 0, cfg.timeoutMs) * 2 : (opts.timeoutMs || cfg.timeoutMs)))
-    const maxTokens = big ? Math.min(4000, Math.round((opts.maxTokens || 1200) * 1.8)) : (opts.maxTokens || 1200)
+    const maxTokens = big ? Math.min(8000, Math.round((opts.maxTokens || 1200) * 2.5)) : (opts.maxTokens || 1200)
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
     try {
@@ -258,6 +319,7 @@ export async function llmJson<T = unknown>(
       }
       const choice = data?.choices?.[0]
       const text = choice?.message?.content || ''
+      if (text) lastText = text
       const parsed = extractJson(text)
       if (parsed && typeof parsed === 'object') return parsed as T
 
@@ -275,6 +337,15 @@ export async function llmJson<T = unknown>(
       clearTimeout(timer)
     }
   }
+  // 放弃之前先抢救：截断的第 3 条写不完，但前 2 条往往是完整的
+  if (opts.salvageArrayKey && lastText) {
+    const items = salvageArray(lastText, opts.salvageArrayKey)
+    if (items) {
+      console.warn(`[garden] llm-json: 内容被截断，但从里面抢救出 ${items.length} 条（${opts.salvageArrayKey}）`)
+      return { [opts.salvageArrayKey]: items } as T
+    }
+  }
+
   const finalReason = lastHead ? `${lastReason}：${lastHead}` : lastReason
   console.warn(`[garden] llm-json: 放弃（共 ${attempts} 次）· 最后原因：${finalReason}`)
   // 把原因交给调用方（审计面板要把它显示出来，否则用户只看到「失败 N 篇」无从下手）

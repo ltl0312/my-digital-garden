@@ -265,14 +265,15 @@ const SYSTEM_PROMPT = [
   '  fix    = 明确错误（错别字、代码块语言标注错、链接失效、事实错误）',
   '',
   '每条建议必须能落到三种动作之一，否则不要提：',
-  '  append-section  追加一小节（给 heading 与 body；body 是完整 markdown，**不超过 200 字**，不要占位符）',
+  '  append-section  追加一小节（给 heading 与 body；body 是完整 markdown，**不超过 150 字**，不要占位符）',
   '  add-tags        补充标签（只能从给定候选标签里选，逐字一致）',
   '  set-domain      调整领域（只能从给定候选领域里选）',
   '若某条建议无法机械执行（例如「建议重写全文」），action 给 null。',
   '',
   '严厉约束：',
-  '1. 最多 3 条，按严重程度排序；宁少勿滥，没有真问题就返回空数组。',
-  '1b. **完整性优先于条数**：宁可只给 1 条，也不要把 JSON 写到一半被截断。',
+  '1. 最多 2 条，按严重程度排序；宁少勿滥，没有真问题就返回空数组。',
+  '1b. **完整性优先于条数**：宁可只给 1 条，也绝不要把 JSON 写到一半被截断。',
+  '1c. detail 不超过 80 字，只讲「哪里有问题、要改成什么」。',
   '2. append-section 的 body 必须是可直接粘进笔记的正文，禁止写「此处补充…」这类占位。',
   '3. 不要建议删除用户内容。',
   '4. 只输出 JSON，不要 markdown 代码块，不要解释。',
@@ -421,13 +422,14 @@ export async function runAudit(opts: {
         maxTokens: 2000,
         timeoutMs: 45_000,
         retries: 2,
+        salvageArrayKey: 'issues',
         onError: reason => { if (run.failReasons.length < 8) run.failReasons.push(reason) }
       })
       if (!res) {
         run.failedCount++
         continue
       }
-      const raw = Array.isArray(res.issues) ? res.issues.slice(0, 3) : []
+      const raw = Array.isArray(res.issues) ? res.issues.slice(0, 4) : []
       for (const r of raw) {
         const issue = normalizeIssue(r, {
           slug: n.slug,
