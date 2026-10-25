@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-10-25（v2.0.0 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-10-25（v2.0.1 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v2.0.0` | `e1858be940c1` | **库备份与恢复 + AI 全库审计 + 「未分组」说明 + 弹窗残留修复**；新增宿主 bind mount `/opt/digital-garden/data`（详见下方 v2.0.0 说明）（**当前**） |
+| `latest` / `v2.0.1` | `d097c1f11aaf` | 杜绝无命名空间标签（裸标签五级处理，新建命名空间需在审核面板逐条同意）+ 多选器重开后勾选归零（详见下方 v2.0.1 说明）（**当前**） |
+| `v2.0.0` | `e1858be940c1` | 库备份与恢复 + AI 全库审计 + 「未分组」说明 + 弹窗残留修复；新增宿主 bind mount `/opt/digital-garden/data`（详见下方 v2.0.0 说明） |
 | `v1.9.9` | `481d354475df` | 删除当前笔记后离开该页 + 新增错误页 + 新建路径统一；部署文件移入 `deploy/`（详见下方 v1.9.9 说明） |
 | `v1.9.8` | `27384584acc5` | 题名归一为字符串 + watcher 启动/周期对账：修「新建数字标题的笔记后打不开、页面一片空白」 |
 | `v1.9.7` | `6a6a5fe43ba2` | 新建/重命名/删除三处缺陷修复（详见下方 v1.9.7 说明） |
@@ -58,7 +59,7 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.0.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.0.1.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
@@ -82,6 +83,13 @@ https://liutianle.cn
 > ② **恢复的两个坑（本轮实测踩到并修掉）** —— 清空 vault 再复制回会触发 524 个 `unlink`，watcher 把整库 Note 行删光又全量重建，`createdAt` 全部变成恢复当天、`updatedAt` 全被刷成同一秒，进而 `scheduleSuggestScan` 认为「全库刚导入」而排队生成 514 条建议。修法：新增 `server/utils/vault-busy.ts`（`beginVaultBusy`/`endVaultBusy`/`isVaultBusy`），watcher 的 `add`/`change`/`unlink` 与 `scheduleSuggestScan` 在整库操作期间直接跳过（结束留 5s 宽限，因为 chokidar 的 `awaitWriteFinish` 稳定窗口是 1s）；重建索引后用 `$executeRawUnsafe` 写回原始时间戳（Prisma 的 `update` 会强行把 `updatedAt` 设为 `now()`）。
 > ③ **AI 全库审计（仅初始管理员）** —— `server/utils/audit.ts`：范围可按文件夹/标签/领域/关键词任意组合，先「看看会扫多少篇」再真正跑；每篇交给模型产出**建议**（`append-section` / `add-tags` / `set-domain` 三种动作，刻意不提供「重写正文」），建议与执行分离，**执行前强制整库备份**（备份失败则一条都不执行）。报告按文件存在 `data/audits/<id>.json`，不进数据库（恢复备份时不该带回旧报告）。
 > ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。
+> **v2.0.1 无 schema 变更**（纯标签生成策略 + 一个前端状态修复），启动日志为 `No pending migrations to apply.`，与 v2.0.0 双向回滚都不丢数据。
+> ① **杜绝无命名空间标签**（用户报障）—— 线上 13 个无前缀裸标签（`Java` 49 次、`后端` 47、`前端` 40…）与 `Java/基础`、`前端/Vue` 是两套并存体系：侧栏把它们全塞进「未分组」、图谱标签边分裂。只在候选池过滤不够（模型返回值也过同一份白名单），所以在 `server/utils/tag-suggest.ts` 的打分与 `server/utils/suggest.ts` 的落库出口两处都设硬约束，裸标签分五级、每级都写可读依据：已带命名空间 → 原样；有共存证据 → 补成 `后端/Java`；它本身就是命名空间（`Java`/`前端`/`运维`）→ 跳过（补成 `Java/Java` 是废标签）；无证据 → 退回**本篇领域名**当命名空间；连领域名都判不出 → 跳过并写明原因。兜底领域值「其他」不当前缀（`其他/Docker` 比裸标签更没信息量）。
+> ② **「自行创建命名空间需要我同意」如何落实** —— 建议本身不写任何笔记：`新建命名空间「X」` 只是理由里的一句话，只有审核面板逐条通过、审核者看见这句话，该命名空间才会随标签落库。为此把命名空间说明从内存态的 `reason` 搬进落库的 `rationale`（否则界面上根本看不到自己在批准什么）。
+> ③ **多选器重开后勾选归零**（用户报障）—— `selected` 是组件自身状态、`AppDialog` 只 `v-if` 了内容，关闭不卸载；而上一轮那些笔记此刻已生成待审建议，再打开时默认筛选「还没有待审」根本列不出它们，勾选却还在（「已选 49 篇」指向一批看不见的笔记）。改为 `watch(props.open)` 打开时先清空再加载。
+> ④ 验证：`pnpm typecheck` EXIT=0；本地 `namespace-probe2` 22/22（造数据覆盖五级分支：`excalidraw`→`type/excalidraw`、`ZnsNs` 本身是前缀被跳过、`ZnsBare3`→`运维/ZnsBare3`、`ZnsBare4` 判不出领域被跳过；另 200 篇大样本 1464 个标签裸标签 0 个；多选器关闭再打开 `count 2 → 0`）；生产 `pnpm acceptance:prod` 19/19，容器内 `selfNamespace`/`inferNamespace`/`hasNamespace`/`droppedBare` 四个标识符均命中产物。
+> ⑤ **已知环境噪声（非本次引入，已用 `git stash` 对照证实）**：本地 `acceptance:suggest` 的 `D2`/`A6`/`K2`/`K5` 四项在改动前后同样失败 —— 开发环境 watcher `ignoreInitial: false` 全量重扫把 524 篇 `updatedAt` 刷成同一时刻，排序退化后特定 slug 掉出 `/api/notes?pageSize=100/200` 窗口（`K2`/`K5` 还叠加探针遗留的 pending 把 limit 窗口占满）。生产是 `ignoreInitial: true`，不受影响；`G99` 同上一条 v2.0.0 说明。
+
 > ⑤ **多选器弹窗挡住确认框**（用户报障）—— `generate()` 里 `await confirm(...)` 排在 `emit('update:open', false)` 之前，两个浮层同 z 层互相遮挡，用户点不到「开始生成」只能手动叉掉；改为先关多选器再弹确认。
 > ⑥ **权限** —— 备份/审计/恢复全部走新增的 `requireBuiltinAdmin`（`role === 'root' && isBuiltin === true`），普通管理员与普通用户均 403。
 > ⑦ 部署侧：`deploy/docker-compose.prod.yml` 增加 `GARDEN_BACKUP_DIR: /app/data/backups`、`GARDEN_AUDIT_DIR: /app/data/audits` 与 bind mount `- /opt/digital-garden/data:/app/data`（容器 `--force-recreate` 会丢容器内文件，而备份的唯一价值就是跨重启可恢复；显式声明同时让界面判为「持久存储」）。**上线前需在服务器 `mkdir -p /opt/digital-garden/data` 并更新该文件**（见 §3）。
