@@ -203,52 +203,83 @@ export async function llmSuggest(req: LlmSuggestRequest): Promise<LlmSuggestResu
 export async function llmJson<T = unknown>(
   system: string,
   user: string,
-  opts: { maxTokens?: number; timeoutMs?: number } = {}
+  opts: { maxTokens?: number; timeoutMs?: number; retries?: number; onError?: (reason: string) => void } = {}
 ): Promise<T | null> {
   const cfg = await llmConfig()
   if (!cfg.enabled) return null
 
-  const timeoutMs = Math.max(1000, opts.timeoutMs || cfg.timeoutMs)
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${cfg.apiKey}`
-      },
-      body: JSON.stringify({
-        model: cfg.model,
-        temperature: 0.3,
-        max_tokens: opts.maxTokens || 1200,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user }
-        ]
-      }),
-      signal: controller.signal
-    })
-    if (!res.ok) {
-      console.warn(`[garden] llm-json: 调用失败 HTTP ${res.status}（model=${cfg.model}）`)
-      return null
+  // 解析失败重试：线上实测「已扫 60 篇 / 模型失败 59 篇」全是同一条
+  // 「返回内容无法解析为 JSON」—— 最可能的原因是一次性要的东西太多、
+  // 输出被 max_tokens 截断（截断的 JSON 既不是合法 JSON，也没法用「首个 { 到末个 }」兜住）。
+  // 所以重试时**放大 max_tokens**并追加一句「必须是完整 JSON」的约束，而不是原样重放。
+  const attempts = Math.max(1, Math.min(3, opts.retries ?? 2))
+  let lastReason = '未知原因'
+  let lastHead = ''
+
+  for (let i = 0; i < attempts; i++) {
+    const big = i > 0
+    const timeoutMs = Math.max(1000, (big ? Math.max(opts.timeoutMs || 0, cfg.timeoutMs) * 2 : (opts.timeoutMs || cfg.timeoutMs)))
+    const maxTokens = big ? Math.min(4000, Math.round((opts.maxTokens || 1200) * 1.8)) : (opts.maxTokens || 1200)
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${cfg.apiKey}`
+        },
+        body: JSON.stringify({
+          model: cfg.model,
+          temperature: big ? 0.1 : 0.3,
+          max_tokens: maxTokens,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: system },
+            {
+              role: 'user',
+              content: big
+                ? `${user}\n\n（重要：直接输出**完整**的 JSON 对象，不要解释、不要代码块；如果内容太多，宁可少给几条，也不要让 JSON 被截断。）`
+                : user
+            }
+          ]
+        }),
+        signal: controller.signal
+      })
+      if (!res.ok) {
+        lastReason = `HTTP ${res.status}`
+        console.warn(`[garden] llm-json: 调用失败 HTTP ${res.status}（model=${cfg.model}）第 ${i + 1} 次`)
+        // 4xx（除了 429）重试没意义：密钥/模型名/参数不对，再打一次还是同样的错
+        if (res.status >= 400 && res.status < 500 && res.status !== 429) break
+        continue
+      }
+      const data = await res.json() as {
+        choices?: Array<{ message?: { content?: string }; finish_reason?: string }>
+      }
+      const choice = data?.choices?.[0]
+      const text = choice?.message?.content || ''
+      const parsed = extractJson(text)
+      if (parsed && typeof parsed === 'object') return parsed as T
+
+      // 记下真实原因：finish_reason=length 就是被 max_tokens 截断，这是最需要看见的一种
+      lastReason = choice?.finish_reason === 'length'
+        ? `输出被 max_tokens(${maxTokens}) 截断`
+        : '返回内容不是合法 JSON'
+      lastHead = String(text).slice(0, 200).replace(/\s+/g, ' ')
+      console.warn(`[garden] llm-json: ${lastReason} 第 ${i + 1} 次 · 原文开头「${lastHead}」`)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      lastReason = msg.includes('abort') ? `超时 ${timeoutMs}ms` : `调用异常（${msg}）`
+      console.warn(`[garden] llm-json: ${lastReason} 第 ${i + 1} 次`)
+    } finally {
+      clearTimeout(timer)
     }
-    const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> }
-    const text = data?.choices?.[0]?.message?.content || ''
-    const parsed = extractJson(text)
-    if (!parsed || typeof parsed !== 'object') {
-      console.warn('[garden] llm-json: 返回内容无法解析为 JSON')
-      return null
-    }
-    return parsed as T
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    console.warn(`[garden] llm-json: 调用异常（${msg}）`)
-    return null
-  } finally {
-    clearTimeout(timer)
   }
+  const finalReason = lastHead ? `${lastReason}：${lastHead}` : lastReason
+  console.warn(`[garden] llm-json: 放弃（共 ${attempts} 次）· 最后原因：${finalReason}`)
+  // 把原因交给调用方（审计面板要把它显示出来，否则用户只看到「失败 N 篇」无从下手）
+  try { opts.onError?.(finalReason) } catch { /* 回调出错不影响主流程 */ }
+  return null
 }
 
 /** 给审核界面/设置界面用的状态描述（**不含任何密钥信息**，只回模型名与地址） */

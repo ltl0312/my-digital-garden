@@ -44,6 +44,7 @@ interface AuditRun {
   noteCount: number
   scannedCount: number
   failedCount: number
+  failReasons?: string[]
   issues: AuditIssue[]
   complete: boolean
   error?: string
@@ -380,12 +381,12 @@ onBeforeUnmount(stopPoll)
 
       <div class="flex flex-wrap items-end gap-3 pt-1">
         <label class="text-[12px] text-ink-3">
-          <span class="block mb-1">最多扫描篇数（1–60）</span>
+          <span class="block mb-1">最多扫描篇数（1–200）</span>
           <input
             v-model.number="limit"
             type="number"
             min="1"
-            max="60"
+            max="200"
             class="w-[110px] px-2.5 py-1.5 rounded-ctl bg-surface border border-line text-ds-sm text-ink font-mono focus:outline-none focus:border-accent/60"
           />
         </label>
@@ -426,6 +427,7 @@ onBeforeUnmount(stopPoll)
           <span>模型 <b class="text-ink-2">{{ run.model }}</b></span>
           <span>匹配 {{ run.noteCount }} 篇 · 已扫 {{ run.scannedCount }} 篇</span>
           <span v-if="run.failedCount" class="text-growing">模型失败 {{ run.failedCount }} 篇</span>
+          <span v-if="run.failedCount" class="text-ink-3">失败原因见下</span>
           <span>{{ run.issues.length }} 条建议</span>
           <span v-if="run.backupId" class="text-evergreen">执行前备份 {{ run.backupId }}</span>
           <span v-if="!run.complete" class="inline-flex items-center gap-1 text-accent">
@@ -434,6 +436,23 @@ onBeforeUnmount(stopPoll)
         </div>
         <p v-if="run.error" class="mt-2 flex items-start gap-1.5 text-[12px] text-danger">
           <AlertTriangle class="w-3.5 h-3.5 shrink-0 mt-0.5" />{{ run.error }}
+        </p>
+      </div>
+      <!-- 失败原因必须可见：只有一个「失败 59 篇」的数字，用户无从判断是超时、限流还是输出被截断
+           （线上第一次跑审计就是 59/60 全失败，最后靠容器日志才查出是 max_tokens 截断）。 -->
+      <div
+        v-if="run.failedCount && run.failReasons?.length"
+        data-testid="audit-fail-reasons"
+        class="rounded-card border border-line bg-surface-2 p-3 mb-3"
+      >
+        <p class="text-[12px] text-ink-3 mb-1">模型失败原因（最多记 8 条）：</p>
+        <ul class="space-y-0.5">
+          <li v-for="(r, i) in run.failReasons" :key="i" class="text-[12px] text-ink-2 font-mono break-all">
+            · {{ r }}
+          </li>
+        </ul>
+        <p class="mt-1.5 text-[12px] text-ink-3">
+          常见原因：输出被截断（已自动放大重试一次）、上游超时或限流、模型名或密钥不对。
         </p>
       </div>
 

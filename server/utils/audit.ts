@@ -36,11 +36,11 @@ export const AUDIT_DIR = process.env.GARDEN_AUDIT_DIR
   : path.join(process.cwd(), 'data', 'audits')
 
 /** 单次审计最多扫多少篇 —— 直接决定 token 花多少，必须有硬上限 */
-const MAX_NOTES = 60
+const MAX_NOTES = 200
 /** 默认扫多少篇（用户不填时） */
 const DEFAULT_NOTES = 20
 /** 正文送进 prompt 的字符上限（长文截断，否则单篇就能吃掉整个上下文） */
-const CONTENT_LIMIT = 4000
+const CONTENT_LIMIT = 3000
 /** 并发数：网关侧通常限流，3 个并发既不慢也不至于被拒 */
 const CONCURRENCY = 3
 
@@ -100,6 +100,14 @@ export interface AuditRun {
   scannedCount: number
   /** 模型失败的篇数（如实报告，不假装全成功） */
   failedCount: number
+  /**
+   * 模型失败的原因（最多记 8 条）。
+   *
+   * 为什么要有：线上第一次跑审计是「已扫 60 篇 / 模型失败 59 篇」，界面上只有一个数字，
+   * 谁也看不出是超时、限流还是输出被截断 —— 只能去翻容器日志。把原因放进报告，
+   * 失败就不再是一个黑盒数字。
+   */
+  failReasons: string[]
   issues: AuditIssue[]
   complete: boolean
   /** 备份 ID（若本次审计执行过写操作） */
@@ -257,13 +265,14 @@ const SYSTEM_PROMPT = [
   '  fix    = 明确错误（错别字、代码块语言标注错、链接失效、事实错误）',
   '',
   '每条建议必须能落到三种动作之一，否则不要提：',
-  '  append-section  追加一小节（给 heading 与 body，body 是完整的 markdown，不要占位符）',
+  '  append-section  追加一小节（给 heading 与 body；body 是完整 markdown，**不超过 200 字**，不要占位符）',
   '  add-tags        补充标签（只能从给定候选标签里选，逐字一致）',
   '  set-domain      调整领域（只能从给定候选领域里选）',
   '若某条建议无法机械执行（例如「建议重写全文」），action 给 null。',
   '',
   '严厉约束：',
-  '1. 最多 4 条，按严重程度排序；宁少勿滥，没有真问题就返回空数组。',
+  '1. 最多 3 条，按严重程度排序；宁少勿滥，没有真问题就返回空数组。',
+  '1b. **完整性优先于条数**：宁可只给 1 条，也不要把 JSON 写到一半被截断。',
   '2. append-section 的 body 必须是可直接粘进笔记的正文，禁止写「此处补充…」这类占位。',
   '3. 不要建议删除用户内容。',
   '4. 只输出 JSON，不要 markdown 代码块，不要解释。',
@@ -380,6 +389,7 @@ export async function runAudit(opts: {
     noteCount: matched,
     scannedCount: notes.length,
     failedCount: 0,
+    failReasons: [],
     issues: [],
     complete: false
   }
@@ -407,12 +417,17 @@ export async function runAudit(opts: {
         (n.content || '').slice(0, CONTENT_LIMIT)
       ].join('\n')
 
-      const res = await llmJson<{ issues?: RawIssue[] }>(SYSTEM_PROMPT, user, { maxTokens: 1500 })
+      const res = await llmJson<{ issues?: RawIssue[] }>(SYSTEM_PROMPT, user, {
+        maxTokens: 2000,
+        timeoutMs: 45_000,
+        retries: 2,
+        onError: reason => { if (run.failReasons.length < 8) run.failReasons.push(reason) }
+      })
       if (!res) {
         run.failedCount++
         continue
       }
-      const raw = Array.isArray(res.issues) ? res.issues.slice(0, 4) : []
+      const raw = Array.isArray(res.issues) ? res.issues.slice(0, 3) : []
       for (const r of raw) {
         const issue = normalizeIssue(r, {
           slug: n.slug,
