@@ -13,6 +13,7 @@ import { prisma } from './db'
 import { invalidateGardenCache } from './cache'
 import { computeMaturityForNote } from './maturity-sync'
 import { normalizeNoteTitle } from './vault'
+import { sanitizeMarkdown, restoreMathPlaceholders } from './markdown-sanitize'
 
 type MaturityValue = 'SEEDLING' | 'GROWING' | 'EVERGREEN'
 
@@ -208,7 +209,10 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
     //     的（rehype-raw 未启用），改写 <a> 标签的 href 会整段变字面量 + 目录栏乱码
     // v5：markdown 内嵌的 <a href> 标签（zrw 笔记大量站内/外链写成 HTML 形式）统一转
     //     markdown 链接，否则全部转义显示
-    const RENDER_VERSION = 5
+    // v6：渲染前清洗（markdown-sanitize.ts）——① 表格行内代码跨度里的裸 `|` 转义成 \|，
+    //     否则整行被切断、反引号原样显示；② 代码跨度内的 `$` 与落单/跨段假配对的 `$`
+    //     换成占位符，避免 remark-math 把正文当行内公式整段吞掉（渲染后原样还原）
+    const RENDER_VERSION = 6
     const metaWithRv = { ...frontmatter, __rv: RENDER_VERSION }
     try {
       const existing = await prisma.note.findUnique({
@@ -377,9 +381,12 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .use(rehypeShiki as any, { theme: 'nord' })
       .use(rehypeStringify)
-      .process(safeLinksMarkdown)
+      // 必须先清洗再交给 unified：表格竖线切割与 $ 公式识别都发生在 parse 阶段，
+      // 渲染后再修已经来不及（单元格已被切碎、代码跨度已被吞进 math 节点）。
+      .process(sanitizeMarkdown(safeLinksMarkdown))
 
-    const htmlContent = htmlResult.toString()
+    // 占位符还原放在 stringify 之后、入库之前：katex 已渲染完，不会被误替换
+    const htmlContent = restoreMathPlaceholders(htmlResult.toString())
 
     // maxWait/timeout 放宽：大笔记处理链长，避免高负载下事务启动超时（P2028）
     await prisma.$transaction(async (tx) => {

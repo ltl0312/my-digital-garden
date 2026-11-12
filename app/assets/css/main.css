@@ -238,6 +238,28 @@ select optgroup {
   border-bottom-color: var(--accent);
 }
 
+/* 行内代码：干掉 @tailwindcss/typography 默认的 ` 反引号装饰
+   （.prose :where(code):before/:after { content: "`" }）。
+   那段规则让渲染完全正确的 <code> 在页面上长得像没解析的 markdown，
+   用户看到的就是「反引号显示出来、语法没渲染」。改为浅底胶囊。 */
+.prose code::before,
+.prose code::after,
+.prose :where(code)::before,
+.prose :where(code)::after {
+  content: none;
+}
+
+.prose :where(code):not(:where(pre code)) {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.12em 0.36em;
+  font-size: 0.9em;
+  font-weight: 500;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
 /* 正文标题窄屏降级：prose 默认 h1 = 2.25em（约 36px），在 390px 宽下长标题每行只放 ~10 字，
    会把移动端屏幕挤满（用户反馈的「移动端文字挤压」）。 */
 @media (max-width: 640px) {
