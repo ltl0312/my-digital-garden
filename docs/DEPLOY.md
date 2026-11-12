@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-10-25（v2.0.4 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-11-12（v2.0.5 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v2.0.4` | `0ef8aff138fa` | AI 审计：截断时自动放大重试并**抢救已写完的建议**、失败原因在界面上可见、扫描上限 60 → 200（详见下方 v2.0.4 说明）。实测同一范围 60 篇：失败 59 → 25 → **0**（**当前**） |
+| `latest` / `v2.0.5` | `d024300f6fac` | 行内代码不再显示字面反引号：覆盖 @tailwindcss/typography 的 `code::before/::after{content:"`"}` 并改为胶囊底色；解析前清洗 `markdown-sanitize.ts`（表格单元格代码内的裸 `\|`、代码跨度内 `$` 防 remark-math 误吞）+ `RENDER_VERSION` 6（**当前**） |
+| `v2.0.4` | `0ef8aff138fa` | AI 审计：截断时自动放大重试并**抢救已写完的建议**、失败原因在界面上可见、扫描上限 60 → 200（详见下方 v2.0.4 说明）。实测同一范围 60 篇：失败 59 → 25 → **0** |
 | `v2.0.3` | `38c799d7cb9d` | 审计失败第一步：截断自动放大重试（×1.8）+ failReasons 可见 + 上限 200。实测失败 59/60 → 25/60，但截断仍在发生，故随后有 v2.0.4 |
 | `v2.0.2` | `6c37a5483402` | 审核通过不再覆盖笔记原有标签（数据损坏修复）+ 徽标/名单同源 + 零引用标签清理；并用备份回灌了被覆盖的标签（详见下方 v2.0.2 说明） |
 | `v2.0.1` | `d097c1f11aaf` | 杜绝无命名空间标签（裸标签五级处理，新建命名空间需在审核面板逐条同意）+ 多选器重开后勾选归零（详见下方 v2.0.1 说明） |
@@ -62,7 +63,7 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.0.4.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.0.5.tar.gz`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚；v2.0.5 起用 `.tar.gz` 以省带宽）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
@@ -86,6 +87,36 @@ https://liutianle.cn
 > ② **恢复的两个坑（本轮实测踩到并修掉）** —— 清空 vault 再复制回会触发 524 个 `unlink`，watcher 把整库 Note 行删光又全量重建，`createdAt` 全部变成恢复当天、`updatedAt` 全被刷成同一秒，进而 `scheduleSuggestScan` 认为「全库刚导入」而排队生成 514 条建议。修法：新增 `server/utils/vault-busy.ts`（`beginVaultBusy`/`endVaultBusy`/`isVaultBusy`），watcher 的 `add`/`change`/`unlink` 与 `scheduleSuggestScan` 在整库操作期间直接跳过（结束留 5s 宽限，因为 chokidar 的 `awaitWriteFinish` 稳定窗口是 1s）；重建索引后用 `$executeRawUnsafe` 写回原始时间戳（Prisma 的 `update` 会强行把 `updatedAt` 设为 `now()`）。
 > ③ **AI 全库审计（仅初始管理员）** —— `server/utils/audit.ts`：范围可按文件夹/标签/领域/关键词任意组合，先「看看会扫多少篇」再真正跑；每篇交给模型产出**建议**（`append-section` / `add-tags` / `set-domain` 三种动作，刻意不提供「重写正文」），建议与执行分离，**执行前强制整库备份**（备份失败则一条都不执行）。报告按文件存在 `data/audits/<id>.json`，不进数据库（恢复备份时不该带回旧报告）。
 > ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。
+### v2.0.5（行内代码显示字面反引号）
+
+**症状**：笔记正文里本该是浅底胶囊的 `<code>`，在页面上显示成 `` `xxx` ``（前后各多一个反引号），看起来像「Markdown 没渲染」。表格、`<br>`、标题都正常 —— 只有行内代码中招。
+
+**根因（不在 Markdown 管线）**：`@tailwindcss/typography` 默认给行内代码加引号装饰：
+
+```css
+.prose :where(code):not(:where([class~=not-prose],...)):before,
+.prose :where(code):not(:where([class~=not-prose],...)):after { content: "`" }
+```
+
+HTML 一直是完好的（`<td><strong><code>constant</code></strong></td>`，整页反引号字符数 = 0），是 CSS 伪元素把反引号画在了代码两侧。
+
+**修复**：`app/assets/css/main.css` 末尾追加（同 cascade 后位，特异性也更高，压过插件的 `:where()` 零特异性规则）：
+
+```css
+.prose code::before, .prose code::after,
+.prose :where(code)::before, .prose :where(code)::after { content: none; }
+.prose :where(code):not(:where(pre code)) { background: color-mix(in srgb, var(--ink) 7%, transparent); border: 1px solid var(--line); border-radius: 4px; padding: 0.12em 0.36em; font-size: 0.9em; font-weight: 500; color: var(--ink); overflow-wrap: anywhere; }
+```
+
+**同时带上渲染管线加固**（`server/utils/markdown-sanitize.ts`，`RENDER_VERSION` 5 → 6）：
+
+- 表格行里代码跨度内的裸 `|` 转 `\|`（GFM 表格内会还原成 `|`，不再切断单元格 —— 实测 `<code>ps aux | grep proot</code>` 由「反引号外露」变为正常）；
+- 代码跨度内的 `$`、以及落单/跨代码跨度假配对的 `$` 换成占位符 `\uE000`，渲染后还原，避免 remark-math 把正文吞成行内公式（`${VAR}`、`$uri`、`($99/年)` 这类）；
+- 全库 524 篇对比验证：残留反引号 27 → 0；真实 KaTeX 公式零损失（`运算方法与运算器` 15 个、`STM32` 81 个保持不变）。
+
+> **v2.0.5 无 schema 变更**，启动日志为 `No pending migrations to apply.`，与 v2.0.4 双向回滚都不丢数据。
+> 注意本版新增了 `server/utils/markdown-sanitize.ts` 这个**新文件**：回滚到 v2.0.4 时老镜像自带老 `.output`，不受影响。
+
 ### v2.0.4（AI 审计失败率修复）
 
 线上第一次跑「AI 全库审计」是「匹配 280 篇 · 已扫 60 篇 · **模型失败 59 篇**」，
@@ -404,6 +435,8 @@ until [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:
 7. **内存红线**：1.6G 内存曾被 watcher 全量重算吃满拖死整机（2026-09-22），故容器限 640M / Node 堆 384M。若发现容器被 OOM Kill，先查 watcher 是否在扫大目录。
 8. **本机与服务器架构需一致**：本机为 `linux/amd64`，与服务器一致，镜像可直接 load。
 9. 生产环境建议 Node ≥ 20.19（Nuxt 4 要求）；当前镜像为 `node:24-alpine`。
+10. **`docker load` 只恢复归档里内置的 tag，不会移动 `latest`**：若 `docker save` 时只写了 `my-digital-garden-app:v2.0.5`，载入后 `:v2.0.5` 指向新 ImageID，而 `:latest` 仍指着旧镜像；`docker compose up -d` 用的是 `image: my-digital-garden-app:latest`，于是容器**跑的还是旧版本**（v2.0.5 首次上线就踩了这个坑：容器重建成功、登录 200、但 CSS 仍旧、页面照旧显示反引号）。载入后必须显式 `docker tag my-digital-garden-app:vX.Y.Z my-digital-garden-app:latest`，再用 `docker inspect -f '{{.Image}}' garden-app` 核对 ImageID 与 `docker images` 里该 tag 的 ID 一致。
+11. **`docker save` 后务必对两个 tag 一起导出**（`docker save ...:vX ...:latest`）或在载入后补 tag，可省掉上面那次核对。
 
 ---
 
