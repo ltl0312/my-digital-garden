@@ -51,7 +51,7 @@ console.log(`目标: ${BASE}\n`)
     ['P3 /api/admin/settings/llm 存在且需鉴权', '/api/admin/settings/llm', 401],
     ['P4 /api/admin/suggestions 存在且需鉴权', '/api/admin/suggestions', 401],
     ['P5 /api/admin/suggestions/meta 存在且需鉴权', '/api/admin/suggestions/meta', 401],
-    ['P6 /api/notes/graph 需鉴权', '/api/notes/graph', 401]
+    ['P6 /api/overview 需鉴权', '/api/overview', 401]
   ]
   for (const [id, path, expect] of probes) {
     const r = await api(path)
@@ -105,11 +105,11 @@ if (!ROOT_KEY) {
     notes.status === 200 && rows.length > 0 && rows.every(n => typeof n.domain === 'string' && !!n.domainFrom),
     `例=${rows[0]?.domain}/${rows[0]?.domainFrom}`)
 
-  const graph = await api('/api/notes/graph')
-  const nodes = graph.json?.nodes || []
-  log('P14 图谱接口回传 domainFrom',
-    graph.status === 200 && nodes.length > 0 && nodes.every(n => !!n.domainFrom),
-    `nodes=${nodes.length} edges=${graph.json?.edges?.length} 例=${nodes[0]?.domain}/${nodes[0]?.domainFrom}`)
+  const overview = await api('/api/overview')
+  log('P14 总览接口回传分区 / 类型 / 成熟度分布',
+    overview.status === 200 && (overview.json?.sections || []).length > 0
+      && (overview.json?.types || []).length > 0 && (overview.json?.maturity || []).length > 0,
+    `total=${overview.json?.total} sections=${overview.json?.sections?.length} 例=${overview.json?.sections?.[0]?.key}/${overview.json?.sections?.[0]?.count}`)
 
   const tree = await api('/api/vault/tree')
   log('P15 结构树可用', tree.status === 200 && !!tree.json?.tree, `roots=${tree.json?.tree?.length}`)

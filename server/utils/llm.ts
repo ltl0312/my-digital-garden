@@ -12,7 +12,7 @@
  * （返回值逐个过白名单校验，越界的直接丢弃并在 rationale 里说明被丢弃了几个）。
  * 这样即使模型幻觉，也污染不了标签体系。
  */
-import { isKnownDomain } from '#shared/graph-domain'
+import { isKnownDomain } from '#shared/domain'
 import { getLlmSettings } from './settings'
 
 export interface LlmConfig {

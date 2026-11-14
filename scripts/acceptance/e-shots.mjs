@@ -1,4 +1,4 @@
-// 阶段 E 前后对照截图：登录 / 首页 / 全部笔记 / 笔记详情 / 图谱 / 管理后台 × 亮暗双主题
+// 阶段 E 前后对照截图：登录 / 首页 / 全部笔记 / 笔记详情 / 分类浏览 / 管理后台 × 亮暗双主题
 // 用法：node e-shots.mjs <before|after>
 import { resolve } from 'node:path'
 import fs from 'node:fs/promises'
@@ -21,7 +21,7 @@ const PAGES = [
   { name: 'home', path: '/', auth: true },
   { name: 'notes', path: '/notes', auth: true },
   { name: 'detail', path: null, auth: true }, // 动态取第一篇笔记
-  { name: 'graph', path: '/graph', auth: true },
+  { name: 'browse', path: '/browse?kind=type&value=MOC', auth: true },
   { name: 'admin', path: '/admin', auth: true }
 ]
 const VIEWPORTS = [

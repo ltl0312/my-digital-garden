@@ -18,8 +18,8 @@ const { canManage, actorRole } = useRoles()
 // 用户看不到自己刚触发的那一条（实测踩到：面板显示 56 条而不是 1 条）。
 const { open: suggestReviewOpen, onlyIds: suggestReviewOnlyIds } = useSuggestionReview()
 const onSuggestApplied = async () => {
-  // 审核通过会改标签/领域 → 列表、侧栏、图谱都要重新取数
-  await refreshNuxtData(['vault-tree', 'sidebar-tags', 'sidebar-graph', 'graph-data', 'notes-recent'])
+  // 审核通过会改标签/领域 → 列表、侧栏、首页统计都要重新取数
+  await refreshNuxtData(['vault-tree', 'sidebar-tags', 'overview', 'notes-recent'])
 }
 
 const commandOpen = useState<boolean>('shell-command-open', () => false)
@@ -66,17 +66,8 @@ const newNoteParent = ref('')
 const newNoteSubmitting = ref(false)
 const toast = useToast()
 
-// 跨页面请求新建笔记：图谱页的命令「新建笔记并在图谱中定位」把请求投到这里；
-// 创建成功后按 createNoteReturn 决定是回到图谱（/graph?focus=<slug>）还是打开笔记正文。
-const createNoteRequest = useState<'note' | 'graph' | null>('shell-create-note', () => null)
-const createNoteReturn = ref<'note' | 'graph'>('note')
-watch(createNoteRequest, (v) => {
-  if (!v) return
-  createNoteReturn.value = v
-  createNoteRequest.value = null
-  newNoteParent.value = ''
-  startCreateRoot()
-})
+// 跨页面「请求新建笔记」的唯一通道随知识图谱页一起下线：那个通道原本只有图谱页的命令
+// （新建后回到 /graph?focus=）在用，如今没有发出方，留着只会是死代码 + 一个永远为 'note' 的分支。
 
 // 侧栏开关与宽度（跨页面保留）
 const SIDEBAR_KEY = 'garden-sidebar-width'
@@ -139,24 +130,25 @@ onMounted(() => {
   window.addEventListener('click', closeCreateMenu)
 })
 
-const { tree, tags, graph, totalNotes, domains, tagGroups, stats } = useFacets()
-// tags / graph 由 useFacets 统一取数（sidebar-tags / sidebar-graph 缓存键），此处不再单独请求
+const { tree, tags, totalNotes, sections, tagGroups, stats } = useFacets()
+// tags / overview 由 useFacets 统一取数（sidebar-tags / overview 缓存键），此处不再单独请求
 void tags
-void graph
 
 const route = useRoute()
 const currentSlug = computed(() => decodeURIComponent(route.path.replace(/^\/notes\//, '')))
 
 // FAB 的启用页面：交付物 §5 ②「仅首页 / 列表启用；详情与编辑态不显示」。
-// 图谱页也必须排除 —— 那里底部被「图例与统计」折叠面板占据，FAB 会压在统计数字上；
-// 且图谱页本就没有「新建」语义（顶栏「新建」按钮仍在手机端保留，不构成入口死路）。
-const FAB_ROUTES = new Set(['/', '/notes'])
+// 分类浏览页（/browse）同样启用：它就是一个列表页，用户在那里新建笔记的心理预期与 /notes 一致。
+const FAB_ROUTES = new Set(['/', '/notes', '/browse'])
 const showFab = computed(() => canManage.value && FAB_ROUTES.has(route.path))
 
 // 面包屑：Garden Vault / …路径段（末段高亮）
+/** 路由段 → 面包屑文案（slug 段保持原样，只有固定页面需要翻译） */
+const SEG_LABEL: Record<string, string> = { notes: '笔记', browse: '分类浏览', admin: '管理后台' }
+
 const crumbs = computed(() => {
   const segs = route.path.split('/').filter(Boolean).map(s => decodeURIComponent(s))
-  return ['Garden Vault', ...segs]
+  return ['Garden Vault', ...segs.map(s => SEG_LABEL[s] ?? s)]
 })
 
 const activeTag = computed(() => (typeof route.query.tag === 'string' ? route.query.tag : ''))
@@ -179,12 +171,6 @@ const submitCreateRoot = async () => {
     const slug = await createNote(newNoteParent.value, title)
     newNoteOpen.value = false
     toast.success(`已创建「${title}」`)
-    if (createNoteReturn.value === 'graph') {
-      // 图谱页发起的新建：留在图谱里并定位到这篇新笔记
-      createNoteReturn.value = 'note'
-      await navigateTo(`/graph?focus=${encodeURIComponent(slug)}`)
-      return
-    }
     // 服务端已在 POST 返回前主动入库，这里再兜一层等待（覆盖 watcher 兜底路径与慢盘），
     // 否则客户端路由会被 404 中止：地址栏是新笔记、内容却停在列表页且不会恢复。
     await openNote(slug)
@@ -364,7 +350,7 @@ const logout = async () => {
           <div v-show="sidebarOpen" class="h-full" :style="{ width: isNarrow ? drawerW + 'px' : 'var(--sidebar-w)' }">
             <ContextSidebar
               :tree="(tree as any)?.tree || []"
-              :domains="domains"
+              :sections="sections"
               :tag-groups="tagGroups"
               :stats="stats"
               :total-notes="totalNotes"

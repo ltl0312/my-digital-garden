@@ -78,7 +78,7 @@ export default defineEventHandler(async (event) => {
   await rmWithRetry(fileFull, false)
   // 同 notes/[...slug].delete.ts：删文件后主动清行，不依赖 watcher 的 unlink（见那边的注释）
   await removeMarkdownFile(fileFull)
-  // 写操作后立即失效 tree/graph 缓存，避免前端刷新拿到 10s 内的旧树
+  // 写操作后立即失效 tree 缓存，避免前端刷新拿到 10s 内的旧树
   invalidateGardenCache()
   return { ok: true, type: 'file', slug: fileRel.replace(/\.md$/i, '') }
 })

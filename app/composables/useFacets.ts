@@ -1,7 +1,8 @@
-// 侧栏分段面板的数据派生（spec 第 4 章）：领域 / 标签分组 / 结构统计
-// 原则：只用既有只读接口（/api/vault/tree、/api/tags、/api/notes/graph）的真实数据，
+// 侧栏分段面板与首页仪表盘的数据派生（spec 第 4 章）：领域 / 标签分组 / 结构统计
+// 原则：只用既有只读接口（/api/vault/tree、/api/tags、/api/overview）的真实数据，
 // 不做硬编码数字；无法确定归属的归入「其他」并在 UI 上如实标注。
 import type { TreeNodeLike } from './useNameRule'
+import { typeHueOf } from '#shared/note-types'
 
 export interface DomainFacet {
   name: string
@@ -19,7 +20,7 @@ export interface TagGroup {
   total: number
 }
 
-// 领域派生规则**不在本文件定义**：唯一份在 shared/graph-domain.ts（前后端共用），
+// 领域派生规则**不在本文件定义**：唯一份在 shared/domain.ts（前后端共用），
 // 这里只做 re-export，保证既有调用点（app 内 `from '~/composables/useFacets'`）不受影响。
 import {
   DOMAIN_FALLBACK,
@@ -29,7 +30,7 @@ import {
   domainOfSlug,
   hueVarOf,
   normalizeDomain
-} from '#shared/graph-domain'
+} from '#shared/domain'
 
 export {
   DOMAIN_FALLBACK,
@@ -116,25 +117,29 @@ export function buildTagGroups(tags: { name: string; count: number }[] | undefin
   return groups.sort((a, b) => b.total - a.total)
 }
 
-/** 侧栏状态徽标的成熟度统计（供底部状态栏用；数据来自 /api/tags 的 type/status 命名空间之外） */
-export interface GraphStats {
-  nodes: number
-  edges: number
+/**
+ * 全站结构统计（侧栏底部状态栏 + 首页仪表盘顶端）。
+ * 数据来自 /api/overview：那里顺手把连接数算掉了 —— 原来只有知识图谱接口在算，
+ * 图谱下线后如果没人接，这个数字就会永远显示 0。
+ */
+export interface VaultStats {
+  /** 已发布笔记总数 */
+  total: number
+  /** 双向链接条数（两端都已发布） */
+  links: number
+  /** 没有任何链接的笔记数 */
   isolated: number
 }
 
-export function buildGraphStats(graph: { nodes?: any[]; edges?: any[] } | null | undefined): GraphStats {
-  const nodes = graph?.nodes || []
-  const edges = graph?.edges || []
-  const linked = new Set<string>()
-  for (const e of edges) {
-    linked.add(e.source)
-    linked.add(e.target)
-  }
+/** 从 /api/overview 的响应里取统计；响应还没回来时退化为树计数 + 0 链接 */
+export function toVaultStats(
+  overview: { total?: number; links?: number; isolated?: number } | null | undefined,
+  fallbackTotal = 0
+): VaultStats {
   return {
-    nodes: nodes.length,
-    edges: edges.length,
-    isolated: nodes.filter(n => !linked.has(n.id)).length
+    total: overview?.total ?? fallbackTotal,
+    links: overview?.links ?? 0,
+    isolated: overview?.isolated ?? 0
   }
 }
 
@@ -143,12 +148,31 @@ export const useFacets = () => {
 
   const { data: tree } = useAsyncData('vault-tree', () => requestFetch('/api/vault/tree'))
   const { data: tags } = useAsyncData('sidebar-tags', () => requestFetch('/api/tags'))
-  const { data: graph } = useAsyncData('sidebar-graph', () => requestFetch('/api/notes/graph'))
+  // 首页仪表盘与状态栏共用这一份：一次请求拿到 总量/连接/领域/类型/成熟度
+  const { data: overview } = useAsyncData('overview', () => requestFetch('/api/overview'))
 
   const totalNotes = computed(() => countNotes((tree.value as any)?.tree))
   const domains = computed(() => buildDomainFacets((tree.value as any)?.tree, totalNotes.value))
   const tagGroups = computed(() => buildTagGroups((tags.value as any) || []))
-  const stats = computed(() => buildGraphStats(graph.value as any))
 
-  return { tree, tags, graph, totalNotes, domains, tagGroups, stats }
+  /**
+   * 目录面板：直接用 /api/overview 的 sections（slug 前两段分桶）。
+   * 不再从领域树现算 —— vault 的主力是 `ltl/01-编程语言` 这类二级目录，
+   * 领域口径会把其中九成并进「其他」，侧栏那栏点进去等于没筛。
+   */
+  const sections = computed<DomainFacet[]>(() => {
+    const list = ((overview.value as any)?.sections || []) as { key: string; label: string; count: number }[]
+    const total = (overview.value as any)?.total || 0
+    return list.map(s => ({
+      name: s.label,
+      dir: s.key,
+      count: s.count,
+      hueVar: typeHueOf(s.key),
+      share: total ? s.count / total : 0
+    }))
+  })
+
+  const stats = computed(() => toVaultStats(overview.value as any, totalNotes.value))
+
+  return { tree, tags, overview, totalNotes, domains, sections, tagGroups, stats }
 }

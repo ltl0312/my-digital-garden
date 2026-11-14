@@ -1,5 +1,5 @@
 // 阶段 M3 + M4 验收：列表行/结构树长按面板 · 对话框底部弹层 · 详情页顶栏插槽与目录抽屉 ·
-// 图谱底部折叠面板 · 后台密钥卡片化。
+// 分类浏览页（原图谱页已移除）· 后台密钥卡片化。
 // 用法：node .workbuddy/backups/m34-verify.mjs
 import { resolve } from 'node:path'
 import fs from 'node:fs/promises'
@@ -258,24 +258,15 @@ await page.evaluate(() => {
 })
 await wait(400)
 
-// ================= E. 390 · 图谱底部折叠面板（M4 / 第 06 屏）=================
-await page.goto(BASE + '/graph', { waitUntil: 'networkidle2', timeout: 60000 })
-await page.waitForFunction(() => !!document.querySelector('[data-testid="graph-panel-toggle"]'), { timeout: 30000 })
+// ================= E. 390 · 分类浏览页（原图谱页已移除，改为仪表盘分类轴）=================
+await page.goto(BASE + '/browse?kind=type&value=MOC', { waitUntil: 'networkidle2', timeout: 60000 })
+await page.waitForFunction(() => !!document.querySelector('[data-testid="note-row"]'), { timeout: 30000 })
 await wait(600)
-ok('390 · 底部面板可见', await vis('[data-testid="graph-panel-toggle"]'))
-ok('390 · 图谱页无 FAB（底部让位给折叠面板）', !(await vis('[data-testid="app-fab"]')))
-ok('390 · 原左下图例 / 右下统计已隐藏',
-  !(await vis('[data-testid="graph-legend"]')) && !(await vis('[data-testid="graph-stats"]')))
-
-await clickDom('[data-testid="graph-panel-toggle"]')
-await wait(400)
-const gpTxt = await page.evaluate(() => {
-  const t = document.querySelector('[data-testid="graph-panel-toggle"]')
-  return t ? t.parentElement.textContent || '' : ''
-})
-ok('390 · 展开后含图例与统计', gpTxt.includes('图例') && gpTxt.includes('统计') && gpTxt.includes('节点'),
-  gpTxt.replace(/\s+/g, ' ').slice(0, 90))
-await page.screenshot({ path: resolve(OUT, '390-graph-panel.png') })
+const mRows = await page.evaluate(() => document.querySelectorAll('[data-testid="note-row"]').length)
+ok('390 · 分类浏览页列出笔记', mRows > 0, `rows=${mRows}`)
+ok('390 · 分类浏览页无横向溢出',
+  await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1))
+await page.screenshot({ path: resolve(OUT, '390-browse.png') })
 
 // ================= F. 390 · 后台密钥卡片化（M4 / 第 08 屏）=================
 await page.goto(BASE + '/admin', { waitUntil: 'networkidle2', timeout: 60000 })
@@ -310,13 +301,6 @@ await page.waitForFunction(() => !!document.querySelector('[data-testid="key-tab
 await wait(300)
 ok('1440 · 密钥表格可见', await vis('[data-testid="key-table"]'))
 ok('1440 · 密钥卡片列表已隐藏', !(await vis('[data-testid="key-cards"]')))
-
-await page.goto(BASE + '/graph', { waitUntil: 'networkidle2', timeout: 60000 })
-await page.waitForFunction(() => !!document.querySelector('[data-testid="graph-legend"]'), { timeout: 30000 })
-await wait(400)
-ok('1440 · 图例与统计浮层可见',
-  (await vis('[data-testid="graph-legend"]')) && (await vis('[data-testid="graph-stats"]')))
-ok('1440 · 底部折叠面板已隐藏', !(await vis('[data-testid="graph-panel-toggle"]')))
 
 await page.goto(BASE + '/notes', { waitUntil: 'networkidle2', timeout: 60000 })
 await wait(400)

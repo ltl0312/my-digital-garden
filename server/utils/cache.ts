@@ -1,5 +1,5 @@
 // 轻量进程内缓存（TTL + 手动失效）
-// 用途：vault/tree、graph 等"全量计算型"接口避免每次请求重复扫盘/查库。
+// 用途：vault/tree、overview 等"全量计算型"接口避免每次请求重复扫盘/查库。
 // 一致性：watcher 完成入库后调用 invalidateGardenCache() 立即失效（见 markdown.ts）。
 // 注意：多实例部署时缓存是各进程独立的，失效只影响本进程——配合短 TTL 兜底可接受。
 

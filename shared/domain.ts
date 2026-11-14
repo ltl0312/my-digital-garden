@@ -1,6 +1,6 @@
 // 领域规则（**唯一一份**）
-// 前端（app/composables/useFacets.ts）与后端（server/api/notes/graph.get.ts）共用本文件，
-// 避免「列表页说工程、图谱页说其他」这类两边规则漂移。
+// 前端（app/composables/useFacets.ts）与后端（server/api/overview.get.ts、notes 列表）共用本文件，
+// 避免「列表页说前端、首页统计说其他」这类两边规则漂移。
 //
 // 两条规则，按优先级：
 //   ① 显式领域：Note.domainLevel1 非空（人工 / 审核通过写入）→ 直接采用；
@@ -54,7 +54,7 @@ export function domainOfSlug(slug: string | undefined): { domain: string; dirPat
   return { domain: '', dirPath }
 }
 
-/** 领域名归一：解析不出时落到兜底领域（图谱着色/分组一律走这里） */
+/** 领域名归一：解析不出时落到兜底领域（着色/分组一律走这里） */
 export function normalizeDomain(domain: string | undefined): string {
   return domain || DOMAIN_FALLBACK
 }
@@ -64,7 +64,7 @@ export function normalizeDomain(domain: string | undefined): string {
 // 背景：领域原先是**纯路径派生**的，所以「给笔记分配领域」只能靠移动文件，旧 URL 会失效。
 // 引入 Note.domainLevel1 后，分配领域变成写一个属性，路径不动。本区块就是这条规则的唯一份：
 //   explicit（非空字符串） > 路径派生 > DOMAIN_FALLBACK
-// 所有调用方（列表/图谱/详情/侧栏/命令面板）都必须走 resolveDomain，不要再各自拼。
+// 所有调用方（列表/首页统计/详情/侧栏/命令面板）都必须走 resolveDomain，不要再各自拼。
 
 export const DOMAIN_SOURCE_AUTO = 'auto'
 export const DOMAIN_SOURCE_MANUAL = 'manual'

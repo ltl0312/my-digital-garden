@@ -134,7 +134,7 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 
 ---
 
-## 4. 笔记与图谱接口（需登录）
+## 4. 笔记与总览接口（需登录）
 
 ### 4.1 笔记列表（分页 / 搜索 / 标签筛选）
 
@@ -146,6 +146,12 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 | `pageSize` | number | 10 | 每页数量（1–100） |
 | `q` | string | — | 标题或正文模糊搜索（大小写不敏感） |
 | `tag` | string | — | 标签精确筛选（如 `前端`） |
+| `domain` | string | — | 领域筛选（`shared/domain.ts` 的 `resolveDomain()` 口径，含兜底值 `其他`） |
+| `dir` | string | — | 目录前缀筛选（如 `KnowledgeBase/03_Knowledge/前端`，按 slug 前缀匹配） |
+| `type` | string | — | 类型筛选：`笔记` / `教程` / `MOC` / `素材` …（对应 `type/<类型>` 标签）；传 `未分类` 表示**没有任何 `type/*` 标签** |
+| `maturity` | string | — | 成熟度筛选：`SEEDLING` / `GROWING` / `EVERGREEN`（大小写不敏感，非法值当未传） |
+| `sort` | string | `updated` | `updated`（最近更新）/ `title`（标题升序）/ `reading`（阅读时长） |
+| `pending` | string | — | 仅管理端「待处理」视图使用 |
 
 **成功响应 `200`**
 
@@ -218,140 +224,51 @@ curl 使用：curl -b cookies.txt -c cookies.txt ...
 | 400 | Invalid Slug |
 | 404 | 笔记不存在或未发布 |
 
-### 4.3 全站知识图谱数据
+### 4.3 首页总览统计（仪表盘数据源）
 
-`GET /api/notes/graph`
+`GET /api/overview`
 
 | 项 | 说明 |
 |---|---|
 | 权限 | 登录 |
-| 缓存 | 进程内 60s（`createCache(60_000)`），写库后由 `invalidateGardenCache()` 失效 |
+| 缓存 | 进程内 30s（`createCache(30_000)`），写库后由 `invalidateGardenCache()` 失效 |
 
 **成功响应 `200`**
 
 ```json
 {
-  "nodes": [
-    {
-      "id": "uuid",
-      "title": "…",
-      "slug": "KnowledgeBase/03_Knowledge/…",
-      "maturity": "SEEDLING",
-      "primaryTag": "前端",
-      "tags": ["前端", "Vue"],
-      "domain": "前端",
-      "dirPath": "KnowledgeBase / 03_Knowledge / 前端",
-      "inDegree": 3,
-      "outDegree": 7,
-      "updatedAt": "2026-01-01T00:00:00.000Z",
-      "readingTime": 6,
-      "summary": "…"
-    }
+  "total": 1234,
+  "links": 3901,
+  "isolated": 245,
+  "sections": [
+    { "key": "KnowledgeBase/03_Knowledge", "label": "03_Knowledge", "count": 280 },
+    { "key": "ltl/01-编程语言", "label": "01-编程语言", "count": 230 }
   ],
-  "edges": [
-    { "source": "源笔记id", "target": "目标笔记id", "kind": "link" },
-    { "source": "源笔记id", "target": "目标笔记id", "kind": "tag" }
+  "types": [
+    { "key": "笔记", "label": "笔记", "count": 848 },
+    { "key": "教程", "label": "教程", "count": 73 },
+    { "key": "未分类", "label": "未分类", "count": 244 }
+  ],
+  "maturity": [
+    { "key": "SEEDLING", "label": "幼苗", "count": 1072 },
+    { "key": "GROWING", "label": "生长中", "count": 139 },
+    { "key": "EVERGREEN", "label": "常青", "count": 23 }
   ]
 }
 ```
 
-- 仅含已发布笔记；`primaryTag` 为笔记第一个标签（可能为 `null`）
-- `domain` / `dirPath` 由 `shared/graph-domain.ts` 的 `domainOfSlug()` 派生（`/^\d{2}_Knowledge$/i` 段的下一级目录即领域），未知领域统一归为 `"其他"`
-- `edges[].kind` 有两种：
-  - `link`：显式 WikiLink（有向，方向即链接书写方向）
-  - `tag`：**标签共有**（无向，同标签且**无显式链接**的两篇笔记之间补一条）
-- `inDegree` / `outDegree` **只统计 `kind: "link"`**，不含标签共有边
-- 标签共有边按标签分组两两相连，**同标签组节点数 > `MAX_TAG_GROUP_SIZE`(40) 时整组跳过**，避免泛用标签产生 O(n²) 边拖垮首帧
-- 前端按 `RENDER_TIERS`（`app/lib/graph-constants.ts`）分级渲染：≤150 节点走 SVG，>150 走 Canvas，>600 只绘制度数 Top 200
+- 只统计 `isPublished = true`；一次 `findMany` 取 `slug / maturity / tags` 后在内存里分桶，**不额外查询**
+- `sections` = **目录轴**：按 slug 前两段分桶（单段 slug 自成桶），`label` 取最后一段，按 `count` 降序。**刻意不用「领域」**——`resolveDomain()` 只认 `NN_Knowledge/<领域>`，vault 主力是 `ltl/01-编程语言` 这类二级目录，用领域口径会把九成笔记塞进「其他」兜底桶，卡片等于一堵墙
+- `types` = `type/*` 标签轴（`shared/note-types.ts` 的 `TYPE_NAMESPACE` / `typeOfTag()`），另加 `未分类` 桶（无任何 `type/*` 标签）。**一篇笔记挂多个类型标签时会在每个桶各计一次，所以各桶之和可能略大于 `total`**
+- `maturity` = 成熟度轴，顺序固定（`MATURITY_ORDER`）
+- `links` 只统计**两端都已发布**的 `NoteLink`；`isolated = total - 有任意链接的笔记数`
 
-### 4.4 图谱圈选检索（按路径 / 文件名 / tag / 正文 / 笔记属性）
+### 4.4 知识图谱接口（已下线）
 
-`GET /api/notes/graph/match`
+`GET /api/notes/graph`、`GET /api/notes/graph/match`、`GET/PUT/DELETE /api/graph/colors`、`GET/PUT/DELETE /api/graph/color-rules` 已在「移除图谱界面」中整组删除（前端图谱页 1212 节点全量渲染是主要卡顿源，实际使用率极低）。首页与分类浏览改用 `GET /api/overview` + `GET /api/notes`。
 
-| 参数 | 必填 | 说明 |
-|---|---|---|
-| `q` | 是 | 关键词；为空直接返回空结果 |
-| `fields` | 否 | 逗号分隔，白名单 `path`（slug 路径）/ `filename`（标题）/ `tag`（标签名）/ `content`（正文）/ `property`（frontmatter 属性值）；`name` 保留为 `filename` 的别名；默认 `content` |
-| `key` | 否 | 仅 `property` 用：属性名；给了就只在该属性下匹配 |
-| `limit` | 否 | `ids` 返回上限，默认 1000，最大 5000 |
-
-**成功响应 `200`**
-
-```json
-{ "ids": ["笔记uuid"], "total": 207, "truncated": false }
-```
-
-- 多个字段之间是 **OR（并集）**，不是 AND
-- 除 `property` 外全部走 `mode: 'insensitive'` 的 `contains`；`path` / `content` 有 `pg_trgm` GIN 索引（迁移 `20260809000000_search_trgm_indexes`），正文检索比标题慢
-- `property` 是例外：frontmatter 的值可能是字符串 / 数字 / 数组 / 嵌套对象，Prisma 的 JSON 过滤覆盖不到，因此这一维度是**取回 `{id, metadata}` 后在 JS 里摊平再匹配**（`flattenProp`，深度 ≤3）。所以**带 `property` 时 DB 查询不截断**，以保证 `total` 是精确的并集大小，最后再统一按 `limit` 截断 `ids`
-- `ids` 是 `Note.id`，与 `GET /api/notes/graph` 的节点 `id` 同源，前端可直接求交集
-- 不带 `property` 时 `total` 为命中总数（`count()`）；`truncated` 表示 `ids` 被 `limit` 截断
-
-### 4.5 图谱自定义颜色（按用户同步）
-
-> 颜色**按访问密钥（= 用户身份）隔离**存储，换设备用同一密钥登录即恢复；客户端 localStorage 只是首帧缓存。键用笔记 slug（vault 相对路径）而非 `Note.id`——后者是重建索引就会变的 uuid。
-
-`GET /api/graph/colors` — 读取当前用户的全部自定义颜色
-
-```json
-{
-  "colors": { "KnowledgeBase/03_Knowledge/前端/MOC - 前端": "#0090FF" },
-  "count": 1,
-  "updatedAt": "2026-10-01T00:00:00.000Z"
-}
-```
-
-`PUT /api/graph/colors` — **全量覆盖**（客户端每次提交完整状态，因此天然幂等）
-
-| 请求体 | 说明 |
-|---|---|
-| `{ "colors": { "<slug>": "<css color>" } }` | 键是笔记 slug，值是 CSS 颜色 |
-
-- `colors` 不是对象 → `400`；条目数 > `MAX_NODE_COLORS`（5000）→ `413`
-- 颜色值经 `shared/graph-colors.ts` 的 `normalizeColor()` 白名单校验，接受**任意合法 CSS 颜色字面量**：`#RGB` / `#RGBA` / `#RRGGBB` / `#RRGGBBAA` / `rgb()` / `rgba()` / `hsl()` / `hsla()`（逗号或空格分隔、通道百分比、`/` 或第 4 参表达 alpha 都行）以及 `var(--x)`；非法条目**单条丢弃**而非整单失败
-- 服务端**不做归一化**：写什么存什么（`hsl(160 56% 40%)` 原样保留）。客户端 UI 一律经 `formatColor()` 归一——不透明写成 `#RRGGBB`，半透明写成 `rgba(r, g, b, a)`（a 两位小数）
-- 服务端按差集落库（先删后插），响应 `{ "ok": true, "count": 1, "dropped": 0 }`
-
-`DELETE /api/graph/colors` — 清空当前用户的全部自定义颜色，响应 `{ "ok": true, "removed": 1 }`
-
-三个接口都需要登录，未带凭据一律 `401`。
-
-### 4.6 图谱颜色规则（按用户同步）
-
-> 「批量上色」的持久形态：一条规则 = 维度 + 算子 + 值 + 颜色。规则**有序**，数组下标即优先级，求值时从上到下第一条命中生效。同样按访问密钥隔离。
-
-`GET /api/graph/color-rules` — 读取当前用户的规则表
-
-```json
-{
-  "rules": [
-    { "id": "r-1f0c…", "enabled": true, "field": "path", "op": "contains", "value": "KnowledgeBase/03_Knowledge", "color": "#0090FF" },
-    { "id": "r-2ab9…", "enabled": true, "field": "property", "op": "contains", "key": "status", "value": "已发布", "color": "#46A758" }
-  ],
-  "count": 2,
-  "updatedAt": "2026-10-15T00:00:00.000Z"
-}
-```
-
-- **`updatedAt` 为 `null` 表示该用户从未保存过规则**（表里没有这一行）。前端据此决定是否播种默认的领域 / 成熟度配色；用户把规则全删光时提交的是 `[]`，那一行存在，因此不会再被播种回默认值
-
-`PUT /api/graph/color-rules` — **全量覆盖**（数组顺序即优先级）
-
-| 请求体 | 说明 |
-|---|---|
-| `{ "rules": [ { …ColorRule } ] }` | `field` ∈ `path`/`filename`/`tag`/`property`/`content`/`domain`/`maturity`；`op` ∈ `contains`/`equals`（`domain`/`maturity` 只允许 `equals`）；`property` 必须有 `key`，其余必须有 `value` |
-
-- `rules` 不是数组 → `400`；原始条目数 > `MAX_COLOR_RULES`（200）→ `413`
-- 每条经 `shared/graph-colors.ts` 的 `normalizeRule()` 校验，非法条目**单条丢弃**（`id` 必须匹配 `/^[\w:-]+$/` 且 ≤64 字符，`color` 走与节点颜色同一套白名单）
-- 响应 `{ "ok": true, "count": 2, "dropped": 0 }`
-
-`DELETE /api/graph/color-rules` — **连那一行一起删掉**，响应 `{ "ok": true, "removed": 1 }`
-
-- 与 `PUT { "rules": [] }` 的区别：PUT 空数组会留下一行空规则，表示「用户主动清空了规则」，`updatedAt` 不再是 `null`，因此前端不会再播种；DELETE 之后 `updatedAt` 回到 `null`，前端会重新播种默认的领域 / 成熟度配色——即「恢复出厂设置」
-
-三个接口都需要登录，未带凭据一律 `401`。
-
----
+- Prisma 的 `GraphColor` / `GraphColorRules` 表**保留未删**（旧配色是用户数据，备份导出里仍会带上），但已无任何读写端点
+- 领域解析（`shared/domain.ts` 的 `resolveDomain()` / `domainOfSlug()`）**保留**，`GET /api/notes` 与 `GET /api/notes/[...slug]` 仍在用（列表的领域 chip、领域筛选）
 
 ## 5. 标签接口（需登录）
 
@@ -704,18 +621,13 @@ curl -s -b cookies.txt 'http://localhost:3000/api/notes?page=2&pageSize=20&q=Vue
 # 4. 领域前缀筛选（侧栏「领域」面板点击即筛选）
 curl -s -b cookies.txt 'http://localhost:3000/api/notes?dir=KnowledgeBase/03_Knowledge/前端'
 
-# 5. 图谱数据
-curl -s -b cookies.txt http://localhost:3000/api/notes/graph
+# 5. 首页总览（仪表盘：目录 / 类型 / 成熟度分布 + 链接数）
+curl -s -b cookies.txt http://localhost:3000/api/overview
 
-# 6. 图谱圈选：标题或正文含「知识」的笔记 id（并集）
-curl -s -b cookies.txt 'http://localhost:3000/api/notes/graph/match?q=知识&fields=name,content'
-
-# 7. 图谱自定义颜色：全量覆盖写入，再读回 / 清空
-curl -s -b cookies.txt -X PUT http://localhost:3000/api/graph/colors \
-  -H 'Content-Type: application/json' \
-  -d '{"colors":{"KnowledgeBase/03_Knowledge/前端/MOC - 前端":"#0090FF"}}'
-curl -s -b cookies.txt http://localhost:3000/api/graph/colors
-curl -s -b cookies.txt -X DELETE http://localhost:3000/api/graph/colors
+# 6. 分类浏览：某一目录 / 某一类型 / 某一成熟度的笔记
+curl -s -b cookies.txt 'http://localhost:3000/api/notes?dir=ltl/01-编程语言&pageSize=20'
+curl -s -b cookies.txt 'http://localhost:3000/api/notes?type=教程'
+curl -s -b cookies.txt 'http://localhost:3000/api/notes?maturity=EVERGREEN'
 
 # 8. 管理员：新建文件夹
 curl -s -b cookies.txt -X POST http://localhost:3000/api/vault/folders \
@@ -748,12 +660,12 @@ curl -s -b cookies.txt -c cookies.txt -X POST http://localhost:3000/api/auth/log
 
 | 页面 / 入口 | 使用接口 |
 |---|---|
-| `/`（首页 Hero + 统计条 + 最近更新） | `GET /api/notes?pageSize=6`、`GET /api/vault/tree`、`GET /api/tags`、`GET /api/notes/graph` |
+| `/`（仪表盘：统计条 + 按目录 / 类型 / 成熟度分布 + 最近更新） | `GET /api/overview`、`GET /api/notes?pageSize=6`、`GET /api/vault/tree`、`GET /api/tags` |
+| `/browse?kind=dir\|type\|maturity&value=…`（分类列表 → 点标题进正文） | `GET /api/notes`（`dir` / `type` / `maturity` / `sort`） |
 | `/notes`（列表/搜索/排序/密度/筛选芯片） | `GET /api/notes`（`q`/`tag`/`dir`/`sort`）、`GET /api/tags` |
 | `/notes/[...slug]`（阅读/编辑/目录栏/更多操作） | `GET /api/notes/[...slug]`、`PUT/DELETE /api/vault/notes/[...slug]` |
-| `/graph`（图谱） | `GET /api/notes/graph`、`GET /api/notes/graph/match`（规则匹配预览）、`GET/PUT/DELETE /api/graph/colors`（手动单节点颜色按用户同步）、`GET/PUT /api/graph/color-rules`（颜色规则按用户同步） |
 | `/login` | `POST /api/auth/verify` |
 | `/admin`（密钥管理三形态 + 我的密钥） | `GET/POST /api/admin/keys`、`PATCH/DELETE /api/admin/keys/[id]` |
-| 侧边栏（结构树/领域/标签 + 右键操作 + 剪贴板） | `GET /api/vault/tree`、`GET /api/tags`、`POST /api/vault/notes`、`POST /api/vault/folders`、`PUT /api/vault/rename`、`POST /api/vault/copy`、`DELETE /api/vault/nodes` |
+| 侧边栏（结构树/目录/标签 + 右键操作 + 剪贴板） | `GET /api/vault/tree`、`GET /api/tags`、`POST /api/vault/notes`、`POST /api/vault/folders`、`PUT /api/vault/rename`、`POST /api/vault/copy`、`DELETE /api/vault/nodes` |
 | 顶栏「新建」下拉（笔记/文件夹/导入） | `POST /api/vault/notes`、`POST /api/vault/folders`、`POST /api/vault/import/*` |
 | ⌘K 命令面板 | `GET /api/notes?q=…&pageSize=8` |

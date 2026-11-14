@@ -75,7 +75,7 @@ export default defineEventHandler(async (event) => {
   } else {
     await fs.copyFile(srcFull, destFull)
   }
-  // 写操作后立即失效 tree/graph 缓存，避免前端刷新拿到 10s 内的旧树
+  // 写操作后立即失效 tree 缓存，避免前端刷新拿到 10s 内的旧树
   invalidateGardenCache()
   return { ok: true, path: destRel }
 })

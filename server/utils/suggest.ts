@@ -27,7 +27,7 @@ import {
   suggestForNote, termsOf, toVaultNotes, hasNamespace,
   type VaultContext, type VaultNoteLike, type SuggestResult
 } from './tag-suggest'
-import { DOMAIN_FALLBACK, isKnownDomain, resolveDomain } from '#shared/graph-domain'
+import { DOMAIN_FALLBACK, isKnownDomain, resolveDomain } from '#shared/domain'
 
 // ── 常量 ────────────────────────────────────────────────────────────────────
 /** 送进 LLM 的正文最大字符数（prompt 成本与内存双约束；1.6G 的服务器不能喂整库） */
@@ -380,7 +380,7 @@ export async function pendingCount(): Promise<number> {
 /**
  * 当前 vault 里实际存在的领域名集合。
  *
- * 为什么审核领域要用它做白名单（而不是只认 shared/graph-domain 的 8 个色族名）：
+ * 为什么审核领域要用它做白名单（而不是只认 shared/domain 的 8 个色族名）：
  * 领域是**用户自己建的目录**。用户在知识区新建 `人工智能/` 之后，审核界面会把它列进
  * 下拉（domainOptions 来自目录树），但色族表里没有这个名字 —— 只认色族会把用户
  * 自己刚建的合法领域判成非法，直接报「不在已知领域集合内」。
@@ -389,7 +389,7 @@ export async function pendingCount(): Promise<number> {
  * **必须扫磁盘而不是只扫笔记 slug**：刚建好的领域目录是空的（还没有笔记落进去），
  * 从 Note.slug 派生根本看不到它 —— 这正是「新建目录后立刻分配领域」的场景，
  * 只查库会把它误判成非法（实测踩到）。
- * 扫盘口径与 shared/graph-domain.ts 的 domainOfSlug 对齐：任意层级中匹配
+ * 扫盘口径与 shared/domain.ts 的 domainOfSlug 对齐：任意层级中匹配
  * `/^\d{2}_Knowledge$/i` 的目录，其**下一级子目录名**即领域名。
  */
 export async function knownDomainsNow(): Promise<string[]> {

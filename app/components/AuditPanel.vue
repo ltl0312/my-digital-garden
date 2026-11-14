@@ -11,7 +11,7 @@ import {
   AlertTriangle, Check, ChevronDown, ChevronRight, Loader2,
   Plus, ScanSearch, Sparkles, X
 } from 'lucide-vue-next'
-// 领域候选与侧栏「领域」面板同源（规则唯一份在 shared/graph-domain.ts），这里只做派生
+// 领域候选与侧栏「领域」面板同源（规则唯一份在 shared/domain.ts），这里只做派生
 import { buildDomainFacets } from '~/composables/useFacets'
 import type { TreeNodeLike } from '~/composables/useNameRule'
 
@@ -104,7 +104,7 @@ const removeDomain = (v: string) => removeChip(domains, v)
  *   · `GET /api/vault/tree` → `{ tree: TreeNode[] }`（不是裸数组，也不是 `{ nodes }`）
  *   · `GET /api/tags`       → **裸数组** `[{ name, count }]`
  *   · 领域没有独立接口 —— 与侧栏「领域」面板同源，用 `buildDomainFacets` 从树里派生
- *     （知识区的一级子目录即领域；规则唯一份在 `shared/graph-domain.ts`）。
+ *     （知识区的一级子目录即领域；规则唯一份在 `shared/domain.ts`）。
  */
 const loadOptions = async () => {
   try {

@@ -17,7 +17,7 @@ server/utils/markdown.ts (解析 YAML, WikiLinks, Math, Shiki)
 PostgreSQL 18 (JSONB 元数据 + 关系图谱 + 全文索引)
        │
        ▼ (Nuxt 4 Nitro RESTful APIs)
-app/ (Vue 3 SSR 前端渲染 / Tailwind CSS / D3 图谱)
+app/ (Vue 3 SSR 前端渲染 / Tailwind CSS / 总览仪表盘)
 ```
 
 系统的数据管道构建于“本地无感写作-服务端文件监听-抽象语法树（AST）解析-关系数据库持久化-高能 Hydration 渲染”全链路之上。用户在本地 Obsidian 中撰写 Markdown 文档，通过 Syncthing 后台服务实现本地与云服务器 `/content/vault` 磁盘目录的秒级双向同步。Nuxt 4 内置 Nitro 引擎的服务端插件在系统启动时挂载 Chokidar 文件监听器，实时捕获文件的创建、修改与删除事件。一旦触发文件变更，后端利用 Unified 生态（Remark 与 Rehype）提取 YAML Frontmatter 元数据、解析 Obsidian 特有的 `[[WikiLinks]]` 双向引用关系，生成结构化 HTML 节点并以事务方式写入 PostgreSQL 18 数据库。前端 Vue 3 应用利用服务端渲染（SSR）直接加载数据库中的结构化文本与图谱拓扑，提供沉浸式护眼阅读与交互体验。
@@ -114,7 +114,7 @@ my-digital-garden/
 │   │       └── main.css        # 全局护眼色彩系统与 Tailwind CSS 引入
 │   ├── components/             # 复用 Vue 组件
 │   │   ├── ArticleReader.vue   # 沉浸式文章阅读器组件
-│   │   ├── GraphView.vue       # D3/Canvas 力导向图谱渲染组件
+│   │   ├── NoteRow.vue         # 笔记行（列表 / 总览复用）
 │   │   ├── HeaderNav.vue       # 顶栏导航与模式切换组件
 │   │   └── TocTree.vue         # 动态文章目录树组件
 │   ├── composables/            # Vue 3 组合式 API
@@ -124,7 +124,7 @@ my-digital-garden/
 │   │   └── default.vue         # 系统默认响应式网格布局
 │   └── pages/                  # 基于文件系统的动态路由
 │       ├── index.vue           # 知识花园首页
-│       ├── graph.vue           # 全局交互式知识网格图谱页
+│       ├── browse.vue          # 分类浏览页（kind=dir|type|maturity + value）
 │       └── notes/
 │           ├── index.vue       # 笔记列表与多维检索页
 │           └── [slug].vue      # 笔记详情与沉浸式阅读页
@@ -133,7 +133,7 @@ my-digital-garden/
 │   │   └── notes/
 │   │       ├── index.get.ts    # 分页、标签筛选与全文搜索 API
 │   │       ├── [slug].get.ts   # 笔记详情与反向链接 API
-│   │       └── graph.get.ts    # 全站图谱节点与边数据 API
+│   │       ├── index.get.ts    # 分页、标签 / 目录 / 类型 / 成熟度筛选与全文搜索用例
 │   ├── plugins/                # Nitro 运行时插件
 │   │   └── watcher.ts          # Chokidar 磁盘文件实时监听插件
 │   └── utils/                  # 服务端单例工具集
@@ -362,28 +362,33 @@ export default defineEventHandler(async (event) => {
 })
 ```
 
-全站知识拓扑图谱 API (`server/api/notes/graph.get.ts`) 输出符合力导向图格式的节点与边数据。
+首页总览统计 API (`server/api/overview.get.ts`) 一次 `findMany` 取回全部已发布笔记，在内存里分成三条轴：
+
+- `sections`：目录轴，按 slug 前两段分桶（`KnowledgeBase/03_Knowledge`、`ltl/01-编程语言`…），label 取末段
+- `types`：类型轴，读 `type/*` 命名的标签，未打类型标签的落「未分类」
+- `maturity`：成熟度轴，`SEEDLING` / `GROWING` / `EVERGREEN`
 
 TypeScript
 
 ```
-import { defineEventHandler } from 'h3'
+import { resolveDomain } from '#shared/domain'
 import { prisma } from '../../utils/db'
 
 export default defineEventHandler(async () => {
   const notes = await prisma.note.findMany({
     where: { isPublished: true },
-    select: { id: true, title: true, slug: true, maturity: true }
+    select: { id: true, slug: true, maturity: true, tags: { select: { tag: { select: { name: true } } } } }
   })
 
-  const links = await prisma.noteLink.findMany({
-    select: { sourceId: true, targetId: true }
-  })
-
-  return {
-    nodes: notes.map(n => ({ id: n.id, title: n.title, slug: n.slug, maturity: n.maturity })),
-    edges: links.map(l => ({ source: l.sourceId, target: l.targetId }))
+  const sections = new Map<string, number>()
+  for (const n of notes) {
+    const key = n.slug.split('/').slice(0, 2).join('/')
+    sections.set(key, (sections.get(key) ?? 0) + 1)
   }
+
+  return { total: notes.length, sections: [...sections].map(([key, count]) => ({
+    key, label: key.split('/').pop(), count
+  })) }
 })
 ```
 
@@ -700,5 +705,5 @@ server {
 | **Phase 2**  | 数据建模与数据库初始化    | 创建 `prisma/schema.prisma`，运行 `prisma migrate dev` 建立 PostgreSQL 实体。 | 数据库包含 `Note`、`Tag`、`NoteTag`、`NoteLink` 表。         |
 | **Phase 3**  | Nitro 文件监听与 AST 解析 | 编写 `server/plugins/watcher.ts` 与 `server/utils/markdown.ts` 管道代码。 | 在 `/content/vault` 修改 `.md` 文件，PostgreSQL 数据同步更新。 |
 | **Phase 4**  | 主题样式与阅读器 UI       | 实现 `main.css` 护眼色彩变量、`useTheme.ts` 以及 `ArticleReader.vue` 组件。 | 页面能够展示双向链接卡片，支持无缝暗黑模式切换。             |
-| **Phase 5**  | RESTful API 与图谱渲染    | 实现 `/api/notes/` 详情、列表与全站图谱关系网 API，完成 D3 图谱组件。 | `/graph` 页面能够流畅呈现力导向节点与关联边。                |
+| **Phase 5**  | RESTful API 与总览统计    | 实现 `/api/notes/` 详情、列表与 `/api/overview` 三轴统计 API，完成首页仪表盘与分类浏览页。（原 D3 图谱页已在后续版本移除） | `/graph` 页面能够流畅呈现力导向节点与关联边。                |
 | **Phase 6**  | 云端部署与 Docker 编排    | 编写 `docker-compose.yml`、`ecosystem.config.js` 与 Nginx 证书配置。 | 服务器上 Docker 容器启动正常，本地 Obsidian 修改秒级同步至线上。 |

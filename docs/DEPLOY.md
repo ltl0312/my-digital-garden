@@ -179,7 +179,7 @@ HTML 一直是完好的（`<td><strong><code>constant</code></strong></td>`，�
 > ⑥ **权限** —— 备份/审计/恢复全部走新增的 `requireBuiltinAdmin`（`role === 'root' && isBuiltin === true`），普通管理员与普通用户均 403。
 > ⑦ 部署侧：`deploy/docker-compose.prod.yml` 增加 `GARDEN_BACKUP_DIR: /app/data/backups`、`GARDEN_AUDIT_DIR: /app/data/audits` 与 bind mount `- /opt/digital-garden/data:/app/data`（容器 `--force-recreate` 会丢容器内文件，而备份的唯一价值就是跨重启可恢复；显式声明同时让界面判为「持久存储」）。**上线前需在服务器 `mkdir -p /opt/digital-garden/data` 并更新该文件**（见 §3）。
 > ⑧ 验证：`pnpm typecheck` EXIT=0；本地 `backup-audit-probe` 32/32（起假模型 `127.0.0.1:3199`，含备份→改文件→差异→恢复→审计→执行→权限 403 全链路）、`admin-panels-probe` 11/11、`ui-fixes-probe` 13/13；生产 `prod-backup-verify` 15/15（`persistent=true`、`keep=10`、首次整库备份 `files=531 bytes=4749499 noteCount=526`）、`pnpm acceptance:prod` 19/19。
-> ⑨ **已知未修**：`acceptance:graph` 的 `G99 刷新后节点位置保持`（graph-verify 119/120）—— 刷新后存档里 `pos` 为空、位置全部重排。已确认不是本轮引入（`.workbuddy/acceptance-all2.log` 在 10-06 时是 120/120），试过「空 `nodeData` 时不 persist」，虽能让 G99 通过却把 G92/G93/G98/G100–G106 打挂，已回退，留待单独排查。
+> ⑨ **已知未修（脚本已随图谱页一并删除，仅存档）**：`acceptance:graph` 的 `G99 刷新后节点位置保持`（graph-verify 119/120）—— 刷新后存档里 `pos` 为空、位置全部重排。已确认不是本轮引入（`.workbuddy/acceptance-all2.log` 在 10-06 时是 120/120），试过「空 `nodeData` 时不 persist」，虽能让 G99 通过却把 G92/G93/G98/G100–G106 打挂，已回退，留待单独排查。
 
 > **v1.9.9 无 schema 变更**（纯前端 + 仓库布局），启动日志为 `No pending migrations to apply.`，与 v1.9.8 双向回滚都不丢数据。本次修掉三处体验缺陷、并整理仓库布局：
 
@@ -340,7 +340,7 @@ bash /opt/deploy-image.sh v1.9.1
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/login          # 200
 curl -s -o /dev/null -w '%{http_code}\n' https://liutianle.cn/login            # 200
 curl -s -o /dev/null -w '%{http_code}\n' https://liutianle.cn/                 # 302（未登录跳转，正常）
-curl -s -o /dev/null -w '%{http_code}\n' https://liutianle.cn/api/notes/graph  # 401（未登录，正常）
+curl -s -o /dev/null -w '%{http_code}\n' https://liutianle.cn/api/overview    # 401（未登录，正常）
 docker inspect garden-app --format 'Image={{.Image}} Started={{.State.StartedAt}} Mem={{.HostConfig.Memory}}'
 free -m
 ```
@@ -348,18 +348,23 @@ free -m
 ### 5.2 新代码确实生效
 
 ```bash
-# 服务端产物含新字段
-docker exec garden-app sh -c "grep -o dirPath /app/.output/server/chunks/routes/api/notes/graph.get.mjs | wc -l"
-# 客户端产物含新 testid
-docker exec garden-app sh -c "grep -rl graph-minimap /app/.output/public/_nuxt/"
+# 服务端产物含新端点与字段（输出 ≥1 即生效）
+docker exec garden-app sh -c "ls /app/.output/server/chunks/routes/api/ | grep -c overview"
+docker exec garden-app sh -c "grep -o 'sections' /app/.output/server/chunks/routes/api/overview.get.mjs | wc -l"
+# 客户端产物含新页面 testid（分类浏览页）
+docker exec garden-app sh -c "grep -rl '分类浏览' /app/.output/public/_nuxt/ | head -1"
 ```
 
 ### 5.3 登录后只读校验接口形状
 
-登录用 root 密钥（`POST /api/auth/verify`，body `{"key":"..."}`，成功下发 `garden_token` cookie），然后 `GET /api/notes/graph` 应返回：
+登录用 root 密钥（`POST /api/auth/verify`，body `{"key":"..."}`，成功下发 `garden_token` cookie），然后 `GET /api/overview` 应返回：
 
-- `nodes[]` 含 `id,title,slug,maturity,primaryTag,tags,domain,dirPath,inDegree,outDegree,updatedAt,readingTime,summary`
-- `edges[]` 含 `source,target,kind`（`kind` 为 `link` / `tag`）
+- `total` / `links` / `isolated` 三个整数（`links` 只统计两端都已发布的 `NoteLink`）
+- `sections[]` 每项含 `key`（slug 前两段）、`label`（末段）、`count`
+- `types[]` 每项含 `key`（`type/*` 后的类型名或 `未分类`）、`label`、`count`
+- `maturity[]` 每项含 `key`（`SEEDLING` / `GROWING` / `EVERGREEN`）、`label`、`count`
+
+再抽查分类筛选：`GET /api/notes?pageSize=2&type=教程`、`GET /api/notes?dir=ltl/01-编程语言`、`GET /api/notes?maturity=EVERGREEN` 均应返回 `total > 0`。
 
 ### 5.4 只读验收套件（推荐）
 
@@ -367,19 +372,9 @@ docker exec garden-app sh -c "grep -rl graph-minimap /app/.output/public/_nuxt/"
 # Windows PowerShell
 $env:GARDEN_BASE='https://liutianle.cn'
 pnpm acceptance:prod      # 只读部署校验 19 项：新端点存在 + 字段形状 + 权限仍生效（**全程只发 GET**）
-pnpm acceptance:graph     # 图谱重构 120 项，配色部分会自动快照并还原
 pnpm acceptance:shell     # 外壳 47 项，只开对话框不提交
 pnpm acceptance:ui        # UI 51 项，只开对话框不提交
 ```
-
-> 💾 **`acceptance:graph` 会动配色，但跑完会原样还原**：为覆盖「写服务端 / 跨设备恢复 / 清除」
-> 这些用例，它必须真的 PUT 与 DELETE `/api/graph/colors` 与 `/api/graph/color-rules`。
-> 快照在**任何用例跑之前**取（G67 的「清除全部颜色」会连用户自己的配色一起清掉），
-> 收尾按快照的**精确状态**写回：有配色就 PUT 回来，原本「从未保存过」（`updatedAt === null`）
-> 就 DELETE 回出厂状态——PUT 空数组语义不同，它会留下一个空规则行，前端从此不再播种默认配色。
-> 最终还原在一个**没有前端应用**的同源页面（`/favicon.ico`）上执行：截图段的多次
-> `goto('/graph')` 会让客户端把播种出来的 10 条默认规则回推服务端，在应用页面上还原等于白做。
-> G110 / G111 就是这套安全网的自检（G111 在全部跳转之后再回读一次）。
 
 > 🚫 **`pnpm acceptance:api`（`e4-regression.mjs`）与 `pnpm acceptance:suggest`（`suggest-verify.mjs`）绝不能对生产跑**：
 > 前者会 POST `/api/admin/keys`、POST `/api/vault/folders`、POST `/api/vault/notes`、PUT `/api/vault/rename`、POST `/api/vault/copy`，并 DELETE `/api/vault/nodes`（含 `KnowledgeBase/03_Knowledge`）；

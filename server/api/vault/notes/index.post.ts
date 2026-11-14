@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
 
   // 原子写入：先写临时文件再 rename，避免 watcher 读到半截内容（与批量导入共用同一实现）
   await writeMarkdownAtomic(full, noteTemplate(title))
-  // 写操作后立即失效 tree/graph 缓存，避免前端刷新拿到 10s 内的旧树
+  // 写操作后立即失效 tree 缓存，避免前端刷新拿到 10s 内的旧树
   invalidateGardenCache()
 
   // 主动入库，而不是等 watcher：调用方拿到 slug 后要立刻打开这篇笔记，而 watcher 是

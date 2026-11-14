@@ -15,20 +15,18 @@
     "acceptance:ui": "node scripts/acceptance/e4-check.mjs",
     "acceptance:api": "node scripts/acceptance/e4-regression.mjs",
     "acceptance:shots": "node scripts/acceptance/e-shots.mjs m-final",
-    "acceptance:graph": "node scripts/acceptance/graph-verify.mjs",
     "acceptance:suggest": "node scripts/acceptance/suggest-verify.mjs",
     "acceptance:picker": "node scripts/acceptance/picker-verify.mjs",
     "acceptance:entries": "node scripts/acceptance/suggest-entries-verify.mjs",
     "acceptance:toc": "node scripts/acceptance/toc-verify.mjs",
     "acceptance:prod": "node scripts/acceptance/prod-readonly.mjs",
-    "acceptance:all": "node scripts/acceptance/m-verify.mjs && node scripts/acceptance/m34-verify.mjs && node scripts/acceptance/e4-check.mjs && node scripts/acceptance/e4-regression.mjs && node scripts/acceptance/graph-verify.mjs && node scripts/acceptance/suggest-verify.mjs && node scripts/acceptance/picker-verify.mjs && node scripts/acceptance/suggest-entries-verify.mjs"
+    "acceptance:all": "node scripts/acceptance/m-verify.mjs && node scripts/acceptance/m34-verify.mjs && node scripts/acceptance/e4-check.mjs && node scripts/acceptance/e4-regression.mjs && node scripts/acceptance/suggest-verify.mjs && node scripts/acceptance/picker-verify.mjs && node scripts/acceptance/suggest-entries-verify.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@shikijs/rehype": "^4.4.2",
     "chokidar": "^5.0.0",
-    "d3": "^7.9.0",
     "gray-matter": "^4.0.3",
     "h3": "2.0.1-rc.26",
     "katex": "^0.18.1",
@@ -47,7 +45,6 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.20",
-    "@types/d3": "^7.4.3",
     "autoprefixer": "^10.5.4",
     "postcss": "^8.5.25",
     "tailwindcss": "^3.4.19",

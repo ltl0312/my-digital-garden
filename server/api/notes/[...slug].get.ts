@@ -4,7 +4,7 @@ import matter from 'gray-matter'
 import { prisma } from '../../utils/db'
 import { resolveVaultPath } from '../../utils/vault'
 // 领域解析唯一入口（显式领域 > 路径派生 > 兜底「其他」）
-import { resolveDomain } from '#shared/graph-domain'
+import { resolveDomain } from '#shared/domain'
 
 export default defineEventHandler(async (event) => {
   const parts = event.context.params?.slug

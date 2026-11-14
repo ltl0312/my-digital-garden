@@ -3,18 +3,18 @@ import {
   Filter, FolderTree, Grid2x2, Tags, X, Upload, FolderPlus,
   FilePlus, Pencil, Files, ClipboardPaste, Trash2, Link2, SquareArrowOutUpRight, Sparkles
 } from 'lucide-vue-next'
-import type { DomainFacet, TagGroup, GraphStats } from '~/composables/useFacets'
+import type { DomainFacet, TagGroup, VaultStats } from '~/composables/useFacets'
 import type { MenuItem } from './TreeContextMenu.vue'
 
-// ContextSidebar（spec ch.4/6）：头部（Vault 名 + 计数 + 过滤）· 分段面板（结构 / 领域 / 标签）
+// ContextSidebar（spec ch.4/6）：头部（Vault 名 + 计数 + 过滤）· 分段面板（结构 / 目录 / 标签）
 // · 剪贴板提示条插槽 · 底部同步状态；宽度由 AppShell 持有并持久化。
 interface TreeNode { name: string; type: 'dir' | 'file'; slug?: string; title?: string; maturity?: string; children?: TreeNode[] }
 
 const props = defineProps<{
   tree: TreeNode[]
-  domains: DomainFacet[]
+  sections: DomainFacet[]
   tagGroups: TagGroup[]
-  stats: GraphStats
+  stats: VaultStats
   totalNotes: number
   canManage: boolean
   activeTag?: string
@@ -31,14 +31,14 @@ const emit = defineEmits<{
   (e: 'new-note', parent: string): void
 }>()
 
-type Panel = 'tree' | 'domain' | 'tag'
+type Panel = 'tree' | 'dir' | 'tag'
 // 面板选择跨组件共享：详情页「在结构树中定位」需要把面板切回「结构」
 const panel = useState<Panel>('shell-sidebar-panel', () => 'tree')
 const query = ref('')
 
 const PANELS: { key: Panel; label: string; icon: any }[] = [
   { key: 'tree', label: '结构', icon: FolderTree },
-  { key: 'domain', label: '领域', icon: Grid2x2 },
+  { key: 'dir', label: '目录', icon: Grid2x2 },
   { key: 'tag', label: '标签', icon: Tags }
 ]
 
@@ -195,7 +195,7 @@ const refreshTree = async () => { await refreshNuxtData('vault-tree') }
 // · 例外：编辑器开着时不跳。草稿只存在组件内存里，跳走就丢了 —— 让人自己重新打开更安全。
 const onRenamed = async (result: { newPath: string; isDir: boolean; wasOpen: boolean }) => {
   await refreshTree()
-  await refreshNuxtData(['notes-recent', 'graph-data', 'sidebar-graph'])
+  await refreshNuxtData(['notes-recent', 'overview'])
   notesRev.value++
   if (!result.wasOpen) return
   if (editorOpen.value) {
@@ -267,7 +267,7 @@ const onMenuSelect = async (key: string) => {
         if (!ok) break
         await requestFetch('/api/vault/nodes', { method: 'DELETE', body: { path: t.path } })
         await refreshTree()
-        notesRev.value++ // 列表 / 最近更新 / 图谱等跟着刷新
+        notesRev.value++ // 列表 / 最近更新 / 状态栏统计跟着刷新
         toast.success(`已删除「${t.name}」`)
         // 删掉的正是当前打开的笔记（或它所在的文件夹）→ 退回列表。
         // 否则主界面会继续停在已经不存在的 slug 上：正文还在、实际已删，
@@ -374,7 +374,7 @@ const onMenuSelect = async (key: string) => {
         :query="query"
         :current-slug="currentSlug"
       />
-      <FacetList v-else-if="panel === 'domain'" :facets="domains" :active-dir="activeDir" />
+      <FacetList v-else-if="panel === 'dir'" :facets="sections" :active-dir="activeDir" />
       <TagGroups v-else :groups="tagGroups" :active-tag="activeTag" />
     </div>
 
@@ -424,7 +424,7 @@ const onMenuSelect = async (key: string) => {
         <span class="w-1.5 h-1.5 rounded-full bg-evergreen animate-pulse"></span>
         Vault Synced
       </span>
-      <span class="font-mono tabular-nums">{{ stats.nodes }} 节点 · {{ stats.edges }} 连接</span>
+      <span class="font-mono tabular-nums">{{ stats.total }} 篇 · {{ stats.links }} 连接</span>
     </div>
 
     <!-- 拖拽调宽手柄由 AppShell 提供（sidebar 右侧独立 1px 列），此处不再重复 -->

@@ -106,7 +106,7 @@ export function useNoteActions() {
         })
         if (!ok) return
         await $fetch(`/api/vault/notes/${encoded}`, { method: 'DELETE' })
-        await refreshNuxtData(['vault-tree', 'sidebar-tags', 'sidebar-graph', 'notes-recent', 'graph-data'])
+        await refreshNuxtData(['vault-tree', 'sidebar-tags', 'overview', 'notes-recent'])
         rev.value++
         toast.success('笔记已删除')
         // 删掉的正是当前打开的笔记 → 退回列表（否则页面会停在一个已不存在的 slug 上）

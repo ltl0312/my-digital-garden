@@ -1,12 +1,12 @@
 // 断点单源（spec 第 4 章 + 交付物 MOBILE-PARITY §5 ④）
 //
 // 背景：断点值此前散落在四处 —— Tailwind 前缀（sm=640 / lg=1024）、
-// layouts/default.vue 的 isNarrow（1024）、GraphView.minScale（768）、
+// layouts/default.vue 的 isNarrow（1024）、侧栏收起阈值（768）、
 // main.css 的媒体查询（640）。E4 就因 md(768) 与 lg(1024) 混用出现过
 // 「768–1023 图标栏已隐藏但汉堡按钮也被 md:hidden 隐藏 → 抽屉根本打不开」的真实缺陷。
 // 此后**所有 JS 侧断点判定一律从这里取**，不要再写字面量。
 //
-// 注意：`GraphView.minScale()` 里的 768 是「**画布宽度**」阈值而非视口断点，
+// 注意：这里的 768 是「**侧栏可用宽度**」阈值而非视口断点，
 // 不属于本文件管辖（已在该处加注释），迁移时不要误并入。
 export const BP = {
   /** 手机上限：与 Tailwind `sm` 严格对齐 */

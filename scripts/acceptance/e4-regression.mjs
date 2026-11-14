@@ -80,8 +80,10 @@ const cookieOf = (s) => (s.cookie ? { cookie: s.cookie } : {})
   log('R3 排序接口（title 升序，按 en 排序规则比对）', sort.status === 200 && titles.length > 0 && titles.join('|') === sorted.join('|'), titles.join(' > '))
   const tree = await root.api('/api/vault/tree')
   log('R4 结构树', tree.status === 200 && !!tree.json?.tree, `roots=${tree.json?.tree?.length}`)
-  const graph = await root.api('/api/notes/graph')
-  log('R5 图谱接口', graph.status === 200 && graph.json?.nodes?.length > 200, `nodes=${graph.json?.nodes?.length} edges=${graph.json?.edges?.length}`)
+  const overview = await root.api('/api/overview')
+  log('R5 总览接口（首页仪表盘数据源）',
+    overview.status === 200 && overview.json?.total > 200 && (overview.json?.sections || []).length > 5,
+    `total=${overview.json?.total} sections=${overview.json?.sections?.length} links=${overview.json?.links}`)
   const tags = await root.api('/api/tags')
   log('R6 标签接口', tags.status === 200 && Array.isArray(tags.json), `tags=${tags.json?.length}`)
   const detail = await root.api('/api/notes/' + (list.json?.notes?.[0]?.slug || '').split('/').map(encodeURIComponent).join('/'))

@@ -2,7 +2,7 @@
 
 > 本文档按**时间线**记录项目从搭建到生产运维全过程中遇到的**问题（bug / 代码格式 / 代码问题）**与**优化细节**，含全部历史与最新记录。
 > 定位：开发历程日志，与 `PROJECT-SUMMARY.md`（总结）、`PROJECT_NOTES.md`（架构认知 + 审查清单）、`API.md`（接口参考）互补。
-> 最后更新：2026-08-16
+> 最后更新：2026-11-14
 
 ---
 
@@ -18,6 +18,7 @@
 - [第八阶段 · 生产部署与上线（ECS）](#第八阶段--生产部署与上线ecs)
 - [第九阶段 · 全面代码审查与安全修复（08-09）](#第九阶段--全面代码审查与安全修复-08-09)
 - [第十阶段 · 生产密码轮换与代码更新（08-15/16）](#第十阶段--生产密码轮换与代码更新-081516)
+- [第十一阶段 · 移除知识图谱、首页改仪表盘（11-14）](#第十一阶段--移除知识图谱首页改仪表盘11-14)
 - [问题索引表](#问题索引表)
 - [遗留事项与后续优化](#遗留事项与后续优化)
 
@@ -292,6 +293,38 @@
 - 部署包排除清单：`node_modules .nuxt .output .git .env .ssh-tmp keys-tmp *.tar.gz build-log* dev-log*`
 
 ---
+
+## 第十一阶段 · 移除知识图谱、首页改仪表盘（11-14）
+
+**背景（用户报障）**：「知识图谱界面剔除，经常卡顿，而且基本上用不到；另外做一个首页放笔记总览——什么类型有多少，点版块进列表看笔记名，再点进正文，类似仪表盘。」
+
+### 问题与解决
+
+| # | 类型 | 问题 | 解决 |
+|---|---|---|---|
+| L37 | 性能 | `/graph` 一次性渲染全库节点（当时 1212 篇 / 3030 边），标签共有边是 O(n²) 且 `MAX_TAG_GROUP_SIZE=40` 才截断，首屏与 HMR 下长时间卡死 | 整个图谱页下线：删除 `app/pages/graph.vue`、`GraphView.vue`、`components/graph/*`（9 个）、`composables/useGraph*`（4 个）、`lib/graph-*`（5 个）、`server/api/graph/*`、`server/api/notes/graph*`、`shared/graph-colors.ts` |
+| L38 | 导航 | 顶部/底部导航 4 项里「知识图谱」失去落点 | `useNavItems` 删项 → 3 项（首页 / 笔记 / 后台）；`m-verify.mjs` 的 TabBar 断言同步 4 → 3 |
+| L39 | 分类 | 侧栏第二面板「领域」形同虚设：`resolveDomain` 只认 `NN_Knowledge/<领域>`，实测 1212 篇里 920 篇落进「其他」兜底桶 | 面板改「目录」，轴换成 **slug 前两段**（`KnowledgeBase/03_Knowledge`、`ltl/01-编程语言`…），24 个桶、最大 280，无长尾垃圾桶 |
+| L40 | 配色 | 首页卡与分类页按数组下标分配色相，两处排序不同 → 同一个目录两处颜色不一致 | `shared/note-types.ts` 加 `typeHueOf(name)`（名称哈希 `(h*31+code)%9973` → 6 支 `--hue-*`），两处同源 |
+| L41 | 缓存 | 首页 `stats` 依赖 `/api/notes/graph` 全域数据 | 新增 `server/api/overview.get.ts`：单次 `findMany` + 内存分桶出 `sections`/`types`/`maturity` 三轴，30s 进程内缓存；`useFacets` 的 `GraphStats` 更名 `VaultStats`，缓存键 `sidebar-graph`/`graph-data` 全部改 `overview` |
+| L42 | 死代码 | `layouts/default.vue` 的 `createNoteRequest('graph')` / `createNoteReturn` 机制唯一发出方是被删的图谱页 | 整块删除，`submitCreateRoot` 去掉 graph 分支；`FAB_ROUTES` 由 `['/','/notes']` → `['/','/notes','/browse']` |
+
+### 落地产物
+
+- 新增页：`app/pages/index.vue`（重写为仪表盘）、`app/pages/browse.vue`（`kind=dir|type|maturity` + `value`）
+- 新增接口：`GET /api/overview`；`GET /api/notes` 补 `dir` / `type`（含「未分类」走 `tags.none startsWith 'type/'`）/ `maturity` 三个参数，且把 `tag` 条件从 where 顶层挪进 `AND` 数组（否则 tag 与 type 两个 `tags:` 会互相覆盖）
+- 新增共享层：`shared/note-types.ts`（类型轴与色相）、`shared/graph-domain.ts` → `shared/domain.ts`（领域解析改名保留，列表 chip 与领域筛选仍在用）
+- 有意保留：Prisma `GraphColor` / `GraphColorRules` 两张表与 `server/utils/backup.ts` 的 `graphColors` 导出（旧配色是用户数据，删表属于破坏性迁移，不做）
+- 验收脚本：`e-shots/e4-check/e4-regression/m-verify/m34-verify/prod-readonly/suggest-verify` 里所有 `/graph` 断言改到 `/api/overview` 与 `/browse`；`node --check` 12 个脚本全通过
+
+### 细节沉淀
+
+- **为什么不做「领域」轴**：领域是从路径派生的（`NN_Knowledge/<领域>`），只在知识库那一种目录约定下有效；本库 `ltl/`、`zrw/`、`lyf/` 三棵树把它绕过去了。**派生轴的覆盖率要先量再画**——920/1212 落兜底桶时，卡片就是一堵「其他 920」的墙。
+- **`typecheck` 基线**：`npx pnpm typecheck` 剩 8 条错误全在 `server/utils/markdown-sanitize.ts`（102/104/120/125/126 行，TS18048/TS2345），是本任务之前就红的基线，未改动该文件。
+- **grep 教训**：MSYS 下 `grep -rn "graph\|图谱"` 在该仓库会超时（>60s，vault 是通往 `E:\Vault` 的 junction），改用 `grep -c` 或 python 逐行读。
+
+---
+
 
 ## 问题索引表
 

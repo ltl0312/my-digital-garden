@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// FacetList（spec ch.6）：领域行 = 色块 + 名称 + 占比条 + 数量；点击即筛选。
-// 数据来源：知识区一级目录（useFacets 动态发现），点击跳 /notes?dir=<路径>
+// FacetList（spec ch.6）：目录行 = 色块 + 名称 + 占比条 + 数量；点击即筛选。
+// 数据来源：/api/overview 的 sections（slug 前两段分桶），点击跳 /notes?dir=<路径>
 import type { DomainFacet } from '~/composables/useFacets'
 
 defineProps<{ facets: DomainFacet[]; activeDir?: string }>()
@@ -28,6 +28,6 @@ defineProps<{ facets: DomainFacet[]; activeDir?: string }>()
         <span class="w-8 text-right text-xs font-mono text-ink-3 tabular-nums">{{ f.count }}</span>
       </NuxtLink>
     </li>
-    <li v-if="!facets.length" class="px-2.5 py-2 text-xs text-ink-3">未发现领域目录</li>
+    <li v-if="!facets.length" class="px-2.5 py-2 text-xs text-ink-3">未发现目录</li>
   </ul>
 </template>

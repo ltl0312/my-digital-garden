@@ -181,7 +181,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // slug 是 tree/graph 缓存键，主动失效（与 markdown 入库后口径一致）
+  // slug 是 tree 缓存键（树里带 title/maturity），主动失效（与 markdown 入库后口径一致）
   invalidateGardenCache()
   return { ok: true, type: isDir ? 'dir' : 'file', slug: newSlug, titleMismatch }
 })

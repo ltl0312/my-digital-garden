@@ -95,7 +95,7 @@ const boundary = computed<{ ok: boolean; text: string; note?: string }[]>(() => 
     ]
   }
   return [
-    { ok: true, text: '浏览全部笔记与知识图谱' },
+    { ok: true, text: '浏览全部笔记与分类总览' },
     { ok: true, text: '在此查看自己的密钥、状态与创建者' },
     { ok: false, text: '导入 / 新建 / 编辑 / 删除笔记（普通用户全程只读）', note: '所有写入接口均由全局中间件强制要求管理员身份' },
     { ok: false, text: '生成或审核标签 / 领域分配建议', note: '自动分配与审核仅对初始管理员与普通管理员开放' },
@@ -280,7 +280,7 @@ const generate = async (scope: 'recent' | 'missing') => {
 
 const onReviewed = async () => {
   await loadSuggestMeta()
-  await refreshNuxtData(['vault-tree', 'sidebar-tags', 'sidebar-graph', 'graph-data', 'notes-recent'])
+  await refreshNuxtData(['vault-tree', 'sidebar-tags', 'overview', 'notes-recent'])
 }
 
 /** 打开审核面板时顺手把徽标对齐一次：徽标是进页面时读的，中途可能已被后台判定改过 */

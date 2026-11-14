@@ -352,7 +352,7 @@ useHead({
         >
           <Info class="w-4 h-4 mt-0.5 text-accent shrink-0" />
           <p class="text-ds-sm text-ink-2 leading-summary">
-            编辑的是 vault 中的 Markdown 源文件，<b class="font-semibold">保存后写入磁盘，watcher 自动同步入库</b>；同步完成前列表与图谱可能短暂滞后。
+            编辑的是 vault 中的 Markdown 源文件，<b class="font-semibold">保存后写入磁盘，watcher 自动同步入库</b>；同步完成前列表与统计可能短暂滞后。
           </p>
         </div>
 

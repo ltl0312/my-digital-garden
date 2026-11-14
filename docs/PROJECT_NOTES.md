@@ -11,7 +11,7 @@
 
 - 写作端：本地 **Obsidian**（`content/vault/KnowledgeBase` 是 Obsidian 库本体，含 `.obsidian` 配置）
 - 服务端：Chokidar 监听 vault 目录 → 自动解析 Markdown 入库 PostgreSQL
-- Web 端：SSR 渲染，提供沉浸式阅读、双向链接知识图谱、在线编辑、访问密钥认证与管理后台
+- Web 端：SSR 渲染，提供仪表盘总览、沉浸式阅读、双向链接、在线编辑、访问密钥认证与管理后台
 
 已上线生产：https://liutianle.cn（阿里云 ECS）。
 
@@ -26,7 +26,7 @@
 | 数据库 | PostgreSQL（生产 15）+ **Prisma 7**（`prisma-client` generator + `@prisma/adapter-pg` 驱动适配器 + `prisma.config.ts`） |
 | Markdown 管道 | unified 11 + remark-parse / remark-gfm / remark-math / remark-rehype + rehype-katex / rehype-shiki（nord 主题）/ rehype-stringify；gray-matter 解析 frontmatter |
 | 文件监听 | chokidar 5（生产环境轮询模式，开发环境事件模式） |
-| 图谱 | d3 v7 力导向图（SVG 渲染） |
+| 总览统计 | 单次 `findMany` + 内存分桶（目录 / 类型 / 成熟度），30s 进程内缓存 |
 | 认证 | 自研 HMAC-SHA256 签名 token（node:crypto），httpOnly cookie |
 | 其他 | lucide-vue-next 图标、h3 事件处理 |
 
@@ -41,31 +41,11 @@ my-digital-garden/
 │   ├── assets/css/main.css     # Tailwind + Lumina 设计语言 + 护眼 CSS 变量
 │   ├── components/
 │   │   ├── ArticleReader.vue   # 沉浸式阅读器（进度条/TOC/backlinks）
-│   │   ├── GraphView.vue       # d3 图谱画布（SVG/Canvas 分级、四布局、拖拽固定、状态持久化）
-│   │   ├── graph/              # 图谱专用组件
-│   │   │   ├── FilterPanel.vue     # 左栏筛选（可见范围/领域/成熟度/标签/关系类型/显示）
-│   │   │   ├── NodeDetail.vue      # 右栏节点详情（入链/出链/在图中定位/聚焦邻居）
-│   │   │   ├── GraphSearchPanel.vue# 画布内搜索（笔记/标签/领域/命令 四组）
-│   │   │   ├── Minimap.vue         # 缩略图（可拖拽平移/滚轮缩放）
-│   │   │   ├── GraphTuningPanel.vue# 图谱控制（标签模式/节点与连线/力导向参数/自定义颜色，仿 Obsidian）
-│   │   │   ├── ColorRulePanel.vue  # 颜色规则（按维度建规则 + 有序列表/启停/调优先级/行内改色）
-│   │   │   ├── ColorPicker.vue   # 通用调色盘（饱和度/明度方阵 + 色相条 + 透明度条 + 预设色板）
-│   │   │   ├── GraphContextMenu.vue# 右键菜单（节点菜单 / 画布空白菜单）
-│   │   │   └── GraphSkeleton.vue   # 加载骨架屏（SSR 安全的伪随机点阵）
 │   │   ├── FileTree.vue        # 递归文件树（含目录内新建笔记）
 │   │   └── CommandPalette.vue  # ⌘K 命令面板（全局搜索跳转）
 │   ├── composables/
 │   │   ├── useAuth.ts          # 认证状态（useAsyncData('auth-me') + isAdmin）
-│   │   ├── useGraphData.ts     # 图谱数据派生（度数/邻接/入出链/领域/标签/最短路径）
-│   │   ├── useGraphFilter.ts   # 图谱筛选状态（范围/领域/成熟度/标签/关系类型）
-│   │   ├── useGraphColors.ts   # 自定义颜色的服务端同步（全量提交 + 防抖 + 本地首帧缓存 + 旧键迁移）
-│   │   ├── useGraphColorRules.ts # 颜色规则的服务端同步（有序数组整体 PUT + 服务端维度匹配集合）
 │   │   └── useTheme.ts         # 暗黑主题切换（localStorage + 双 rAF 过渡）
-│   ├── lib/                    # 图谱纯逻辑与常量（无 Vue 依赖）
-│   │   ├── graph-types.ts      # GraphNode/GraphEdge/GraphFilterState 等类型
-│   │   ├── graph-constants.ts  # RENDER_TIERS/缩放/边样式/布局选项等集中常量
-│   │   ├── graphLayouts.ts     # 四种布局纯函数 computeLayout()
-│   │   └── graphState.ts       # localStorage 状态读写（字段级合并 + 颜色缓存/旧键迁移）
 │   ├── layouts/
 │   │   ├── default.vue         # 主布局：顶栏 + 可拖侧边栏 + 内容区 + ⌘K
 │   │   └── auth.vue            # 登录页布局（居中卡片）
@@ -74,7 +54,7 @@ my-digital-garden/
 │       ├── index.vue           # 首页「最近更新」（pageSize=8）
 │       ├── notes/index.vue     # 笔记列表（分页/搜索/标签筛选）
 │       ├── notes/[...slug].vue # 笔记阅读 + 管理员在线编辑/删除
-│       ├── graph.vue           # 知识图谱页（三区布局：筛选栏 / 画布 / 详情栏）
+│       ├── browse.vue          # 分类浏览页（kind=dir|type|maturity + value）
 │       ├── login.vue           # 密钥登录
 │       └── admin.vue           # 管理后台（生成/禁用/删除访问密钥）
 ├── server/                     # Nitro 后端
@@ -88,7 +68,7 @@ my-digital-garden/
 │   │   ├── markdown.ts         # ★ 核心解析管道（见下文数据流）
 │   │   └── auth.ts             # HMAC token 签发/校验、requireAuth/requireAdmin、密钥生成
 │   └── api/
-│       ├── notes/              # index.get（分页/搜索/标签）、[...slug].get（详情+backlinks）、graph.get
+│       ├── notes/              # index.get（分页/搜索/tag/dir/domain/type/maturity）、[...slug].get（详情+backlinks）
 │       ├── tags/index.get      # 标签列表（按笔记数降序）
 │       ├── auth/               # verify.post（密钥登录）、me.get、logout.post
 │       ├── admin/keys/         # 密钥 CRUD（index.get/post、[id].patch/delete，均 requireAdmin）
@@ -140,7 +120,7 @@ server/utils/markdown.ts  processMarkdownFile(filePath)：
    ▼
 PostgreSQL（JSONB 元数据 + 关系边表）
    ▼
-Nitro REST API（列表/详情/图谱/标签/树）
+Nitro REST API（列表/详情/总览统计/标签/树）
    ▼
 app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fetch（watch 路由变化重取）
 ```
@@ -155,9 +135,7 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 |---|---|---|
 | GET `/api/notes` | 登录 | 分页（page/pageSize≤100）+ 标题/正文模糊搜索 + 标签筛选；返回 notes/total/totalPages |
 | GET `/api/notes/[...slug]` | 登录 | 单篇详情（含 tags、incoming backlinks）；未发布 404 |
-| GET `/api/notes/graph` | 登录 | 全站图谱：nodes（id/title/slug/maturity/primaryTag/tags/domain/dirPath/inDegree/outDegree/updatedAt/readingTime/summary）+ edges（source/target/kind: link\|tag）；进程内缓存 60s |
-| GET `/api/notes/graph/match` | 登录 | 图谱圈选检索：`q` + `fields`（path\|name\|content，默认 content）+ `limit`（默认 1000，≤5000）；多字段 OR，返回 `{ids,total,truncated}` |
-| GET/PUT/DELETE `/api/graph/colors` | 登录 | 自定义颜色**按访问密钥（=用户）隔离**：读 `{colors,count,updatedAt}`；PUT 全量覆盖（任意合法 CSS 颜色，含 `rgba()`/`hsla()`，差集落库，非法值单条丢弃，>5000 条 413）；DELETE 清空 |
+| GET `/api/overview` | 登录 | 首页仪表盘统计：`total`/`links`/`isolated` + `sections`（目录轴，slug 前两段）/`types`（`type/*` 标签）/`maturity`（成熟度）三组分布，30s 进程内缓存 |
 | GET `/api/tags` | 登录 | 标签及计数（按使用量降序） |
 | POST `/api/auth/verify` | 公开 | 密钥登录，签发 30 天 httpOnly cookie |
 | GET `/api/auth/me` | 公开 | 当前身份（role/label），未登录返回 null |
@@ -187,20 +165,10 @@ app/ 前端 SSR 渲染（useRequestFetch 转发 cookie）＋ 客户端手动 fet
 
 - **首页**：最近 8 篇 + maturity 徽章（🌱 琥珀 SEEDLING / 🌿 天蓝 GROWING / 🌳 翠绿 EVERGREEN）。
 - **阅读器**：滚动进度条、面包屑、TOC（正则提取 h2/h3 + scrollIntoView）、阅读时长估算（字数/400）、标签可点击筛选、backlinks 玻璃卡片网格。
-- **图谱**：三区布局（左筛选栏 240/272 · 中画布 flex · 右详情栏 288/320；<1024 左栏改抽屉、右栏改底部弹层；<640 保留底部「图例与统计」折叠面板）。d3 forceSimulation（link 120 / charge -320 / collide r+10 / alphaDecay 0.032 / velocityDecay 0.42）；**渲染分级** `RENDER_TIERS`（≤150 SVG / >150 Canvas / >600 只画度数 Top 200，devicePixelRatio 适配）；**四种布局**（力导向/层次树/径向/时间轴，切换 400ms 补间，`computeLayout()` 纯函数在 `app/lib/graphLayouts.ts`）；**单击选中**（右栏详情）、**双击进正文**、**拖拽只挪位置、不固定节点**（需求 m00991 ③；只有右键菜单「固定」才钉住，钉标 + 「双击解除」提示）；可见范围三选一（全图 / 2 跳邻居 / 最短路径）；领域·成熟度·标签多选 + 关系类型开关（显式链接 / 标签共有，至少保留一种）；hover 信息卡 + 邻域高亮（邻域内 2.5px 描边、邻域外 0.12 不透明度、邻域内连线 2.4px）；缩略图（可拖拽平移 / 滚轮缩放）；四态互不复用（骨架屏 / 筛选空态 / 图谱真空态 / 错误态）；快捷键 ⌘K 搜索、⌘F 聚焦搜索、⌘L 锁物理、`G` then `F` 适配全图、`/` 命令面板、`Delete` 断开关系、Esc 逐层退出。位置 + 缩放 + 固定 + 布局 + 筛选持久化到 localStorage（`garden-graph-state`；设置 `garden-graph-settings-v3`）。
-- **标签策略**（`labelMode`，默认 `moc`）：常态只标注 **MOC 节点**（标题匹配 `/^MOC\b/i`，约 36 个），其余节点名字全部隐藏；**聚焦（邻域聚焦）时改为只标注被聚焦的节点**，且不受 `MAX_LABELS`(160) 上限约束；选中 / 悬停始终标注。可切 `all`（上限 160）或 `off`。
-- **图谱控制面板**（左栏 `GraphTuningPanel.vue`，仿 Obsidian 图谱设置）：标签模式三选一；节点大小 / 连线粗细；中心力 / 排斥力 / 连接力 / 连接距离 / **聚焦斥力**（默认 2.4）。参数持久化在 `garden-graph-settings-v3`（`readGraphSettings()` 逐字段校验，防止 NaN 流进 d3）。改任一参数即 `refreshForces()` + `reheat()`。**聚焦时被聚焦节点的电荷力额外乘 `focusRepel`**，邻域自动散开。
-- **连线配色与绘制**：`--edge-link` / `--edge-tag`（亮色 `#6E7987` / `#A08A66`，暗色 `#6E7A8C` / `#6E5C3C`）。对比度按「细线抗锯齿会再掉一档」取值：亮色对 `--canvas` 是 4.03 / 3.01，暗色 4.46 / 3.01；两个主题里**显式链接都比标签共有更重**（标签共有是多数边，1395/1675，比链接还亮就把层级搞反了）。旧值 `#94A0AF`/`#C2AF90` 只有 2.4/1.9，而更早的 `--line` 画在 `--canvas` 上只有 1.17。
-- **连线必须画得出来 —— 端点归一化**（需求 m04206 的根因）：d3 的 `forceLink.links(linkData)` 在 `initialize()` 里会把每条边的 **source/target 就地替换成节点对象**（`VLink` 的两个字段因此声明为 `string | VNode`）。所以任何拿 `linkData` 做事的代码都不能假定端点是字符串，一律走 `linkEndpoint()`（要节点）或 `linkEndpointId()`（要 id）。当年 `drawCanvas()` 写的是 `nodeMap.get(l.source)`，`Map.get(对象)` 必然 `undefined` → 每条边都被 `continue` 掉，**525 节点走 Canvas 分级时一条连线都画不出来**；同时 `getNeighbors()` 的 `l.source === id` 也永远为 false，邻域聚焦与最短路径一起失灵。SVG 分级（≤150 节点）反而是好的，因为它的 `edgeGeometry()` 一直按对象处理 —— 这正是「小图有线、大图没线」的由来，也让只断言缩略图的旧用例放过了它。现有 G62a（劫持 `CanvasRenderingContext2D.stroke` 按描边色计数）与 G62b（画布像素里连线色占比）专门盯这个回归：修前 0.46%/0.62%，修后 ~26%。
-- **缩略图**（`Minimap.vue`）：点半径按**屏幕像素**归一到 1.4–3.4px（按 `sqrt(degree)` 插值，绘制时再除以 `fit.scale`），点按节点色着色，并按 `MINIMAP.maxEdges`(700) 步长抽样画连线。根因备忘：老实现直接拿主画布的图坐标半径当屏幕半径，525 个点把 164×112 糊成一片灰。
-- **节点自定义颜色**：在节点上右键 → 设置颜色（10 个预设色 + 任意色输入 + 恢复领域色）。**权威存储在服务端** `GraphColor` 表，按访问密钥（=用户身份）隔离——换设备用同一密钥登录即恢复；localStorage 的 `garden-graph-colors-v2`（slug → 颜色）降级为**首帧缓存**，只为在请求回来前先按上次颜色画出来不闪白。自定义色优先于领域色；左栏「自定义颜色」区显示计数并可一键清除。颜色值经 `shared/graph-colors.ts` 的 `normalizeColor()` 白名单前后端各校验一次。
-- **任意色 / 透明度**（`ColorPicker.vue`，右键菜单与颜色规则表单共用）：**调色盘**——饱和度 × 明度方阵 + 色相条 + 透明度条（5%–100%）+ 预设色板 + 文本框。三条控件都是**手写的指针拖拽**（不是 `<input type=range>`，因为要给轨道画彩虹/棋盘格渐变与自绘圆形拖柄），键盘 ←/→（Shift 加速）也能调；组件内部状态就是 HSV（`rgbToHsv`/`hsvToRgb` 放在 `shared/graph-colors.ts`），方阵底色用两层 CSS 渐变叠出来：`linear-gradient(to top, #000, transparent)` 盖 `linear-gradient(to right, #fff, hsl(H,100%,50%))`。文本框接受 `#RGB`/`#RGBA`/`#RRGGBB`/`#RRGGBBAA`/`rgb()`/`rgba()`/`hsl()`/`hsla()`，统一经 `formatColor()` 归一——**不透明写 `#RRGGBB`、半透明写 `rgba(r, g, b, a)`**（只在真需要透明度时才引入 rgba，免得把满屏简洁的 hex 全改写成函数式写法）。透明度下限刻意是 5% 而不是 0，全透明的节点等于消失、已超出「上色」语义。预览色块画在棋盘格上，半透明时才看得出「确实透了」。改动立即 emit，没有「应用」按钮；`source: 'preset' | 'custom'` 让父级区分——右键菜单里点预设色顺手关菜单，拖调色盘 / 打字时菜单必须留着（否则拖一下菜单就没了，看不到节点实时变色）。**踩坑**：① 文本框提交最初写成 `withAlpha(parsed, parsed.a)`，而 `withAlpha` 只接受颜色**字符串**（内部走 `parseColor`，非字符串直接返回 null），于是合法色静默不 emit，只有非法色那条分支（只设 `textInvalid`）看起来正常——改成 `formatColor(parsed)`。② 父级会把我们 emit 的字符串原样回灌，若 watch 里无条件重新解析，RGB 取整会把 `hsv` 顶回去、拖色相时光标乱跳——用 `lastEmitted` 自己发的值直接跳过。③ 灰阶（`s=0`）时色相反推不出来，`adopt()` 要保留当前色相，否则点一下灰色色相就被清零。
-- **自定义色同步**（`app/composables/useGraphColors.ts`）：客户端**全量提交**（`PUT /api/graph/colors` 带完整 `{slug: color}`），服务端按差集落库，因此天然幂等、丢包重试不会写坏数据。连点色板 / 批量上色合并成一次请求（600ms 防抖），`beforeunload` 与 `visibilitychange → hidden` 时 `flush()` 立即提交。**键用 slug 而非 `Note.id`**：后者是重建索引就会变的 uuid。旧版按 id 存档的 `garden-graph-node-colors` 会在首次装载时一次性迁移成 slug 键并上传（只有确实映射出条目才清旧键，图谱数据未到位时不清，否则会丢用户历史颜色）。
-- **颜色规则**（左栏 `ColorRulePanel.vue` + `app/composables/useGraphColorRules.ts` + 纯求值 `app/lib/graph-rules.ts`）：批量上色被重写成**一条记录在案的规则**——选维度（文件路径 / 文件名 / tag 标签 / 笔记属性 / 文章内容 / 领域 / 成熟度）+ 算子（包含 / 等于）+ 值 + 颜色。规则存在 `GraphColorRules` 表的**一行 jsonb**（`{ keyId, rules: ColorRule[] }`，按访问密钥隔离），因为规则是**有序**的：数组下标即优先级，从上到下第一条命中生效，整体替换天然原子、不用算差集。原来写死在代码里的「按领域」「按成熟度」配色由 `defaultRules()` 播种成同一份列表里的预置规则，因此可以改色、调序、停用；「恢复默认配色」整体重置，「补充默认配色」只补缺的。**播种条件是服务端没有那一行（`updatedAt === null`）而不是「规则为空」**——用户把规则全删光时提交的是 `[]`，用「为空」判断会导致下次打开又长回一堆默认规则。
-  求值优先级：**手动单节点色（右键）→ 规则按顺序第一条命中 → 兜底（领域色 → 成熟度色）**。廉价维度（路径 / 文件名 / tag / 领域 / 成熟度）在**前端本地**求值；昂贵维度（正文 / 笔记属性）由 `GET /api/notes/graph/match` 解析成 id 集合后按 `id ∈ set` 判定（350ms 防抖 + 序号防乱序）。新建规则表单带**实时预览**：填完就能看到会命中多少节点、并在主画布上以 accent 描边高亮（Canvas 分级下用根 div 的 `data-match-count` 断言）。
-- **右键菜单**（`GraphContextMenu.vue`）：节点菜单 = 打开笔记 / 聚焦邻居 / 设为路径起点·终点 / 固定·解除固定 / 设置颜色 / 复制 `[[标题]]` / 复制标题 / 断开全部关系；画布空白菜单 = 适配全图 / 重置布局 / 重新点火 / 标签模式 / 清除筛选。`CONTEXT_MENU` 尺寸用于贴边避让；Esc 或外部点击关闭。
-- **左栏可收起**：三区模式下画布左缘的竖直把手（`graph-toggle-left`）切换 `leftCollapsed`。
-- 页面标题 `知识图谱 · 拾光`（`useHead`）。
+- **首页仪表盘**（`app/pages/index.vue`）：顶部统计条（笔记总数 / 双向链接 / 孤立笔记 / 分区目录）+ 三段分类卡——「按目录」（slug 前两段，默认铺前 9 个，长尾折叠）、「按类型」（`type/*` 标签 + 未分类）、「按成熟度」（幼苗 → 生长中 → 常青进度条）+ 最近更新 6 条；右栏 = 快速入口 / 常用标签 / Vault 状态。每张卡跳 `/browse?kind=<dir|type|maturity>&value=…`。
+- **分类浏览页**（`app/pages/browse.vue`）：`kind` + `value` 两个 query 决定筛选轴，翻译成 `GET /api/notes` 的 `dir` / `type` / `maturity` 参数，列表复用 `NoteRow`（点标题进 `/notes/<slug>`），带排序三档、密度切换、分页与空态。
+- **配色一致性**：目录卡 / 类型卡 / 分类页标题色点统一走 `shared/note-types.ts` 的 `typeHueOf(name)`（名称哈希 → 6 支 `--hue-*`），**不按下标分配**——首页与分类页的排序不同，按下标会漂色。
+- **图谱已移除**：原 `/graph` 页（1212 节点全量渲染，是主要卡顿源）连同 `GraphView.vue`、`components/graph/*`、`composables/useGraph*`、`lib/graph-*`、`server/api/graph/*`、`server/api/notes/graph*`、`shared/graph-colors.ts` 一并删除；侧栏第二面板由「领域」改为「目录」。领域解析 `shared/domain.ts` 仍保留（列表 chip / 领域筛选在用），`GraphColor` / `GraphColorRules` 两张表保留未删（旧配色是用户数据，备份仍导出）。
 - **侧边栏**：可拖宽度（240–480px，localStorage `garden-sidebar-width`，pointerdown 记录 dragOffset 消除居中偏移）；始终挂载 + 宽度过渡实现丝滑收起；文件树（递归、目录计数、过滤）；标签云（前 20）；Vault Synced 状态栏；管理员可新建笔记。
 - **命令面板**：⌘K/⌃K 全局唤起，输入即搜（pageSize=8），Enter 直达首条。
 - **主题**：`useTheme`（localStorage 'theme' + prefers-color-scheme 兜底）；nuxt.config 内联脚本 FOUC 防护；`theme-switching` 类 + 双 rAF 统一 0.2s 过渡。
@@ -279,14 +247,14 @@ https://liutianle.cn
 | M4 | 保存后固定 1.5s 等待 → 轮询 watcher 入库（最长 10s，超时提示） |
 | M5 | WikiLink 解析 N+1 → `resolveTargetSlugs` 批量 IN 查询（精确/basename/aliases 三级） |
 | M6 | 搜索无索引 → `prisma/migrations/20260809000000_search_trgm_indexes`（pg_trgm GIN，需 `migrate deploy`） |
-| M7 | tree/graph 每次全量计算 → `server/utils/cache.ts` 进程内缓存（TTL + watcher 失效） |
+| M7 | tree/overview 每次全量计算 → `server/utils/cache.ts` 进程内缓存（TTL + watcher 失效） |
 | M8 | 编辑写文件非原子 → `PUT`/`POST` 先写 `*.tmp` 再 rename；watcher 忽略非 `.md` 后缀 |
 | M11 | title 校验不全 → 拒绝 `? * < > " \|` 与控制字符；verify 登录限流（每 IP 10 次/分钟，429） |
 
 ### 已修复（P3 质量）
 
 - `CommandPalette`：200ms 防抖 + 请求序号竞态控制
-- `GraphView`：窗口 resize 更新中心力；物理开关改 `defineModel` 与页面双向同步
+- （已删除）`GraphView` 的窗口 resize 重算中心力、物理开关 `defineModel` 双向同步
 - `auth.global.ts`：客户端 60s me 缓存（仅缓存已登录结果，登录后可立即生效）
 - `package.json`：新增 `typecheck` 脚本（需先 `pnpm add -D typescript vue-tsc`；本次因本机 pnpm store 被锁未能安装执行）
 - `.gitignore`：忽略部署包与 `*.tmp`；`ecosystem.config.js` 更名 `.cjs`（ESM 兼容，与线上一致）
@@ -305,7 +273,7 @@ https://liutianle.cn
 
 - vault 双向同步（Obsidian ↔ 服务器，如 Syncthing，受内存限制）
 - 密钥哈希存储升级
-- 图谱搜索覆盖正文全文（**圈选检索已落地**：`GET /api/notes/graph/match?fields=content` 走后端 `pg_trgm` GIN 索引，见 `server/api/notes/graph/match.get.ts`；画布内的 `GraphSearchPanel` 仍是前端本地过滤 title/tags/dirPath/summary——要做全文须复用该接口，**不得前端全文扫描**）
+- （已随图谱删除）图谱圈选检索 `GET /api/notes/graph/match?fields=content` 曾用后端 `pg_trgm` GIN 索引；正文检索改走 `GET /api/notes?q=`。
 - www 子域名证书、内存监控告警
 
-> 注：「图谱 >500 节点时改 Canvas 渲染」已于知识图谱重构中落地（`RENDER_TIERS`：>150 Canvas、>600 只画 Top 200）。
+> 注：「图谱 >500 节点时改 Canvas 渲染」曾于知识图谱重构中落地（`RENDER_TIERS`）；该页已在后续版本整体移除。

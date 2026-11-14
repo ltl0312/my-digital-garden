@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
   if (exists) throw createError({ statusCode: 409, message: '同名目录或文件已存在' })
 
   await fs.mkdir(targetFull) // recursive:false：父目录缺失即抛错（防御竞态）
-  // 写操作后立即失效 tree/graph 缓存，避免前端刷新拿到 10s 内的旧树
+  // 写操作后立即失效 tree 缓存，避免前端刷新拿到 10s 内的旧树
   invalidateGardenCache()
   return { path: parent ? `${parent}/${name}` : name }
 })

@@ -137,7 +137,7 @@ await goto('/')
 // ============ 4. 四档视口 × 五页：无横向滚动 ============
 const slug = await page.evaluate(async () => (await (await fetch('/api/notes?pageSize=1')).json()).notes[0].slug)
 const enc = slug.split('/').map(encodeURIComponent).join('/')
-const PAGES = ['/', '/notes', `/notes/${enc}`, '/graph', '/admin']
+const PAGES = ['/', '/notes', `/notes/${enc}`, '/browse?kind=type&value=MOC', '/admin']
 for (const w of [1440, 1280, 1024, 768, 390]) {
   await page.setViewport({ width: w, height: 900 })
   for (const p of PAGES) {
@@ -184,56 +184,20 @@ log('⑤ 1280px 详情页显示常驻目录栏（sticky + 236px）', await page.
   return !!r && r.width >= 200 && getComputedStyle(rail).position === 'sticky'
 }))
 
-// ============ 6. 图谱：窄屏最小可读缩放 0.34 ============
+// ============ 6. 分类浏览页：窄屏可读、不横向溢出 ============
 await setVp(390, 844)
-await goto('/graph')
+await goto('/browse?kind=dir&value=' + encodeURIComponent('ltl/01-编程语言'))
 {
-  await page.waitForFunction(() => document.querySelectorAll('svg g g').length > 50, { timeout: 60000 }).catch(() => {})
-  await sleep(1200)
-  // 连续缩小，读实际 scale
-  for (let i = 0; i < 10; i++) {
-    await page.evaluate(() => document.querySelector('button[aria-label="缩小"]')?.click())
-    await sleep(280)
-  }
-  const view = await page.evaluate(() => {
-    const g = document.querySelector('svg > g')
-    const t = g?.getAttribute('transform') || ''
-    const m = t.match(/scale\(([\d.]+)\)/)
-    const visEl = (sel) => {
-      const el = document.querySelector(sel)
-      if (!el) return false
-      const r = el.getBoundingClientRect()
-      return getComputedStyle(el).display !== 'none' && r.width > 0 && r.height > 0
-    }
-    // M4 起 <640 的图例与统计收进底部折叠面板（原两个常驻浮层改由 ≥640 承担）。
-    // 这里改用 data-testid 判「可见性」，不再用「文本 + class 含 absolute」——
-    // 后者会匹配到新的底部面板容器，属于假通过。
-    const overlays = {
-      locate: !!document.querySelector('input[placeholder="定位笔记…"]'),
-      legendRail: visEl('[data-testid="graph-legend"]'),
-      statsRail: visEl('[data-testid="graph-stats"]'),
-      bottomPanel: visEl('[data-testid="graph-panel-toggle"]')
-    }
-    return { transform: t, k: m ? Number(m[1]) : null, overlays }
-  })
-  log('⑥ 390px 图谱最小缩放被限制在 0.34', view.k !== null && view.k >= 0.335 && view.k <= 0.40, `k=${view.k}`)
-  log('⑥ 390px 左上「定位笔记」入口可用', view.overlays.locate)
-  log('⑥ 390px 图例与统计改由底部折叠面板承载（原浮层隐藏）',
-    view.overlays.bottomPanel && !view.overlays.legendRail && !view.overlays.statsRail,
-    JSON.stringify(view.overlays))
-
-  // 原「图例与统计不重叠」在 <640 已无对照对象（两者合并进同一个面板）；
-  // 改为断言新载体展开后自身不横向溢出，保持「浮层不越界」这一原始意图。
-  await page.evaluate(() => document.querySelector('[data-testid="graph-panel-toggle"]')?.click())
-  await sleep(450)
-  const panel = await page.evaluate(() => {
-    const host = document.querySelector('[data-testid="graph-panel-toggle"]')?.parentElement
-    const r = host?.getBoundingClientRect()
-    return r ? { w: Math.round(r.width), right: Math.round(r.right), vw: window.innerWidth } : null
-  })
-  log('⑥ 390px 底部面板展开后不横向溢出',
-    !!panel && panel.w <= panel.vw && panel.right <= panel.vw, JSON.stringify(panel))
-  await page.screenshot({ path: `${OUT}/graph-390x844.png` }).catch(() => {})
+  await page.waitForFunction(() => document.querySelectorAll('[data-testid="note-row"]').length > 0, { timeout: 60000 }).catch(() => {})
+  await sleep(800)
+  const browse = await page.evaluate(() => ({
+    rows: document.querySelectorAll('[data-testid="note-row"]').length,
+    docW: document.documentElement.scrollWidth,
+    vw: window.innerWidth
+  }))
+  log('⑥ 390px 分类浏览页列出笔记', browse.rows > 0, `rows=${browse.rows}`)
+  log('⑥ 390px 分类浏览页不横向溢出', browse.docW <= browse.vw + 1, `docW=${browse.docW} vw=${browse.vw}`)
+  await page.screenshot({ path: `${OUT}/browse-390x844.png` }).catch(() => {})
 }
 
 // ============ 7. 导入对话框 @390：单列 + 动作按钮拉通 ============

@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
   const tmp = full + '.tmp'
   await fs.writeFile(tmp, finalContent, 'utf-8')
   await fs.rename(tmp, full)
-  // 保存正文后立即失效 tree/graph 缓存（树的成熟度点/列表来自缓存数据）
+  // 保存正文后立即失效 tree/overview 缓存（树的成熟度点、首页统计、列表都来自缓存数据）
   invalidateGardenCache()
   return { ok: true, slug }
 })

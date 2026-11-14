@@ -199,8 +199,8 @@ useHead({ title: '全部笔记 · 拾光' })
     <EmptyState
       v-else
       :reason="emptyReason"
-      :action-text="activeFilters.length ? undefined : '浏览知识图谱'"
-      :action-to="activeFilters.length ? undefined : '/graph'"
+      :action-text="activeFilters.length ? undefined : '回到总览'"
+      :action-to="activeFilters.length ? undefined : '/'"
     >
       <button
         v-if="activeFilters.length"

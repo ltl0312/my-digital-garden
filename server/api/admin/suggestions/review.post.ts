@@ -101,7 +101,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // 通过会改标签/领域 → 列表、图谱、侧栏缓存必须失效（否则界面要等 60s TTL）
+  // 通过会改标签/领域 → 列表、统计、侧栏缓存必须失效（否则界面要等 60s TTL）
   if (results.some(r => r.ok)) invalidateGardenCache()
   const pending = await pendingCount()
   return {

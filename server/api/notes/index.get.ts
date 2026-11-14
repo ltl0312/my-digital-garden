@@ -2,8 +2,10 @@ import { defineEventHandler, getQuery } from 'h3'
 import { prisma } from '../../utils/db'
 import { cleanSummary } from '../../utils/markdown'
 import { isAdminRole } from '../../utils/auth'
-// 领域解析唯一入口（显式领域 > 路径派生 > 兜底「其他」），与图谱/详情页同源
-import { resolveDomain } from '#shared/graph-domain'
+// 领域解析唯一入口（显式领域 > 路径派生 > 兜底「其他」），与首页统计/详情页同源
+import { resolveDomain } from '#shared/domain'
+// 类型 / 成熟度两条分类轴的口径（与 /api/overview、首页仪表盘同源）
+import { TYPE_NAMESPACE, UNTYPED, isMaturity } from '#shared/note-types'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -30,6 +32,23 @@ export default defineEventHandler(async (event) => {
    */
   const domain = typeof query.domain === 'string' && query.domain.trim() ? query.domain.trim() : undefined
 
+  /**
+   * 成熟度筛选（首页「按成熟度」卡片进入的分类页）。
+   * 只认三个枚举值；非法值当作「不筛」，免得手改 URL 得到一张空列表。
+   */
+  const maturityRaw = typeof query.maturity === 'string' ? query.maturity.trim().toUpperCase() : ''
+  const maturity = isMaturity(maturityRaw)
+    ? (maturityRaw as 'SEEDLING' | 'GROWING' | 'EVERGREEN')
+    : undefined
+
+  /**
+   * 类型筛选（首页「按类型」卡片）。type 是 `type/*` 标签的取值；
+   * 「未分类」不是一个标签，而是「一个 type/* 都没有」的口径 ——
+   * 必须与 /api/overview 的 types 计数完全一致（那边是 types.length === 0，这边用 none + startsWith）。
+   */
+  const typeRaw = typeof query.type === 'string' && query.type.trim() ? query.type.trim() : undefined
+  const wantUntyped = typeRaw === UNTYPED
+
   const dirFilter = dir ? { slug: { startsWith: `${dir}/` } } : null
   const domainFilter = domain
     ? {
@@ -52,13 +71,21 @@ export default defineEventHandler(async (event) => {
 
   // 组合条件一律走 AND 数组：领域筛选与关键词搜索**各自都可能产生 OR**，
   // 若把两个 OR 平铺在同一个对象里，后者会覆盖前者（搜索时会静默丢掉领域筛选）。
+  // 同理 tag 与 type 都落在 `tags` 这个键上：平铺会互相覆盖，所以一起进 AND。
   const where = {
     isPublished: true,
-    ...(tag ? { tags: { some: { tag: { name: tag } } } } : {}),
+    ...(maturity ? { maturity } : {}),
     ...(pendingFilter === 'none' ? { suggestions: { none: { status: 'pending' } } } : {}),
     ...(pendingFilter === 'has' ? { suggestions: { some: { status: 'pending' } } } : {}),
     AND: [
       ...(domainFilter ? [domainFilter] : []),
+      ...(tag ? [{ tags: { some: { tag: { name: tag } } } }] : []),
+      ...(typeRaw && !wantUntyped
+        ? [{ tags: { some: { tag: { name: `${TYPE_NAMESPACE}${typeRaw}` } } } }]
+        : []),
+      ...(wantUntyped
+        ? [{ tags: { none: { tag: { name: { startsWith: TYPE_NAMESPACE } } } } }]
+        : []),
       ...(q
         ? [{
             OR: [

@@ -101,10 +101,10 @@ ok('390 · TabBar 高度 ≈ 95', tb && Math.abs(tb.h - 95) < 8, tb ? `h=${tb.h.
 ok('390 · FAB 不与 TabBar 重叠', !!(fab && tb && fab.bottom <= tb.top + 0.5), fab && tb ? `fab.bottom=${fab.bottom.toFixed(1)} tabbar.top=${tb.top.toFixed(1)}` : 'null')
 
 const tabCount = await page.evaluate(() => document.querySelectorAll('[data-testid="bottom-tabbar"] a').length)
-ok('390 · TabBar 条目数 = 4（首页/笔记/图谱/后台）', tabCount === 4, `count=${tabCount}`)
+ok('390 · TabBar 条目数 = 3（首页/笔记/后台）', tabCount === 3, `count=${tabCount}`)
 const tabLabels = await page.evaluate(() =>
   Array.from(document.querySelectorAll('[data-testid="bottom-tabbar"] a')).map((a) => a.textContent.trim()))
-ok('390 · TabBar 文案', JSON.stringify(tabLabels) === JSON.stringify(['首页', '笔记', '图谱', '后台']), tabLabels.join(' / '))
+ok('390 · TabBar 文案', JSON.stringify(tabLabels) === JSON.stringify(['首页', '笔记', '后台']), tabLabels.join(' / '))
 
 // 吸顶：滚动后顶栏仍在视口顶部
 const h0 = await box('header')
@@ -258,12 +258,12 @@ ok('1440 · 底部 TabBar 隐藏', !(await vis('[data-testid="bottom-tabbar"]'))
 ok('1440 · FAB 隐藏', !(await vis('[data-testid="app-fab"]')))
 ok('1440 · 汉堡隐藏', !(await vis('header button[title="打开侧栏"]')))
 // 注意：品牌入口也是 <a>，必须按导航文案过滤，否则会数成 5 项
-const NAV_LABELS = ['首页', '笔记', '知识图谱', '管理后台', '我的密钥']
+const NAV_LABELS = ['首页', '笔记', '管理后台', '我的密钥']
 const railItems = await page.evaluate((labels) =>
   Array.from(document.querySelectorAll('nav[aria-label="主导航"] a'))
     .map((a) => a.getAttribute('title'))
     .filter((t) => labels.includes(t)), NAV_LABELS)
-ok('1440 · 图标栏 4 项含「管理后台」', railItems.length === 4 && railItems.includes('管理后台'), railItems.join(' / '))
+ok('1440 · 图标栏 3 项含「管理后台」', railItems.length === 3 && railItems.includes('管理后台'), railItems.join(' / '))
 ok('1440 · 无横向滚动', await noHScroll())
 // 截图必须留在 1440 段内 —— 边界检查会改视口，跨段截图会拍到错误的宽度
 await page.screenshot({ path: resolve(OUT, '1440-home.png') })

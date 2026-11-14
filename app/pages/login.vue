@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link2, Network, BookOpen, KeyRound, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-vue-next'
+import { Link2, LayoutGrid, BookOpen, KeyRound, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-vue-next'
 
 definePageMeta({ layout: 'auth' })
 
@@ -11,7 +11,7 @@ const showKey = ref(false)
 
 const capabilities = [
   { icon: Link2, title: '双向链接', desc: '在笔记里写 [[笔记名]]，两篇就互相关联' },
-  { icon: Network, title: '知识图谱', desc: '按领域着色，看清知识之间真实的连接密度' },
+  { icon: LayoutGrid, title: '分类总览', desc: '按目录 / 类型 / 成熟度一眼看清笔记分布' },
   { icon: BookOpen, title: '沉浸阅读', desc: '正文 720px 单栏 + 目录栏跟随，长文也不迷路' },
   { icon: KeyRound, title: '密钥访问', desc: '分级权限：初始管理员 / 管理员 / 普通用户' }
 ]
@@ -27,7 +27,7 @@ const submit = async () => {
     await $fetch('/api/auth/verify', { method: 'POST', body: { key: key.value.trim() } })
     // 登录前 /api/auth/me 曾缓存为 null；此处必须失效，否则角色化界面（新建下拉 / 管理入口 / 导入）
     // 要等到硬刷新才出现 —— 这是上一轮的既有缺陷，E2 修复。
-    await refreshNuxtData(['auth-me', 'sidebar-graph', 'vault-tree', 'sidebar-tags'])
+    await refreshNuxtData(['auth-me', 'overview', 'vault-tree', 'sidebar-tags'])
     // 仅允许站内相对路径跳转（防 open redirect：拒绝绝对 URL 与协议相对 //evil.com）
     const raw = typeof route.query.redirect === 'string' ? route.query.redirect : ''
     const redirect = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
@@ -52,7 +52,7 @@ useHead({ title: '访问验证 · 拾光' })
         一座私人的、会自己生长的知识花园。以下都是它现在就能做的事，不是口号。
       </p>
 
-      <!-- 纯 SVG 花园连线插画（与知识图谱同构） -->
+      <!-- 纯 SVG 花园连线插画（枝条彼此牵连，呼应双向链接） -->
       <svg viewBox="0 0 320 140" class="w-full max-w-[320px] mb-8" aria-hidden="true">
         <g stroke="var(--line)" stroke-width="1.5" fill="none">
           <path d="M60 96 L128 44" />

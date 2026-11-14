@@ -13,7 +13,7 @@ const PUBLIC = ['/api/auth/verify', '/api/auth/me', '/api/auth/logout']
  *   · 只读方法（GET/HEAD/OPTIONS）一律放行，读能力对登录用户全开；
  *   · 其余方法落在受管前缀下即要求管理身份，与接口内的 requireAdmin 双重校验。
  * 前缀是**白名单式**的（不在列表里的路径不受影响），因此不会误伤
- * /api/graph/colors 这类按密钥隔离的用户级写入。
+ * /api/notes/<slug> 这类按密钥隔离的用户级读取。
  *
  * /api/vault/import/preflight 例外：它只做校验与预检，不写任何文件，
  * 但方法是 POST。列入 READ_ONLY_EXCEPTIONS 以免语义与实现不符。

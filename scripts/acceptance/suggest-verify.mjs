@@ -140,10 +140,10 @@ let sampleNote = null
     inFront ? `slug=${inFront.slug} domain=${inFront.domain} from=${inFront.domainFrom}` : '未找到前端目录下的笔记')
   sampleNote = inFront || null
 
-  const graph = await admin.api('/api/notes/graph')
-  const gNode = (graph.json?.nodes || []).find(n => n.domain && n.domainFrom)
-  log('D3 图谱接口回传 domainFrom', graph.status === 200 && !!gNode,
-    gNode ? `${gNode.domain}/${gNode.domainFrom}` : 'none')
+  const overview = await admin.api('/api/overview')
+  log('D3 总览接口覆盖全库（首页仪表盘数据源）',
+    overview.status === 200 && overview.json?.total > 0 && (overview.json?.sections || []).length > 0,
+    `total=${overview.json?.total} sections=${overview.json?.sections?.length} types=${overview.json?.types?.length}`)
 }
 
 // ---------- 3. 生成 → 待审（不改动任何笔记） ----------
@@ -312,15 +312,10 @@ let expectedTags = []
     log('A6 列表接口同样体现显式领域', !!row && row.domain === '前端' && row.domainFrom === 'manual',
       row ? `domain=${row.domain} from=${row.domainFrom}` : 'not found')
 
-    const graph = await admin.api('/api/notes/graph')
-    const gn = (graph.json?.nodes || []).find(n => n.slug === SCRATCH_SLUG)
-    log('A7 图谱接口同样体现显式领域', !!gn && gn.domain === '前端' && gn.domainFrom === 'manual',
-      gn ? `domain=${gn.domain} from=${gn.domainFrom} dirPath=${gn.dirPath}` : 'not found')
-
     // 关键不变量：显式领域是「领域」而非「移动文件」——文件仍在原目录
     const stillThere = readFileSync(resolve(PROJECT_ROOT, 'content/vault', SCRATCH_SLUG + '.md'), 'utf-8').length > 0
-    log('A8 领域分配没有移动文件（slug 与路径不变）', stillThere && !!gn && gn.slug === SCRATCH_SLUG,
-      `slug=${gn?.slug}`)
+    log('A8 领域分配没有移动文件（slug 与路径不变）', stillThere && !!row && row.slug === SCRATCH_SLUG,
+      `slug=${row?.slug}`)
 
     // ── V 段：领域白名单必须接受「用户自建的新领域目录」─────────────────────
     // 领域是用户在建目录时定义的；色族表里只有 8 个固定名。若白名单只认色族名，

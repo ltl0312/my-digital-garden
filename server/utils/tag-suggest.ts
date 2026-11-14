@@ -20,7 +20,7 @@
  * 里选。理由是标签体系一旦被自动生成的新词污染，侧栏标签云与图谱的标签共有边都会退化；
  * 需要新标签时由审核者在界面上手输（那条路走 PATCH 元数据接口，不经过本引擎）。
  */
-import { DOMAIN_FALLBACK, domainOfSlug } from '#shared/graph-domain'
+import { DOMAIN_FALLBACK, domainOfSlug } from '#shared/domain'
 
 // ── 阈值（集中在这里，便于按真实库调参并对账） ──────────────────────────────
 //
