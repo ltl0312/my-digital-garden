@@ -323,6 +323,15 @@
 - **`typecheck` 基线**：`npx pnpm typecheck` 剩 8 条错误全在 `server/utils/markdown-sanitize.ts`（102/104/120/125/126 行，TS18048/TS2345），是本任务之前就红的基线，未改动该文件。
 - **grep 教训**：MSYS 下 `grep -rn "graph\|图谱"` 在该仓库会超时（>60s，vault 是通往 `E:\Vault` 的 junction），改用 `grep -c` 或 python 逐行读。
 
+### 上线（v2.1.0，2026-11-14 16:25 CST）
+
+- 构建：本机 `docker build -f deploy/Dockerfile -t my-digital-garden-app:v2.1.0 -t my-digital-garden-app:latest .`（约 40 秒，Nitro 产物 22.9 MB），`docker save` 裸 tar 332,249,088 B，SHA-256 `d96e5f0a8325…e4ed01`，两端比对一致。
+- 上线：`scp` → `/opt/garden-image-v2.1.0.tar` → 备份编排与 `.env` 到 `/opt/garden-backup/<stamp>` → 记回滚点 `d024300f6fac`（v2.0.5）→ `docker load` → **显式 `docker tag …:v2.1.0 …:latest`** → `compose up -d --force-recreate`。第 3 次探测（约 6 秒）返回 200。
+- 启动日志：`No pending migrations to apply.` + `[garden] watcher: 开始监听 /app/content/vault` + `Listening on http://[::]:3000`；容器内存 93 MiB / 640 MiB，CPU 0.33%。
+- 线上抽查：`/login` 200、`/` 与 `/browse?kind=dir&…` 302（未登录跳登录）、`/api/overview` 401；镜像内 `routes/api/overview.get.mjs` 存在、`routes/api` 下 graph 路由计数 0、客户端 bundle 含「分类总览 / 按目录」字样。
+- 已知遗留：`/api/overview` 仍是「全量取回再内存分桶」，1200+ 篇下每次 30 秒缓存失效后要扫一遍全表；下一步可下推为 Postgres `split_part(slug,'/',1) || '/' || split_part(slug,'/',2)` 的 `group by`。
+
+
 ---
 
 

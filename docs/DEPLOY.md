@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-11-12（v2.0.5 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-11-14（v2.1.0 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v2.0.5` | `d024300f6fac` | 行内代码不再显示字面反引号：覆盖 @tailwindcss/typography 的 `code::before/::after{content:"`"}` 并改为胶囊底色；解析前清洗 `markdown-sanitize.ts`（表格单元格代码内的裸 `\|`、代码跨度内 `$` 防 remark-math 误吞）+ `RENDER_VERSION` 6（**当前**） |
+| `latest` / `v2.1.0` | `ee065a95720d` | **移除知识图谱页**（D3 力导向图整页 + `/api/graph/*` 配色与规则接口 + 全部 `GraphView`/`components/graph`/`useGraph*`/`lib/graph-*`，`shared/graph-domain.ts`→`shared/domain.ts`）；首页改为**笔记总览仪表盘**（笔记总数/双向链接/孤立笔记/目录数 + 按目录、按类型、按成熟度三段卡片），新增 `/browse?kind=dir|type|maturity&value=…` 分类浏览页；新增 `GET /api/overview`（单次 findMany + 内存分桶，30s 进程内缓存），`/api/notes` 增 `type` / `maturity` 参数（**当前**） |
+| `v2.0.5` | `d024300f6fac` | 行内代码不再显示字面反引号：覆盖 @tailwindcss/typography 的 `code::before/::after{content:"`"}` 并改为胶囊底色；解析前清洗 `markdown-sanitize.ts`（表格单元格代码内的裸 `\|`、代码跨度内 `$` 防 remark-math 误吞）+ `RENDER_VERSION` 6 |
 | `v2.0.4` | `0ef8aff138fa` | AI 审计：截断时自动放大重试并**抢救已写完的建议**、失败原因在界面上可见、扫描上限 60 → 200（详见下方 v2.0.4 说明）。实测同一范围 60 篇：失败 59 → 25 → **0** |
 | `v2.0.3` | `38c799d7cb9d` | 审计失败第一步：截断自动放大重试（×1.8）+ failReasons 可见 + 上限 200。实测失败 59/60 → 25/60，但截断仍在发生，故随后有 v2.0.4 |
 | `v2.0.2` | `6c37a5483402` | 审核通过不再覆盖笔记原有标签（数据损坏修复）+ 徽标/名单同源 + 零引用标签清理；并用备份回灌了被覆盖的标签（详见下方 v2.0.2 说明） |
@@ -63,7 +64,7 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.0.5.tar.gz`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚；v2.0.5 起用 `.tar.gz` 以省带宽）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.1.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚；v2.0.5 曾用 `.tar.gz`，v2.1.0 回到裸 `.tar` —— 上传统计 332,249,088 B，秒传约 2 分钟）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
@@ -87,6 +88,37 @@ https://liutianle.cn
 > ② **恢复的两个坑（本轮实测踩到并修掉）** —— 清空 vault 再复制回会触发 524 个 `unlink`，watcher 把整库 Note 行删光又全量重建，`createdAt` 全部变成恢复当天、`updatedAt` 全被刷成同一秒，进而 `scheduleSuggestScan` 认为「全库刚导入」而排队生成 514 条建议。修法：新增 `server/utils/vault-busy.ts`（`beginVaultBusy`/`endVaultBusy`/`isVaultBusy`），watcher 的 `add`/`change`/`unlink` 与 `scheduleSuggestScan` 在整库操作期间直接跳过（结束留 5s 宽限，因为 chokidar 的 `awaitWriteFinish` 稳定窗口是 1s）；重建索引后用 `$executeRawUnsafe` 写回原始时间戳（Prisma 的 `update` 会强行把 `updatedAt` 设为 `now()`）。
 > ③ **AI 全库审计（仅初始管理员）** —— `server/utils/audit.ts`：范围可按文件夹/标签/领域/关键词任意组合，先「看看会扫多少篇」再真正跑；每篇交给模型产出**建议**（`append-section` / `add-tags` / `set-domain` 三种动作，刻意不提供「重写正文」），建议与执行分离，**执行前强制整库备份**（备份失败则一条都不执行）。报告按文件存在 `data/audits/<id>.json`，不进数据库（恢复备份时不该带回旧报告）。
 > ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。
+### v2.1.0（移除知识图谱页，首页改笔记总览仪表盘）
+
+**上线记录**：2026-11-14 16:25 CST。`docker load -i /opt/garden-image-v2.1.0.tar` → 显式 `docker tag my-digital-garden-app:v2.1.0 my-digital-garden-app:latest` → `cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate`；第 3 次探测（约 6 秒）`/login` 返回 200；启动日志含 `No pending migrations to apply.` 与 `[garden] watcher: 开始监听 /app/content/vault`；容器内存 93 MiB / 640 MiB。回滚镜像 `d024300f6fac`（v2.0.5）已记入 `/opt/garden-backup/rollback-image-id.*.txt`。
+
+**改了什么**：
+
+- **删掉图谱**：`app/pages/graph.vue`、`app/components/GraphView.vue` + `app/components/graph/*`（9 个）、`app/composables/useGraph{Data,Filter,Colors,ColorRules}.ts`、`app/lib/graph-*.ts`、`server/api/graph/*`（配色与规则共 6 个端点）、`server/api/notes/graph.get.ts`、`server/api/notes/graph/match.get.ts`、`shared/graph-colors.ts`、`scripts/acceptance/graph-verify.mjs`。原因：1200 篇规模下 `/api/notes/graph` 每次请求都要全量算节点 + 标签共有边（`MAX_TAG_GROUP_SIZE` 截断后仍是 O(n²)），页面自己也卡，而它实际没人用。
+- `shared/graph-domain.ts` → `shared/domain.ts`（领域解析仍被列表 chip 与侧栏使用，只改名不删逻辑）。
+- **新增 `GET /api/overview`**：一次 `findMany(isPublished)` + 内存分桶，返回 `total / links / isolated` + `sections`（slug 前两段）/ `types`（`type/*` 标签 + 未分类）/ `maturity`，30 秒进程内缓存。
+- **首页重写为仪表盘** `app/pages/index.vue`：笔记总数 / 双向链接 / 孤立笔记 / 目录数 四格 + 按目录、按类型、按成熟度三段卡片（点卡片进分类页）+ 最近更新 + 右栏。
+- **新增 `app/pages/browse.vue`**：`/browse?kind=dir|type|maturity&value=…`，复用 `/api/notes`（`dir` / `type` / `maturity` 三个新增参数），列表点进正文。
+- 侧栏第二个 Tab 由「领域」改「目录」（原领域轴 920/1212 落「其他」，等于空筛选）；导航 4 项 → 3 项（首页 / 笔记 / 后台）。
+- Prisma 的 `GraphColor` / `GraphColorRules` 两表与 `server/utils/backup.ts` 的 `graphColors` 导出**保留**：不写破坏性迁移，旧库备份仍可原样回灌。
+
+**为什么分类轴用目录不用领域**：`resolveDomain` 只认 `NN_Knowledge/<领域>` 这种路径，实测 1212 篇里 920 篇落进「其他」兜底桶，做成卡片就是一堵「其他 920」的墙；目录（slug 前两段）分出 24 个真实分区，且直接对应 `/api/notes?dir=` 前缀筛选。
+
+**验收**：
+
+- `npx pnpm typecheck`：只剩 `server/utils/markdown-sanitize.ts` 的 8 条 pre-existing 错误（与本次改动无关）。
+- 本地浏览器（1280×800 + 390 宽屏、Cookie 登录态）：首页三段卡片、`/browse?kind=dir|type|maturity` 的标题/面包屑/排序/密度/分页全部通过。
+- 线上：`/login` 200、`/` 与 `/browse` 302（未登录跳登录）、`/api/overview` 401；产物里有 `routes/api/overview.get.mjs`、`routes/api` 下已无 graph 路由、客户端 bundle 含「分类总览 / 按目录」字样。
+
+> **v2.1.0 无 schema 变更**（没动 `prisma/migrations`），与 v2.0.5 双向回滚都不丢数据。回滚：
+>
+> ```bash
+> docker tag my-digital-garden-app:v2.0.5 my-digital-garden-app:latest
+> cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate
+> ```
+
+---
+
 ### v2.0.5（行内代码显示字面反引号）
 
 **症状**：笔记正文里本该是浅底胶囊的 `<code>`，在页面上显示成 `` `xxx` ``（前后各多一个反引号），看起来像「Markdown 没渲染」。表格、`<br>`、标题都正常 —— 只有行内代码中招。

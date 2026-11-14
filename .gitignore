@@ -21,6 +21,7 @@ logs
 # 部署包与临时文件
 garden-deploy.tar.gz
 *.tar.gz
+garden-image-*.tar
 *.tmp
 
 # Local env files
