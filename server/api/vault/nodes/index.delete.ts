@@ -1,14 +1,14 @@
 import { createError, defineEventHandler, readBody } from 'h3'
 import fs from 'fs/promises'
-import { resolveVaultPath, normalizeVaultRel, isStructuralPath, isDirEffectivelyEmpty } from '../../../utils/vault'
+import { resolveVaultPath, normalizeVaultRel, isStructuralPath } from '../../../utils/vault'
 import { requireAdmin } from '../../../utils/auth'
 import { prisma } from '../../../utils/db'
 import { invalidateGardenCache } from '../../../utils/cache'
 import { removeMarkdownFile } from '../../../utils/markdown'
 
-// C4 删除节点（spec 8.8/8.9）：文件直接删；文件夹按破坏面分档——
-// 空文件夹 admin 可删，非空文件夹仅 root（二次确认由前端承担，篇数在此返回）；
-// 结构目录是全员红线（含 root）；普通用户 403（requireAdmin）。
+// C4 删除节点（spec 8.8/8.9）：文件直接删；文件夹连同其中的笔记一起删，
+// 不再按「空/非空」分档卡 admin（见下面的说明）；结构目录是全员红线（含 root）；
+// 普通用户 403（requireAdmin）。二次确认由前端承担，篇数在此统计并返回。
 export default defineEventHandler(async (event) => {
   const actor = await requireAdmin(event)
   const body = (await readBody<{ path?: string }>(event)) || {}
@@ -57,10 +57,10 @@ export default defineEventHandler(async (event) => {
     if (isStructuralPath(rel)) {
       throw createError({ statusCode: 403, message: '越权操作：结构目录受保护，不可删除' })
     }
-    const empty = await isDirEffectivelyEmpty(full)
-    if (!empty && actor.role !== 'root') {
-      throw createError({ statusCode: 403, message: '越权操作：非空文件夹仅初始管理员可删除' })
-    }
+    // 非空文件夹原先只给 root：真实站点的主人常用 admin 权限的访问密钥登录，
+    // 结果「右键 → 删除」对本人永久置灰（用户反馈的原话就是「右键删除文件夹无效」）。
+    // 破坏面改由这些兜底承担：结构目录红线（上面）· 前端确认弹窗写明路径与不可撤销 ·
+    // 返回值带出实际删掉的篇数（notes），admin 与 root 一视同仁。
     const subtreeWhere = { OR: [{ slug: rel }, { slug: { startsWith: `${rel}/` } }] }
     const noteCount = await prisma.note.count({ where: subtreeWhere })
     await rmWithRetry(full, true)

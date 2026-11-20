@@ -71,63 +71,139 @@ const toast = useToast()
 
 // 侧栏开关与宽度（跨页面保留）
 const SIDEBAR_KEY = 'garden-sidebar-width'
+const SIDEBAR_MIN = 240
+const SIDEBAR_MAX = 440
+const SIDEBAR_DEFAULT = 320
 const sidebarOpen = useState<boolean>('shell-sidebar-open', () => true)
-const sidebarWidth = useState<number>('shell-sidebar-width', () => 320)
+
+/**
+ * 宽度只允许是 [240, 440] 的整数。
+ *
+ * 侧栏宽度直接写进 `--sidebar-w`，一旦是 `NaN`，`width: var(--sidebar-w)` 在计算值阶段
+ * 非法 → 回退 `auto`，侧栏被内容撑成一个和默认值无关的宽度（实测脏值 'abc' 得到 248px、
+ * 空值 320px、'1280' 被夹到 440px）。localStorage 是用户能写坏的地方（旧版本遗留、
+ * 手改、同步工具回放），所以读取和写入两侧都必须过这个夹子。
+ */
+const clampWidth = (n: number) => {
+  if (!Number.isFinite(n)) return SIDEBAR_DEFAULT
+  return Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, Math.round(n)))
+}
+const sidebarWidth = useState<number>('shell-sidebar-width', () => SIDEBAR_DEFAULT)
 const resizing = ref(false)
 let dragLeft = 0
+let resizeHandle: HTMLElement | null = null
+
+/** 结束拖拽：无论正常松手、指针被系统取消、还是窗口失焦，都必须走到这里 */
+const finishResize = () => {
+  if (!resizing.value) return
+  resizing.value = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  if (resizeHandle) {
+    try { resizeHandle.style.removeProperty('touch-action') } catch { /* 元素已卸载 */ }
+    resizeHandle = null
+  }
+  try { localStorage.setItem(SIDEBAR_KEY, String(sidebarWidth.value)) } catch { /* 隐私模式禁写 */ }
+}
+
+const onResizeMove = (e: PointerEvent) => {
+  if (!resizing.value) return
+  sidebarWidth.value = clampWidth(e.clientX - dragLeft)
+}
 
 const startResize = (e: PointerEvent) => {
+  e.preventDefault()
   resizing.value = true
+  resizeHandle = (e.currentTarget as HTMLElement) || null
+  // 捕获指针：拖到窗口外、拖到另一个窗口、或被系统打断时，pointerup/pointercancel
+  // 仍然回到手柄上。没有捕获时这些情况收不到 pointerup，`resizing` 会永久为 true，
+  // 之后鼠标在页面上一动侧栏就跟着变宽（直到 440 上限），body 的 user-select:none
+  // 也一直撤不掉 —— 现象就是「打开网站时侧栏比默认的宽、而且点不动」。
+  try { resizeHandle?.setPointerCapture(e.pointerId) } catch { /* 老浏览器忽略 */ }
   document.body.style.cursor = 'col-resize'
   // 拖拽期间禁用文本选择：否则手柄拖过正文/树行会拖蓝一片文字
   document.body.style.userSelect = 'none'
   // 以侧栏左边缘为基准换算宽度（左侧还有 60px 图标栏，不能直接用视口坐标）
-  const host = (e.currentTarget as HTMLElement)?.parentElement
+  const host = resizeHandle?.parentElement
   dragLeft = host?.getBoundingClientRect().left ?? 0
 }
 
 // 进入窄屏（<1024）自动收起侧栏 —— 沿用 E4 行为；断点值来自 useViewport 单源。
 // immediate: true 覆盖「首帧即为窄屏」的情形（isNarrow 在挂载后才校正为真）。
+// 反向也要还回来：从窄屏拖回宽屏时，若不恢复，侧栏容器宽度是 0 且拖拽手柄被
+// v-if="sidebarOpen" 隐藏，桌面布局里就再也拖不出侧栏（只能靠图标栏那个开关）。
+let autoClosedDrawer = false
 watch(isNarrow, (v) => {
-  if (v) sidebarOpen.value = false
+  if (v) {
+    autoClosedDrawer = sidebarOpen.value
+    sidebarOpen.value = false
+  } else if (autoClosedDrawer) {
+    autoClosedDrawer = false
+    sidebarOpen.value = true
+  }
 }, { immediate: true })
+// 用户自己开一次侧栏，就不再自动关/自动开（避免和手动操作打架）
+watch(sidebarOpen, (v) => { if (v) autoClosedDrawer = false })
+
+const onKeydown = (e: KeyboardEvent) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    commandOpen.value = !commandOpen.value
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+    e.preventDefault()
+    sidebarOpen.value = !sidebarOpen.value
+  }
+  if (e.key === 'Escape') {
+    if (commandOpen.value) commandOpen.value = false
+    if (createMenuOpen.value) createMenuOpen.value = false
+    if (fabMenuOpen.value) fabMenuOpen.value = false
+    if (isNarrow.value && sidebarOpen.value) sidebarOpen.value = false
+  }
+}
 
 onMounted(() => {
   headerActionsReady.value = true
-  const saved = localStorage.getItem(SIDEBAR_KEY)
-  if (saved) sidebarWidth.value = Math.min(440, Math.max(240, Number(saved)))
-
-  window.addEventListener('pointermove', (e) => {
-    if (!resizing.value) return
-    sidebarWidth.value = Math.min(440, Math.max(240, e.clientX - dragLeft))
-  })
-  window.addEventListener('pointerup', () => {
-    if (resizing.value) {
-      resizing.value = false
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      localStorage.setItem(SIDEBAR_KEY, String(sidebarWidth.value))
+  // 记住的宽度在挂载后才生效：SSR 首帧用默认值，随后按 localStorage 校正。
+  // 只有「合法区间内的整数」才认；NaN / 'abc' / 1280 / 640 这类脏值一律丢弃并清键，
+  // 回到默认 320 —— 它们要么让 `--sidebar-w: NaNpx` 失效（宽度由内容撑开），
+  // 要么被夹到 440 上限，两种都表现为「打开网站时侧栏比默认的宽」，且会一直跟着刷新走。
+  try {
+    const saved = localStorage.getItem(SIDEBAR_KEY)
+    if (saved != null && saved !== '') {
+      const raw = Number(saved)
+      if (Number.isFinite(raw) && raw >= SIDEBAR_MIN && raw <= SIDEBAR_MAX) {
+        sidebarWidth.value = Math.round(raw)
+      } else {
+        sidebarWidth.value = SIDEBAR_DEFAULT
+        localStorage.removeItem(SIDEBAR_KEY)
+      }
     }
-  })
+  } catch { /* 隐私模式禁读 */ }
+
+  window.addEventListener('pointermove', onResizeMove, { passive: true })
+  // pointerup / pointercancel / 窗口失焦 三条路径都收尾：少任何一条，拖拽状态都会卡住
+  window.addEventListener('pointerup', finishResize)
+  window.addEventListener('pointercancel', finishResize)
+  window.addEventListener('blur', finishResize)
+  document.addEventListener('visibilitychange', finishResize)
 
   // 全局快捷键：⌘K 命令面板 · ⌘\ 收起/展开侧栏 · ESC 关闭浮层
-  window.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-      e.preventDefault()
-      commandOpen.value = !commandOpen.value
-    }
-    if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
-      e.preventDefault()
-      sidebarOpen.value = !sidebarOpen.value
-    }
-    if (e.key === 'Escape') {
-      if (commandOpen.value) commandOpen.value = false
-      if (createMenuOpen.value) createMenuOpen.value = false
-      if (fabMenuOpen.value) fabMenuOpen.value = false
-      if (isNarrow.value && sidebarOpen.value) sidebarOpen.value = false
-    }
-  })
+  window.addEventListener('keydown', onKeydown)
   window.addEventListener('click', closeCreateMenu)
+})
+
+// 布局组件理论上不会卸载（切页面只换 NuxtPage），但全局监听必须成对回收：
+// 热更新、错误重挂载、将来的多布局切换都会走这里，漏一次就多一份幽灵监听到 body 上。
+onBeforeUnmount(() => {
+  finishResize()
+  window.removeEventListener('pointermove', onResizeMove)
+  window.removeEventListener('pointerup', finishResize)
+  window.removeEventListener('pointercancel', finishResize)
+  window.removeEventListener('blur', finishResize)
+  document.removeEventListener('visibilitychange', finishResize)
+  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('click', closeCreateMenu)
 })
 
 const { tree, tags, totalNotes, sections, tagGroups, stats } = useFacets()
@@ -341,13 +417,15 @@ const logout = async () => {
              抽屉宽度按交付物 §5 ④ 的公式：min(320, max(300, 屏宽 × 0.82))
              —— 取代此前写死的 286px（小屏会显得局促、大屏平板浪费空间）。 -->
         <div
-          class="h-full shrink-0 relative transition-[width] duration-drawer ease-dawn"
+          class="h-full shrink-0 relative overflow-hidden transition-[width] duration-drawer ease-dawn"
           :class="isNarrow
             ? 'absolute left-0 top-0 z-40 shadow-ds3'
             : ''"
-          :style="{ width: isNarrow ? (sidebarOpen ? drawerW + 'px' : '0px') : (sidebarOpen ? 'var(--sidebar-w)' : '0px') }"
+          :style="{ width: isNarrow ? (sidebarOpen ? drawerW + 'px' : '0px') : (sidebarOpen ? 'var(--sidebar-w, 320px)' : '0px') }"
         >
-          <div v-show="sidebarOpen" class="h-full" :style="{ width: isNarrow ? drawerW + 'px' : 'var(--sidebar-w)' }">
+          <!-- overflow-hidden：树行/标签 chip 一旦比栏宽更宽（超长标题、连续英文），
+               会在侧栏外沿「漏」出去压住正文，正文那片区域点到的其实是侧栏里的元素 -->
+          <div v-show="sidebarOpen" class="h-full overflow-hidden" :style="{ width: isNarrow ? drawerW + 'px' : 'var(--sidebar-w, 320px)' }">
             <ContextSidebar
               :tree="(tree as any)?.tree || []"
               :sections="sections"
@@ -378,6 +456,7 @@ const logout = async () => {
           v-if="sidebarOpen && !isNarrow"
           data-sidebar-resize
           class="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-[var(--accent-soft)] transition-colors"
+          style="touch-action: none"
           title="拖动调整宽度"
           @pointerdown="startResize"
         ></div>

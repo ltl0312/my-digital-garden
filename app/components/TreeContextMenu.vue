@@ -27,6 +27,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'select', key: string): void
   (e: 'close'): void
+  /** 点了被禁用的项：把原因(hint)交给上层提示，绝不做成静默无响应 */
+  (e: 'blocked', item: MenuItem): void
 }>()
 
 const WIDTH = 208
@@ -74,8 +76,19 @@ watch(() => props.open, async (v) => {
   root.value?.focus()
 })
 
+/**
+ * 点击菜单项：**禁用的项也要响应**。
+ *
+ * 原来这里用 `<button :disabled>`，浏览器不会给 disabled 按钮派发 click，
+ * 于是「右键文件夹 → 删除 → 没反应」成了一个连日志都没有的死角（线上用户原话：
+ * 「右键删除文件夹无效」）。现在改成 aria-disabled + 自行判断：
+ * 禁用项弹出 hint 说明原因，菜单保留在原处，用户能看清是权限/结构目录还是别的限制。
+ */
 const pick = (item: MenuItem) => {
-  if (item.disabled) return
+  if (item.disabled) {
+    emit('blocked', item)
+    return
+  }
   emit('select', item.key)
   emit('close')
 }
@@ -97,11 +110,14 @@ const pick = (item: MenuItem) => {
         <button
           type="button"
           role="menuitem"
-          class="w-full px-3 py-1.5 text-ds-sm flex items-center gap-2.5 text-left transition-colors duration-micro disabled:cursor-not-allowed"
-          :class="item.danger
-            ? 'text-danger hover:bg-[color-mix(in_srgb,var(--danger)_12%,transparent)] disabled:opacity-45'
-            : 'text-ink-2 hover:text-ink hover:bg-surface-3 disabled:opacity-45'"
-          :disabled="item.disabled"
+          class="w-full px-3 py-1.5 text-ds-sm flex items-center gap-2.5 text-left transition-colors duration-micro"
+          :class="[
+            item.danger
+              ? 'text-danger hover:bg-[color-mix(in_srgb,var(--danger)_12%,transparent)]'
+              : 'text-ink-2 hover:text-ink hover:bg-surface-3',
+            item.disabled ? 'opacity-45 cursor-not-allowed' : ''
+          ]"
+          :aria-disabled="item.disabled ? 'true' : undefined"
           :title="item.hint || ''"
           @click="pick(item)"
         >

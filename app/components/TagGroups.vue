@@ -24,20 +24,16 @@ const toggle = (g: TagGroup) => {
   open.value = next
 }
 
-const nsLabel = (ns: string) => ns === '未分组' ? '未分组' : ns
-
 /**
- * 「未分组」不是"笔记没打标签"，而是**这些标签名里没有 `/` 前缀**。
+ * 分组名由接口给（`/api/tags` 的 `group`，规则见 shared/tag-group.ts）。
  *
- * 分组规则是「按标签名的命名空间前缀分组」（见 useFacets.buildTagGroups：
- * `name.indexOf('/')`，没有斜杠就落进 未分组）。所以 AI 分配出 `Java`、`后端`
- * 这种扁平标签时，它们确实是真标签、也真的挂在笔记上，但因为没有前缀，
- * 面板里只能把它们堆在一起 —— 分配领域更不会改变这一点（领域不是标签）。
- *
- * 这里把这个规则直接写在界面上，避免用户以为是"分配没生效"。
+ * 历史裸标签（没有 `命名空间/` 前缀）以前会被整齐地堆进一个「未分组」组里 ——
+ * 线上真实库有 974 个这样的标签，等于半个面板不可用。现在服务端按
+ * 「人工映射 → 同篇共存证据 → 所在目录 → 自身命名空间」推导出分组，
+ * 标签真名（`React`、`专题索引`）保持原样，点击筛选仍按原名走，所以界面
+ * 不需要再解释"为什么没分组"。
  */
-const NO_NS_HINT = '这些标签名里没有「命名空间/」前缀，无法归入某个分组。想让它们成组，把标签名改成「命名空间/名称」即可。'
-const nsTitle = (ns: string) => ns === '未分组' ? NO_NS_HINT : ns
+const nsTitle = (ns: string) => `${ns} · 组内标签合计计数`
 </script>
 
 <template>
@@ -51,12 +47,9 @@ const nsTitle = (ns: string) => ns === '未分组' ? NO_NS_HINT : ns
         @click="toggle(g)"
       >
         <ChevronRight class="w-3 h-3 transition-transform duration-base ease-dawn" :class="isOpen(g, i) ? 'rotate-90' : ''" />
-        <span class="flex-1 text-left">{{ nsLabel(g.ns) }}</span>
+        <span class="flex-1 text-left">{{ g.ns }}</span>
         <span class="font-mono tabular-nums">{{ g.total }}</span>
       </button>
-      <p v-if="isOpen(g, i) && g.ns === '未分组'" class="pl-6 pr-2 pb-1 text-[11px] leading-snug text-ink-3">
-        这些标签名里没有「命名空间/」前缀，所以没法归组。改成「命名空间/名称」就会自动进组。
-      </p>
       <div v-if="isOpen(g, i)" class="flex flex-wrap gap-1 pl-4 pt-1">
         <NuxtLink
           v-for="t in g.items"

@@ -99,13 +99,19 @@ export function buildDomainFacets(tree: TreeNodeLike[] | undefined, totalNotes: 
   return facets.sort((a, b) => b.count - a.count)
 }
 
-/** 标签面板：按命名空间前缀分组，组内按数量倒序；组间按组内合计倒序（spec 6：组头带组内计数） */
-export function buildTagGroups(tags: { name: string; count: number }[] | undefined): TagGroup[] {
+/**
+ * 标签面板：按分组归并，组内按数量倒序；组间按组内合计倒序（spec 6：组头带组内计数）。
+ *
+ * 分组名优先取接口给的 `group`（`/api/tags` 用 shared/tag-group.ts 的纯函数推导，
+ * 历史裸标签也能落到「前端 / 编程语言 / 中间件」这类真实分组里）。
+ * 接口没给 group 时（旧缓存 / 尚未部署的响应）退回按 `命名空间/` 前缀切分。
+ */
+export function buildTagGroups(tags: { name: string; count: number; group?: string }[] | undefined): TagGroup[] {
   if (!tags?.length) return []
   const map = new Map<string, TagGroup>()
   for (const t of tags) {
     const idx = t.name.indexOf('/')
-    const ns = idx > 0 ? t.name.slice(0, idx) : '未分组'
+    const ns = (t.group || '').trim() || (idx > 0 ? t.name.slice(0, idx) : '未分组')
     const label = idx > 0 ? t.name.slice(idx + 1) : t.name
     if (!map.has(ns)) map.set(ns, { ns, items: [], total: 0 })
     const g = map.get(ns)!
@@ -113,7 +119,14 @@ export function buildTagGroups(tags: { name: string; count: number }[] | undefin
     g.total += t.count
   }
   const groups = [...map.values()]
-  groups.forEach(g => g.items.sort((a, b) => b.count - a.count))
+  groups.forEach(g => {
+    g.items.sort((a, b) => b.count - a.count)
+    // 同一组里出现同名标签（`前端/CSS` 与历史裸标签 `CSS` 现在会被归进同一个组）
+    // 时，整组改用全名显示，否则两个 chip 看着一模一样、点进去却是不同筛选结果。
+    const seen = new Map<string, number>()
+    for (const it of g.items) seen.set(it.label, (seen.get(it.label) || 0) + 1)
+    for (const it of g.items) if ((seen.get(it.label) || 0) > 1) it.label = it.name
+  })
   return groups.sort((a, b) => b.total - a.total)
 }
 

@@ -63,7 +63,6 @@ const filteredTree = computed(() => {
 
 // ── 结构树右键菜单（spec 6 / 8.9）────────────────────────────
 // 角色与结构保护规则与服务端保持一致：服务端始终是权威（前端置灰只是第一道门）
-const { actorRole } = useRoles()
 const toast = useToast()
 const { confirm } = useConfirm()
 // 结构树右键的「标签 · 领域自动分配」也走统一入口（分片提交 + 生成后打开审核面板并只看这几篇）
@@ -128,8 +127,6 @@ const menuItems = computed<MenuItem[]>(() => {
   const isDir = t.type === 'dir'
   const structural = isStructural(t.path)
   const canWrite = props.canManage
-  const isRootUser = actorRole.value === 'root'
-  const dirEmpty = isDir && !(t.children || []).length
   const clip = clipboard.value
 
   const items: MenuItem[] = []
@@ -175,10 +172,13 @@ const menuItems = computed<MenuItem[]>(() => {
   })
   items.push({
     key: 'delete', label: '删除', icon: Trash2, danger: true, divider: true,
-    disabled: !canWrite || structural || (isDir && !dirEmpty && !isRootUser),
+    // 非空文件夹不再只给 root：线上这台 vault 的主人常用 admin 权限的访问密钥登录，
+    // 「非空文件夹仅初始管理员可删除」等于让删除键对本人永久置灰（用户原话：右键删除文件夹无效）。
+    // 破坏面仍然有兜底：结构目录全员红线 + 确认弹窗写明路径与「不可撤销」+ 服务端返回删掉的篇数。
+    disabled: !canWrite || structural,
     hint: structural
       ? '结构目录受保护，不可删除'
-      : (isDir && !dirEmpty && !isRootUser ? '非空文件夹仅初始管理员可删除' : (canWrite ? '' : '当前角色无写入权限'))
+      : (canWrite ? '文件夹会连同其中的全部笔记一起删除，不可撤销' : '当前角色无写入权限')
   })
   items.push({ key: 'copy-path', label: '复制路径', icon: Link2, divider: true })
   return items
@@ -266,7 +266,9 @@ const onMenuSelect = async (key: string) => {
         })
         if (!ok) break
         await requestFetch('/api/vault/nodes', { method: 'DELETE', body: { path: t.path } })
-        await refreshTree()
+        // 删除会改标签与统计：只刷 vault-tree 时，标签面板还挂着已删笔记的标签、
+        // 底部状态栏笔记数不动（useNoteActions 的删除路径刷的是四个键，这里对齐）。
+        await refreshNuxtData(['vault-tree', 'sidebar-tags', 'overview'])
         notesRev.value++ // 列表 / 最近更新 / 状态栏统计跟着刷新
         toast.success(`已删除「${t.name}」`)
         // 删掉的正是当前打开的笔记（或它所在的文件夹）→ 退回列表。
@@ -299,8 +301,17 @@ const onMenuSelect = async (key: string) => {
         break
     }
   } catch (e: any) {
-    toast.error(e?.data?.message || '操作失败')
+    // 带上状态码：403「越权」、404「路径不存在」、500「文件系统拒绝」必须能区分，
+    // 否则用户只能看到一句「操作失败」，无法判断是权限还是删不掉。
+    const status = e?.statusCode || e?.status || e?.response?.status || 0
+    toast.error(status ? `${e?.data?.message || '操作失败'}（HTTP ${status}）` : (e?.data?.message || '操作失败'))
   }
+}
+
+// 点到了置灰的菜单项：把 hint 明确说出来。以前 TreeContextMenu 用原生 disabled，
+// 浏览器连 click 都不派发，于是「右键 → 删除 → 毫无反应」既没有日志也没有提示。
+const onMenuBlocked = (item: MenuItem) => {
+  toast.warn(item.hint || `「${item.label}」当前不可用`)
 }
 
 // 重命名完成后的收尾就在上面的 onRenamed（对话框只负责提交，跳转与刷新在这里决定）。
@@ -398,6 +409,7 @@ const onMenuSelect = async (key: string) => {
       :y="menu.y"
       :items="menuItems"
       @select="onMenuSelect"
+      @blocked="onMenuBlocked"
       @close="closeMenu"
     />
     <ActionSheet
