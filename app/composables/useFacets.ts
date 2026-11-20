@@ -159,7 +159,18 @@ export function toVaultStats(
 export const useFacets = () => {
   const requestFetch = useRequestFetch()
 
-  const { data: tree } = useAsyncData('vault-tree', () => requestFetch('/api/vault/tree'))
+  // 目录树是**首屏最大的一块**：2106 篇 → 约 450KB JSON。以前它在服务端取，
+  // 整份响应会被序列化进文档的 `__NUXT_DATA__`（实测占 800KB 文档的 90%），
+  // 而阿里 CDN 会在大响应流上中途掐断（curl exit 18，正好断在 512KiB）——
+  // 文档被截断 ⇒ Nuxt 拿不到完整 payload ⇒ 不水合 ⇒ 侧栏一行都点不动，
+  // 只能靠反复刷新碰上一次完整传输。改为客户端取数后文档掉到 30KB 级，
+  // 即使这一路失败也只是树空着并能重试，不会连带拖垮整页水合。
+  const {
+    data: tree,
+    pending: treePending,
+    error: treeError,
+    refresh: reloadTree
+  } = useAsyncData('vault-tree', () => requestFetch('/api/vault/tree'), { server: false, lazy: true })
   const { data: tags } = useAsyncData('sidebar-tags', () => requestFetch('/api/tags'))
   // 首页仪表盘与状态栏共用这一份：一次请求拿到 总量/连接/领域/类型/成熟度
   const { data: overview } = useAsyncData('overview', () => requestFetch('/api/overview'))
@@ -187,5 +198,18 @@ export const useFacets = () => {
 
   const stats = computed(() => toVaultStats(overview.value as any, totalNotes.value))
 
-  return { tree, tags, overview, totalNotes, domains, sections, tagGroups, stats }
+  return {
+    tree,
+    /** 目录树是否还在首屏加载（侧栏据此显示骨架，而不是显示成「空 vault」） */
+    treePending,
+    treeError,
+    reloadTree,
+    tags,
+    overview,
+    totalNotes,
+    domains,
+    sections,
+    tagGroups,
+    stats
+  }
 }

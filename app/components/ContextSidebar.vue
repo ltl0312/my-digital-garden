@@ -20,11 +20,17 @@ const props = defineProps<{
   activeTag?: string
   activeDir?: string
   currentSlug?: string
+  /** 目录树正在首屏加载（树改为客户端取数后才有这一态，见 useFacets 的注释） */
+  treePending?: boolean
+  /** 目录树取数失败：显示可重试的提示，而不是伪装成「空 vault」 */
+  treeError?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'start-resize', ev: PointerEvent): void
   (e: 'import'): void
+  /** 重新拉取目录树（首屏加载失败时的手动重试） */
+  (e: 'reload-tree'): void
   /** 新建文件夹到指定父目录（空串 = vault 顶层） */
   (e: 'new-folder', parent: string): void
   /** 在指定目录下新建笔记 */
@@ -35,6 +41,12 @@ type Panel = 'tree' | 'dir' | 'tag'
 // 面板选择跨组件共享：详情页「在结构树中定位」需要把面板切回「结构」
 const panel = useState<Panel>('shell-sidebar-panel', () => 'tree')
 const query = ref('')
+
+// 树是客户端取数的（见 useFacets）：服务端 pending 永远是 false、data 永远是 null，
+// 若直接按 treePending 渲染，SSR 出「空树」而客户端首帧出「骨架」——两者 DOM 不同，
+// Vue 会报 hydration mismatch 并退化成整树重渲染。用 mounted 把首帧钉成同一形态。
+const mounted = ref(false)
+onMounted(() => { mounted.value = true })
 
 const PANELS: { key: Panel; label: string; icon: any }[] = [
   { key: 'tree', label: '结构', icon: FolderTree },
@@ -379,12 +391,24 @@ const onMenuBlocked = (item: MenuItem) => {
 
     <!-- 面板内容（内部滚动） -->
     <div class="flex-1 min-h-0 overflow-y-auto px-2 pb-2">
-      <FileTree
-        v-if="panel === 'tree'"
-        :nodes="filteredTree"
-        :query="query"
-        :current-slug="currentSlug"
-      />
+      <template v-if="panel === 'tree'">
+        <!-- 树改成客户端取数后，首屏有一小段真空期：给骨架而不是「空 vault」 -->
+        <div v-if="!tree.length && treeError" class="px-2 py-6 text-center space-y-2">
+          <p class="text-xs text-ink-3">目录树没能加载出来</p>
+          <button class="text-xs text-accent hover:underline transition-colors duration-micro" @click="emit('reload-tree')">
+            重试
+          </button>
+        </div>
+        <ul v-else-if="!tree.length && (treePending || !mounted)" class="space-y-1.5 px-1 py-2" aria-busy="true">
+          <li v-for="i in 6" :key="i" class="h-6 rounded-md bg-surface-3 animate-pulse" />
+        </ul>
+        <FileTree
+          v-else
+          :nodes="filteredTree"
+          :query="query"
+          :current-slug="currentSlug"
+        />
+      </template>
       <FacetList v-else-if="panel === 'dir'" :facets="sections" :active-dir="activeDir" />
       <TagGroups v-else :groups="tagGroups" :active-tag="activeTag" />
     </div>

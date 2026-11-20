@@ -97,7 +97,8 @@ function sanitizeLine(line: string): string {
       return out
     }
     out += guardInlineMath(rest.slice(0, m.index))
-    let body = m[2]
+    // CODE_SPAN_RE 的分组在 noUncheckedIndexedAccess 下是 string | undefined：缺省收敛成空串
+    let body = m[2] ?? ''
     // 代码里的 $ 永远不是公式（${VAR} / $$POSTGRES_USER / $HOME）
     if (body.includes('$')) body = body.replace(/\$/g, DOLLAR_PLACEHOLDER)
     // 表格行内代码里的竖线会切断单元格：转义成 \|（GFM 在表格内会还原为 |）
@@ -116,7 +117,8 @@ export function sanitizeMarkdown(markdown: string): string {
   const lines = markdown.split('\n')
   let inFence = false
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
+    // 同 m[2]：noUncheckedIndexedAccess 下 lines[i] 是 string | undefined
+    const line = lines[i] ?? ''
     if (FENCE_RE.test(line)) {
       inFence = !inFence
       continue

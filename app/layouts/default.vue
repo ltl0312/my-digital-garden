@@ -206,7 +206,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('click', closeCreateMenu)
 })
 
-const { tree, tags, totalNotes, sections, tagGroups, stats } = useFacets()
+const { tree, treePending, treeError, reloadTree, tags, totalNotes, sections, tagGroups, stats } = useFacets()
 // tags / overview 由 useFacets 统一取数（sidebar-tags / overview 缓存键），此处不再单独请求
 void tags
 
@@ -436,6 +436,9 @@ const logout = async () => {
               :active-tag="activeTag"
               :active-dir="activeDir"
               :current-slug="currentSlug"
+              :tree-pending="treePending"
+              :tree-error="!!treeError"
+              @reload-tree="reloadTree"
               @start-resize="startResize"
               @import="startImport"
               @new-folder="startCreateFolder"
