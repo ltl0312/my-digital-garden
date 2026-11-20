@@ -50,7 +50,7 @@ const onKeydown = (e: KeyboardEvent) => {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-[120] flex flex-col justify-end"
+      class="fixed inset-0 z-[1100] flex flex-col justify-end"
       @keydown="onKeydown"
     >
       <Transition

@@ -307,7 +307,7 @@ const domainFromLabel = (f: string) =>
           @click="toggleAll"
         >
           <span
-            class="w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors duration-micro"
+            class="w-4 h-4 rounded border flex items-center justify-center transition-colors duration-micro"
             :class="allSelected ? 'bg-accent border-accent' : 'border-line bg-surface-2'"
           >
             <Check v-if="allSelected" class="w-3 h-3 text-[var(--accent-ink)]" />
@@ -327,7 +327,7 @@ const domainFromLabel = (f: string) =>
           <!-- 头部：勾选 + 标题 + 置信度 -->
           <div class="flex items-start gap-3">
             <button
-              class="mt-0.5 w-4 h-4 shrink-0 rounded-[4px] border flex items-center justify-center transition-colors duration-micro"
+              class="mt-0.5 w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors duration-micro"
               :class="selected.has(row.id) ? 'bg-accent border-accent' : 'border-line bg-surface'"
               :aria-pressed="selected.has(row.id)"
               :aria-label="`选择 ${row.title}`"
@@ -402,7 +402,7 @@ const domainFromLabel = (f: string) =>
               <input
                 v-model="newTag[row.id]"
                 placeholder="手动添加标签（自动判定不会发明新标签）"
-                class="flex-1 min-w-0 px-2.5 py-1.5 rounded-ctl bg-surface border border-line text-[12px] text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+                class="flex-1 min-w-0 px-2.5 py-1.5 rounded-ctl bg-surface border border-line-strong text-[12px] text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
                 @keyup.enter="addTag(row)"
               />
               <button
@@ -427,12 +427,12 @@ const domainFromLabel = (f: string) =>
             <div class="flex flex-wrap items-center gap-2">
               <div class="inline-flex items-center rounded-ctl border border-line bg-surface p-0.5" role="group">
                 <button
-                  class="px-2.5 h-7 rounded-[6px] text-[12px] transition-colors duration-micro"
+                  class="px-2.5 h-7 rounded-xs text-[12px] transition-colors duration-micro"
                   :class="draftOf(row.id).domainMode === 'keep' ? 'bg-accent text-[var(--accent-ink)] font-semibold' : 'text-ink-2 hover:bg-surface-3'"
                   @click="drafts = { ...drafts, [row.id]: { ...draftOf(row.id), domainMode: 'keep' } }"
                 >保持当前</button>
                 <button
-                  class="px-2.5 h-7 rounded-[6px] text-[12px] transition-colors duration-micro"
+                  class="px-2.5 h-7 rounded-xs text-[12px] transition-colors duration-micro"
                   :class="draftOf(row.id).domainMode === 'set' ? 'bg-accent text-[var(--accent-ink)] font-semibold' : 'text-ink-2 hover:bg-surface-3'"
                   :disabled="!domainOptions.length"
                   @click="drafts = { ...drafts, [row.id]: { ...draftOf(row.id), domainMode: 'set' } }"

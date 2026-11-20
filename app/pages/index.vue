@@ -26,7 +26,7 @@ interface Bucket {
   count: number
 }
 
-const { data: list } = await useAsyncData('notes-recent', () =>
+const { data: list, error: recentError, refresh: refreshRecent } = await useAsyncData('notes-recent', () =>
   requestFetch<{ notes: RecentNote[] }>('/api/notes', { query: { pageSize: 6 } })
 )
 
@@ -126,7 +126,38 @@ useHead({ title: '拾光' })
           </NuxtLink>
         </section>
 
-        <!-- ① 按目录（slug 前两段；不用「领域」—— vault 主力是 ltl/01-编程语言 这类二级目录，
+        <!-- ① 最近更新（信息序首位：用户打开首页最先要知道「现在在写什么」。
+             原先它排在三个统计轴之后，1440×900 下 h2 落在 top=1437，首屏根本看不见） -->
+        <section class="mb-10">
+          <div class="flex items-baseline justify-between mb-3">
+            <h2 class="text-ds-xl font-semibold text-ink">最近更新</h2>
+            <NuxtLink to="/notes" class="text-ds-sm text-accent hover:underline inline-flex items-center gap-1">
+              全部笔记<ArrowRight class="w-3.5 h-3.5" />
+            </NuxtLink>
+          </div>
+
+          <ul v-if="list?.notes?.length" class="space-y-1">
+            <li v-for="note in list.notes" :key="note.slug">
+              <NoteRow :note="note" />
+            </li>
+          </ul>
+          <EmptyState
+            v-else-if="recentError"
+            variant="error"
+            title="没能加载最近更新"
+            reason="请求没有返回结果，可能是网络中断或服务正在重启。笔记本身没有受影响。"
+            @retry="refreshRecent()"
+          />
+          <EmptyState
+            v-else
+            title="花园还是空的"
+            reason="向 content/vault 目录添加 Markdown 笔记后，这里会自动出现最近更新的内容。"
+            action-text="了解如何导入"
+            action-to="/admin"
+          />
+        </section>
+
+        <!-- ② 按目录（slug 前两段；不用「领域」—— vault 主力是 ltl/01-编程语言 这类二级目录，
              领域口径会把其中 9 成塞进「其他」兜底桶） -->
         <section class="mb-10">
           <div class="flex items-baseline justify-between mb-3">
@@ -166,7 +197,7 @@ useHead({ title: '拾光' })
           </button>
         </section>
 
-        <!-- ② 按类型 -->
+        <!-- ③ 按类型 -->
         <section class="mb-10">
           <div class="flex items-baseline justify-between mb-3">
             <h2 class="text-ds-xl font-semibold text-ink">按类型</h2>
@@ -193,7 +224,7 @@ useHead({ title: '拾光' })
           <p v-else class="text-ds-sm text-ink-3">还没有打上 type/* 标签的笔记。</p>
         </section>
 
-        <!-- ③ 按成熟度 -->
+        <!-- ④ 按成熟度 -->
         <section class="mb-10">
           <div class="flex items-baseline justify-between mb-3">
             <h2 class="text-ds-xl font-semibold text-ink">按成熟度</h2>
@@ -219,28 +250,6 @@ useHead({ title: '拾光' })
           <p v-else class="text-ds-sm text-ink-3">还没有可统计的成熟度。</p>
         </section>
 
-        <!-- 最近更新 -->
-        <section>
-          <div class="flex items-baseline justify-between mb-3">
-            <h2 class="text-ds-xl font-semibold text-ink">最近更新</h2>
-            <NuxtLink to="/notes" class="text-ds-sm text-accent hover:underline inline-flex items-center gap-1">
-              全部笔记<ArrowRight class="w-3.5 h-3.5" />
-            </NuxtLink>
-          </div>
-
-          <ul v-if="list?.notes?.length" class="space-y-1">
-            <li v-for="note in list.notes" :key="note.slug">
-              <NoteRow :note="note" />
-            </li>
-          </ul>
-          <EmptyState
-            v-else
-            title="花园还是空的"
-            reason="向 content/vault 目录添加 Markdown 笔记后，这里会自动出现最近更新的内容。"
-            action-text="了解如何导入"
-            action-to="/admin"
-          />
-        </section>
       </div>
 
       <!-- 右栏 -->
@@ -265,21 +274,30 @@ useHead({ title: '拾光' })
           </ul>
         </section>
 
-        <section v-if="topTags.length" class="rounded-card border border-line bg-surface p-4">
-          <h3 class="text-ds-sm font-semibold text-ink mb-3">常用标签</h3>
-          <div v-if="!topTags.length && tagsPending" class="flex flex-wrap gap-1.5" aria-busy="true">
-            <span v-for="i in 8" :key="i" class="h-5 w-16 rounded-full bg-surface-3 animate-pulse" />
-          </div>
-          <div v-else class="flex flex-wrap gap-1.5">
-            <TagPill
-              v-for="t in topTags"
-              :key="t.name"
-              :name="t.name"
-              :count="t.count"
-              :to="`/notes?tag=${encodeURIComponent(t.name)}`"
-            />
-          </div>
-        </section>
+        <!-- v-if 条件必须带上 tagsPending：原先外层只看 topTags.length，
+             而内层骨架的条件是 !topTags.length && tagsPending —— 外层恒假，
+             那段骨架是永远走不到的死分支（加载中时整块卡片消失，标签到位才突然出现）。
+             外面再包一层 ClientOnly：标签走 server:false 客户端取数，SSR 时 tagsPending
+             恒为 false、hydration 时恒为 true，直接渲染骨架会造成
+             「Hydration completed but contains mismatches」。ClientOnly 让两侧都先渲染空，
+             挂载后再出骨架，SSR/CSR 结构一致。 -->
+        <ClientOnly>
+          <section v-if="topTags.length || tagsPending" class="rounded-card border border-line bg-surface p-4">
+            <h3 class="text-ds-sm font-semibold text-ink mb-3">常用标签</h3>
+            <div v-if="!topTags.length && tagsPending" class="flex flex-wrap gap-1.5" aria-busy="true">
+              <span v-for="i in 8" :key="i" class="h-5 w-16 rounded-full bg-surface-3 animate-pulse" />
+            </div>
+            <div v-else class="flex flex-wrap gap-1.5">
+              <TagPill
+                v-for="t in topTags"
+                :key="t.name"
+                :name="t.name"
+                :count="t.count"
+                :to="`/notes?tag=${encodeURIComponent(t.name)}`"
+              />
+            </div>
+          </section>
+        </ClientOnly>
 
         <section class="rounded-card border border-line bg-surface p-4">
           <h3 class="text-ds-sm font-semibold text-ink mb-3 flex items-center gap-1.5">

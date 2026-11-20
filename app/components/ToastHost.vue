@@ -14,7 +14,7 @@ const toneOf = (kind: string) => {
 <template>
   <Teleport to="body">
     <div
-      class="fixed z-[120] bottom-4 right-4 flex flex-col gap-2 w-[min(360px,calc(100vw-2rem))] pointer-events-none"
+      class="fixed z-[1400] bottom-4 right-4 flex flex-col gap-2 w-[min(360px,calc(100vw-2rem))] pointer-events-none"
       role="status"
       aria-live="polite"
     >

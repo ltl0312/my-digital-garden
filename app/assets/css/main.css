@@ -18,6 +18,7 @@
     --surface-2: #FAF9F5;   /* 次表面 */
     --surface-3: #F1EFE8;   /* 三级面 */
     --line: #E6E3D9;        /* 描边 */
+    --line-strong: #8E8778; /* 描边·强：控件边界、分隔线 */
 
     /* 图谱连线：1.2px 细线会因抗锯齿再掉一档对比，所以取值比「看着够」的临界值再深一点。
        --edge-link 对 --canvas 的对比度 ≈ 4.0，--edge-tag ≈ 3.0（旧值只有 2.4 / 1.9） */
@@ -27,7 +28,7 @@
     /* 墨 */
     --ink: #191C22;         /* 主文字 */
     --ink-2: #4C545F;       /* 正文 */
-    --ink-3: #7B838F;       /* 辅助 */
+    --ink-3: #616A77;       /* 辅助 */
 
     /* 交互色 */
     --accent: #0E7C5A;
@@ -100,6 +101,7 @@
     --surface-2: #151A24;
     --surface-3: #1C222E;
     --line: #222A37;
+    --line-strong: #5C6A7B;
 
     /* 暗色下 --edge-tag 刻意压得比 --edge-link 弱：标签共有边是多数（本例 1395/1675），
        若比显式链接还亮，层级就反了（旧值 #7A6A52 对比 3.7 反而高于链接的 3.3） */
@@ -108,7 +110,10 @@
 
     --ink: #E9ECF2;
     --ink-2: #A8B1C1;
-    --ink-3: #78829A;
+    /* 暗色 --ink-3 由 #78829A 提亮到 #828CA0：实测 #78829A 对 --surface-3 (#1C222E) 只有 4.14，
+       12px 正文达不到 AA 4.5。提亮后 surface 5.40 / canvas 5.75 / surface-2 5.15 / surface-3 4.71，
+       与 --ink-2 仍有 1.57 的层次差，不会被误当成主文字。 */
+    --ink-3: #828CA0;
 
     --accent: #3FD98B;
     --accent-ink: #08110C;
@@ -156,7 +161,6 @@
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-    border-radius: var(--r-6);
   }
 
   code, pre, kbd, samp,
@@ -221,6 +225,13 @@ select optgroup {
 .bg-mesh {
   background-color: var(--canvas);
   background-image: none;
+}
+
+/* 正文量度（阅读页）：720px 容器配 16px 正文 → 45 汉字/行，长文读起来偏挤。
+   改成 17px 后 720 / 17 ≈ 42.4 字/行，落在中文舒适区（30–40 的宽松侧）。
+   只调字号不调容器宽：加宽会牺牲 TocRail 的对齐与短笔记的观感（长短文都有，取折中）。 */
+.prose {
+  font-size: 17px;
 }
 
 /* 正文内的 WikiLink：浅底胶囊（spec 5.4） */
@@ -318,6 +329,36 @@ select optgroup {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* 触控热区（WCAG 2.5.5 / 移动端误触）：视觉尺寸保持不动，只把可点区域撑到 44px。
+   刻意做成透明覆盖层而不是放大盒子 —— 放大盒子会改行高、把列表撑变形。
+   · .tap-y  ：仅纵向撑到 44。行内胶囊共用一条基线，横向撑宽会和相邻标签互相抢点击。
+   · .tap-44 ：四向撑到 44。只给周围留白足够的独立按钮用。 */
+.tap-y,
+.tap-44 {
+  position: relative;
+}
+
+.tap-y::after,
+.tap-44::after {
+  content: '';
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.tap-y::after {
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: max(100%, 44px);
+}
+
+.tap-44::after {
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
 }
 
 /* 主题切换同步：切换瞬间所有元素过渡统一 0.2s，避免割裂（配合 FOUC 内联脚本） */

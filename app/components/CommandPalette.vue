@@ -109,14 +109,14 @@ const onKeydown = (e: KeyboardEvent) => {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-[100] bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] flex items-start justify-center pt-6 px-3 sm:pt-20 sm:px-4"
+      class="fixed inset-0 z-[1000] bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] flex items-start justify-center pt-6 px-3 sm:pt-20 sm:px-4"
       @click.self="open = false"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="搜索笔记"
-        class="w-full max-w-xl rounded-overlay border border-line bg-surface shadow-ds3 overflow-hidden"
+        class="w-full max-w-xl rounded-overlay border border-line-strong bg-surface shadow-ds3 overflow-hidden"
       >
         <div class="p-4 border-b border-line flex items-center gap-3">
           <Search class="w-4 h-4 text-accent shrink-0" />
@@ -125,7 +125,7 @@ const onKeydown = (e: KeyboardEvent) => {
             v-model="q"
             placeholder="搜索笔记、标签、想法…"
             aria-label="搜索关键词"
-            class="w-full bg-transparent text-ds-base text-ink placeholder-ink-3 focus:outline-none"
+            class="w-full bg-transparent text-ds-base text-ink placeholder-ink-3"
             @input="search"
             @keydown="onKeydown"
           />
@@ -148,7 +148,7 @@ const onKeydown = (e: KeyboardEvent) => {
               <span class="min-w-0 flex-1">
                 <span class="block text-ds-sm font-semibold text-ink truncate">
                   <template v-for="(s, i) in segs(n.title)" :key="i">
-                    <mark v-if="s.hit" class="bg-[var(--accent-soft)] text-accent rounded-[3px] px-0.5">{{ s.t }}</mark>
+                    <mark v-if="s.hit" class="bg-[var(--accent-soft)] text-accent rounded-xs px-0.5">{{ s.t }}</mark>
                     <template v-else>{{ s.t }}</template>
                   </template>
                 </span>

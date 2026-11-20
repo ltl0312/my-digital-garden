@@ -321,7 +321,7 @@ const logout = async () => {
       >
         <!-- 抽屉开关（<1024：图标栏隐藏，侧栏转为抽屉 + 遮罩） -->
         <button
-          class="lg:hidden w-[38px] h-[38px] rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro shrink-0"
+          class="lg:hidden w-11 h-11 rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro shrink-0"
           title="打开侧栏"
           aria-label="打开侧栏"
           :aria-expanded="sidebarOpen"
@@ -345,7 +345,7 @@ const logout = async () => {
 
         <!-- 搜索触发（⌘K）：≥640 完整输入框，<640 收敛为图标按钮 -->
         <button
-          class="hidden sm:flex items-center gap-2 bg-surface-2 hover:bg-surface-3 border border-line hover:border-ink-3 px-3 py-1.5 rounded-full text-ink-3 text-ds-sm transition-colors duration-micro w-64 shrink-0"
+          class="hidden sm:flex items-center gap-2 bg-surface-2 hover:bg-surface-3 border border-line-strong hover:border-ink-3 px-3 h-11 rounded-full text-ink-3 text-ds-sm transition-colors duration-micro w-64 shrink-0"
           @click="commandOpen = true"
         >
           <Search class="w-3.5 h-3.5" />
@@ -353,7 +353,7 @@ const logout = async () => {
           <kbd class="text-xs font-mono bg-surface px-1.5 py-0.5 rounded border border-line">⌘K</kbd>
         </button>
         <button
-          class="sm:hidden w-[38px] h-[38px] rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro shrink-0"
+          class="sm:hidden w-11 h-11 rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro shrink-0"
           title="搜索（⌘K）"
           aria-label="搜索"
           @click="commandOpen = true"
@@ -373,7 +373,7 @@ const logout = async () => {
              手机端与 FAB 并存且共用同一套动作 —— FAB 滚动隐藏后此处不留死路。 -->
         <div v-if="canManage" class="relative shrink-0" data-create-menu>
           <button
-            class="flex items-center gap-1.5 px-3 h-[38px] rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] shadow-ds1 transition-transform duration-micro active:scale-95"
+            class="flex items-center gap-1.5 px-3 h-11 rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] shadow-ds1 transition-transform duration-micro active:scale-95"
             title="新建"
             aria-haspopup="menu"
             :aria-expanded="createMenuOpen"
@@ -400,7 +400,7 @@ const logout = async () => {
         >
           <template #trigger>
             <button
-              class="w-[38px] h-[38px] rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+              class="w-11 h-11 rounded-ctl flex items-center justify-center text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
               :title="`${roleLabel}${me?.label ? ' · ' + me.label : ''}`"
               aria-label="账户菜单"
               :aria-expanded="userMenuOpen"
@@ -465,7 +465,7 @@ const logout = async () => {
           @pointerdown="startResize"
         ></div>
         <!-- 内容区 -->
-        <main ref="scrollEl" data-scroll-root class="flex-1 min-w-0 h-full overflow-y-auto">
+        <main ref="scrollEl" data-scroll-root class="flex-1 min-w-0 h-full overflow-y-auto pb-[88px] sm:pb-0">
           <NuxtPage />
         </main>
 
@@ -519,7 +519,7 @@ const logout = async () => {
           <input
             v-model="newNoteTitle"
             placeholder="如：Rust 所有权模型"
-            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
             @keyup.enter="submitCreateRoot"
           />
           <span class="block mt-2 text-[12px] text-ink-3 font-mono break-all">

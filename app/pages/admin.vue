@@ -524,7 +524,7 @@ useHead({ title: '管理后台 · 拾光' })
             <input
               v-model="label"
               placeholder="如：朋友小明"
-              class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+              class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
               @keyup.enter="createKey"
             />
           </label>
@@ -535,7 +535,7 @@ useHead({ title: '管理后台 · 拾光' })
               <button
                 v-for="o in roleOptions"
                 :key="o.value"
-                class="px-3 h-8 rounded-[6px] text-ds-sm transition-colors duration-micro"
+                class="px-3 h-8 rounded-xs text-ds-sm transition-colors duration-micro"
                 :class="role === o.value ? 'bg-accent text-[var(--accent-ink)] font-semibold' : 'text-ink-2 hover:bg-surface-3'"
                 :aria-pressed="role === o.value"
                 @click="role = o.value"
@@ -933,7 +933,7 @@ useHead({ title: '管理后台 · 拾光' })
           <input
             v-model="aiForm.baseUrl"
             placeholder="https://api.deepseek.com/v1"
-            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
           />
         </label>
 
@@ -942,7 +942,7 @@ useHead({ title: '管理后台 · 拾光' })
           <input
             v-model="aiForm.model"
             placeholder="deepseek-chat"
-            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
           />
         </label>
 
@@ -956,7 +956,7 @@ useHead({ title: '管理后台 · 拾光' })
             type="password"
             autocomplete="new-password"
             :placeholder="aiPub?.hasKey ? '留空则沿用已保存的密钥' : 'sk-...'"
-            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
           />
           <span class="block mt-1.5 text-[12px] text-ink-3 flex items-start gap-1.5">
             <ShieldCheck class="w-3.5 h-3.5 shrink-0 mt-0.5" />

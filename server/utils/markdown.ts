@@ -461,7 +461,7 @@ export async function processMarkdownFile(filePath: string): Promise<boolean> {
           }
         }
       }
-    }, { maxWait: 10000, timeout: 30000 })
+    }, { maxWait: 30000, timeout: 180000 })
 
     // 入库完成：失效 tree/overview 进程内缓存，保证读接口拿到最新数据
     invalidateGardenCache()

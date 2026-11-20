@@ -156,7 +156,11 @@ const cookieOf = (s) => (s.cookie ? { cookie: s.cookie } : {})
   const sdr = await root.api('/api/vault/nodes', { method: 'DELETE', ...jsonBody({ path: 'KnowledgeBase/03_Knowledge' }) })
   log('C10 root 删结构目录 → 403（受保护）', sdr.status === 403, `status=${sdr.status}`)
   const nonEmpty = await admin.api('/api/vault/nodes', { method: 'DELETE', ...jsonBody({ path: SCRATCH }) })
-  log('C11 admin 删非空目录 → 403', nonEmpty.status === 403, `status=${nonEmpty.status}`)
+  // v2.2.0 起规则变了（server/api/vault/nodes/index.delete.ts:60）：真实站点主人常用
+  // admin 权限的访问密钥登录，若非空目录只给 root，主人自己反而删不掉自己的目录。
+  // 现在 admin 也能删非空目录，篇数在响应里统计返回，二次确认由前端承担。
+  log('C11 admin 删非空目录 → 200（v2.2.0 起 admin 亦可，篇数随响应返回）',
+    nonEmpty.status === 200, `status=${nonEmpty.status} count=${nonEmpty.json?.data?.count ?? '?'}`)
 
   // user 越权
   const u1 = await user.api('/api/vault/folders', { method: 'POST', ...jsonBody({ parent: 'KnowledgeBase', name: 'x' }) })
@@ -192,7 +196,8 @@ const cookieOf = (s) => (s.cookie ? { cookie: s.cookie } : {})
 // ---------- 清理 ----------
 {
   const rm = await root.api('/api/vault/nodes', { method: 'DELETE', ...jsonBody({ path: SCRATCH }) })
-  log('Z1 root 删非空测试目录（合法）', rm.status === 200, `status=${rm.status}`)
+  // C11 起 admin 已能删非空目录，SCRATCH 此时通常已被清掉 → 404 也算干净
+  log('Z1 root 删测试目录（合法；C11 已删则 404）', [200, 404].includes(rm.status), `status=${rm.status}`)
   // 复制到 KnowledgeBase 根的那个副本
   const cp = await root.api('/api/vault/nodes', { method: 'DELETE', ...jsonBody({ path: 'KnowledgeBase/回归样例改名' }) })
   log('Z2 清理复制副本', [200, 404].includes(cp.status), `status=${cp.status}`)

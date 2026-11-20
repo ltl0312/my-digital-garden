@@ -216,7 +216,7 @@ const tagsOf = (row: NoteRow) =>
           <input
             v-model="q"
             placeholder="搜索标题或正文…"
-            class="w-full pl-8 pr-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+            class="w-full pl-8 pr-3 py-2 rounded-ctl bg-surface-2 border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
           />
         </div>
         <AppSelect v-model="domainName" size="sm" class="w-[150px] shrink-0" :options="domainOptions" />
@@ -232,7 +232,7 @@ const tagsOf = (row: NoteRow) =>
               { v: 'any', l: '全部' }
             ]"
             :key="o.v"
-            class="px-2.5 h-7 rounded-[6px] text-[12px] transition-colors duration-micro"
+            class="px-2.5 h-7 rounded-xs text-[12px] transition-colors duration-micro"
             :class="pendingFilter === o.v ? 'bg-accent text-[var(--accent-ink)] font-semibold' : 'text-ink-2 hover:bg-surface-3'"
             :aria-pressed="pendingFilter === o.v"
             @click="pendingFilter = o.v as 'none' | 'has' | 'any'"
@@ -270,7 +270,7 @@ const tagsOf = (row: NoteRow) =>
           @click="toggle(row)"
         >
           <span
-            class="mt-0.5 w-4 h-4 shrink-0 rounded-[4px] border flex items-center justify-center transition-colors duration-micro"
+            class="mt-0.5 w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors duration-micro"
             :class="isSelected(row.slug) ? 'bg-accent border-accent' : 'border-line bg-surface'"
           >
             <Check v-if="isSelected(row.slug)" class="w-3 h-3 text-[var(--accent-ink)]" />

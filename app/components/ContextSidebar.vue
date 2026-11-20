@@ -365,7 +365,7 @@ const onMenuBlocked = (item: MenuItem) => {
           v-model="query"
           type="text"
           placeholder="过滤笔记…"
-          class="w-full bg-surface border border-line rounded-ctl pl-8 pr-7 py-1.5 text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent transition-colors duration-micro"
+          class="w-full bg-surface border border-line-strong rounded-ctl pl-8 pr-7 py-1.5 text-ds-sm text-ink placeholder-ink-3 focus:border-accent transition-colors duration-micro"
         />
         <Filter class="w-3.5 h-3.5 absolute left-2.5 top-2 text-ink-3" />
         <button v-if="query" class="absolute right-2 top-2 text-ink-3 hover:text-ink" title="清除" @click="query = ''">
@@ -382,7 +382,7 @@ const onMenuBlocked = (item: MenuItem) => {
           :key="p.key"
           role="tab"
           :aria-selected="panel === p.key"
-          class="flex-1 flex items-center justify-center gap-1 h-7 rounded-[6px] text-xs font-semibold transition-colors duration-micro"
+          class="flex-1 flex items-center justify-center gap-1 h-7 rounded-xs text-xs font-semibold transition-colors duration-micro"
           :class="panel === p.key ? 'bg-surface text-ink shadow-ds1' : 'text-ink-3 hover:text-ink'"
           @click="panel = p.key"
         >

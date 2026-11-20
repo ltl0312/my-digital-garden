@@ -71,7 +71,7 @@ watch(() => props.open, async (v) => {
     >
       <div
         v-if="open"
-        class="fixed inset-0 z-[110] flex items-end sm:items-center justify-center sm:p-6 bg-[color-mix(in_srgb,var(--ink)_38%,transparent)]"
+        class="fixed inset-0 z-[1200] flex items-end sm:items-center justify-center sm:p-6 bg-[color-mix(in_srgb,var(--ink)_38%,transparent)]"
         @click.self="onOverlay"
         @keydown="onKeydown"
       >

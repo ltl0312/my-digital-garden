@@ -303,7 +303,7 @@ useHead({
 
     <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_236px] xl:gap-8">
       <!-- 正文列 -->
-      <div class="min-w-0 max-w-[720px] w-full mx-auto xl:mx-0">
+      <div class="min-w-0 max-w-measure w-full mx-auto xl:mx-0">
         <!-- 操作行（≥640）：目录 + 编辑 / 更多操作。
              <1280 右侧栏不显示，目录改由底部抽屉承载，所以这里补一个「目录」入口 ——
              此前 <1280 时目录在手机与平板上完全不可见（功能丢失）。
@@ -361,7 +361,7 @@ useHead({
         <div v-else-if="editing">
           <textarea
             v-model="draft"
-            class="w-full h-[62vh] p-4 rounded-card bg-surface-2 border border-line font-mono text-ds-sm leading-prose text-ink focus:border-accent/60 outline-none resize-y transition-colors duration-micro"
+            class="w-full h-[62vh] p-4 rounded-card bg-surface-2 border border-line font-mono text-ds-sm leading-prose text-ink focus:border-accent/60 resize-y transition-colors duration-micro"
             spellcheck="false"
           ></textarea>
           <div class="mt-2 flex items-center justify-between text-[12px] text-ink-3 font-mono">
@@ -401,7 +401,7 @@ useHead({
           <input
             v-model="metaInput"
             placeholder="输入标签后回车"
-            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
             @keydown.enter.prevent="addMetaTag"
           />
         </div>

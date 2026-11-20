@@ -76,7 +76,7 @@ const targetPreview = computed(() =>
 const MAX_PCT_FILES = 80
 const filePct = computed(() => Math.min(100, Math.round(check.value.stats.maxSize / MAX_FILE_BYTES * 100)))
 const totalPct = computed(() => Math.min(100, Math.round(check.value.stats.willTotal / MAX_TOTAL_BYTES * 100)))
-const meterCls = (pct: number, over: boolean) => over ? 'bg-red-500' : pct > MAX_PCT_FILES ? 'bg-amber-500' : 'bg-garden-500'
+const meterCls = (pct: number, over: boolean) => over ? 'bg-danger' : pct > MAX_PCT_FILES ? 'bg-seedling' : 'bg-accent'
 
 const loadTree = async () => {
   loadingTree.value = true
@@ -223,15 +223,15 @@ const startImport = async () => {
 
 const close = () => { open.value = false }
 const statusMeta = {
-  ok: { label: '可导入', cls: 'text-garden-700 dark:text-garden-400 bg-garden-500/10 border-garden-500/30' },
-  bad: { label: '超限', cls: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30' },
-  skip: { label: '跳过', cls: 'text-slate-500 dark:text-slate-400 bg-slate-500/10 border-slate-500/30' }
+  ok: { label: '可导入', cls: 'text-accent bg-accent/10 border-accent/30' },
+  bad: { label: '超限', cls: 'text-danger bg-danger/10 border-danger/30' },
+  skip: { label: '跳过', cls: 'text-ink-2 bg-surface-3 border-line-strong' }
 } as const
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] sm:p-8">
+    <div v-if="open" class="fixed inset-0 z-[1200] flex items-end sm:items-center justify-center bg-[color-mix(in_srgb,var(--ink)_38%,transparent)] sm:p-8">
       <div class="relative w-full max-w-3xl h-full sm:h-auto flex flex-col max-h-[100dvh] sm:max-h-[86vh] border-t sm:border border-line bg-surface shadow-ds3 rounded-t-[24px] sm:rounded-t-[var(--r-20)] sm:rounded-b-[var(--r-20)]" data-dialog-card>
         <!-- grabber：手机端底部弹层的拖拽暗示（交付物第 13 屏） -->
         <div class="sm:hidden pt-3 pb-1 flex justify-center shrink-0">
@@ -250,25 +250,25 @@ const statusMeta = {
         <div class="px-5 py-4 space-y-5 flex-1 min-h-0 overflow-y-auto">
           <!-- ① 选择来源 -->
           <section>
-            <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-garden-500/15 text-garden-700 dark:text-garden-400 text-[12px] flex items-center justify-center font-mono">1</span>
+            <h3 class="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent text-[12px] flex items-center justify-center font-mono">1</span>
               选择来源
-              <span v-if="items.length" class="text-[12px] font-normal text-slate-500 dark:text-slate-400">已选 {{ items.length }} 个文件</span>
+              <span v-if="items.length" class="text-[12px] font-normal text-ink-2">已选 {{ items.length }} 个文件</span>
             </h3>
             <div
-              class="rounded-xl border-2 border-dashed transition-colors p-5 text-center"
-              :class="dragging ? 'border-garden-500 bg-garden-500/5' : 'border-slate-300 dark:border-white/15'"
+              class="rounded-card border-2 border-dashed transition-colors p-5 text-center"
+              :class="dragging ? 'border-accent bg-accent/5' : 'border-line-strong'"
               @dragover.prevent="dragging = true"
               @dragleave.prevent="dragging = false"
               @drop.prevent="onDrop"
             >
-              <Upload class="w-6 h-6 mx-auto mb-2 text-slate-400" />
-              <p class="text-xs text-slate-600 dark:text-slate-300 mb-3">拖拽文件或整个文件夹到此处（支持 .md / .markdown / .txt）</p>
+              <Upload class="w-6 h-6 mx-auto mb-2 text-ink-3" />
+              <p class="text-xs text-ink-2 mb-3">拖拽文件或整个文件夹到此处（支持 .md / .markdown / .txt）</p>
               <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2">
-                <button class="px-3 py-1.5 rounded-lg text-xs glass-card hover:border-garden-500/50 transition-all flex items-center justify-center gap-1.5" @click="fileInput?.click();">
+                <button class="px-3 py-1.5 rounded-ctl text-xs border border-line bg-surface hover:border-accent/50 transition-colors flex items-center justify-center gap-1.5" @click="fileInput?.click();">
                   <FileText class="w-3.5 h-3.5" />选择文件
                 </button>
-                <button class="px-3 py-1.5 rounded-lg text-xs glass-card hover:border-garden-500/50 transition-all flex items-center justify-center gap-1.5" @click="dirInput?.click();">
+                <button class="px-3 py-1.5 rounded-ctl text-xs border border-line bg-surface hover:border-accent/50 transition-colors flex items-center justify-center gap-1.5" @click="dirInput?.click();">
                   <FolderUp class="w-3.5 h-3.5" />选择文件夹
                 </button>
               </div>
@@ -280,131 +280,131 @@ const statusMeta = {
 
           <!-- ② 目标位置 -->
           <section>
-            <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-garden-500/15 text-garden-700 dark:text-garden-400 text-[12px] flex items-center justify-center font-mono">2</span>
+            <h3 class="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent text-[12px] flex items-center justify-center font-mono">2</span>
               目标位置
             </h3>
             <div class="grid sm:grid-cols-2 gap-3">
-              <label class="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <label class="flex flex-col gap-1 text-xs text-ink-2">
                 父目录
                 <AppSelect v-model="parentDir" :options="dirOptions" />
               </label>
-              <label class="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <label class="flex flex-col gap-1 text-xs text-ink-2">
                 新建子文件夹（可选）
                 <input
                   v-model="subDir"
                   placeholder="如：2026 新导入"
-                  class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-obsidian-900 border text-sm text-slate-800 dark:text-slate-200 focus:outline-none"
-                  :class="subDirError ? 'border-red-500/60' : 'border-slate-200 dark:border-white/10'"
+                  class="px-3 py-2 rounded-ctl bg-surface-2 border text-sm text-ink"
+                  :class="subDirError ? 'border-danger/60' : 'border-line'"
                   @input="validateSubDir"
                 />
-                <span v-if="subDirError" class="text-[12px] text-red-500">{{ subDirError }}</span>
+                <span v-if="subDirError" class="text-[12px] text-danger">{{ subDirError }}</span>
               </label>
             </div>
-            <label class="mt-3 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-              <input v-model="keepStructure" type="checkbox" class="accent-garden-500" />
+            <label class="mt-3 flex items-center gap-2 text-xs text-ink-2">
+              <input v-model="keepStructure" type="checkbox" class="[accent-color:var(--accent)]" />
               保留来源层级（取消勾选则全部拍平到同一目录）
             </label>
-            <p class="mt-2 text-[12px] font-mono text-slate-500 dark:text-slate-400 break-all">落点预览：{{ targetPreview }}</p>
+            <p class="mt-2 text-[12px] font-mono text-ink-2 break-all">落点预览：{{ targetPreview }}</p>
           </section>
 
           <!-- ③ 大小校验 -->
           <section>
-            <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-garden-500/15 text-garden-700 dark:text-garden-400 text-[12px] flex items-center justify-center font-mono">3</span>
+            <h3 class="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent text-[12px] flex items-center justify-center font-mono">3</span>
               大小校验
               <span
                 v-if="items.length"
                 class="text-[12px] px-2 py-0.5 rounded-full border"
-                :class="blocked ? 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30' : 'text-garden-700 dark:text-garden-400 bg-garden-500/10 border-garden-500/30'"
+                :class="blocked ? 'text-danger bg-danger/10 border-danger/30' : 'text-accent bg-accent/10 border-accent/30'"
               >{{ blocked ? '已阻止' : '校验通过' }}</span>
             </h3>
 
             <!-- 阻断横幅：把"为什么挡住"说完整 -->
-            <div v-for="b in check.blocks" :key="b.kind" class="mb-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2">
-              <p class="text-xs font-semibold text-red-600 dark:text-red-400 flex items-center gap-1.5">
+            <div v-for="b in check.blocks" :key="b.kind" class="mb-2 rounded-card border border-danger/40 bg-danger/10 px-3 py-2">
+              <p class="text-xs font-semibold text-danger flex items-center gap-1.5">
                 <AlertTriangle class="w-3.5 h-3.5" />已阻止导入：{{ b.title }}
               </p>
-              <p v-if="b.over" class="text-[12px] text-red-500/90 mt-1 font-mono">
+              <p v-if="b.over" class="text-[12px] text-danger/90 mt-1 font-mono">
                 {{ b.kind === 'total' ? `待导入合计 ${fmtBytes(check.stats.willTotal)}　超出 ${fmtBytes(b.over)}` : '' }}
                 {{ b.kind === 'count' ? `待导入 ${check.stats.willImport} 个文件　超出 ${b.over} 个` : '' }}
               </p>
               <ul v-if="b.rows.length" class="mt-1 space-y-0.5">
-                <li v-for="r in b.rows.slice(0, 8)" :key="r.relPath" class="text-[12px] font-mono text-red-500/90">
+                <li v-for="r in b.rows.slice(0, 8)" :key="r.relPath" class="text-[12px] font-mono text-danger/90">
                   {{ r.relPath }}　{{ fmtBytes(r.size) }}{{ r.over ? ` · 超出 ${fmtBytes(r.over)}` : '' }} · {{ r.why }}
                 </li>
               </ul>
-              <p v-if="b.kind === 'file'" class="text-[12px] text-red-500/80 mt-1">单个文件超限无法通过分批绕过，需先在本地拆分。</p>
-              <p v-if="b.kind === 'total'" class="text-[12px] text-red-500/80 mt-1">可分批导入（每批小于上限）。</p>
-              <p v-if="b.kind === 'dup'" class="text-[12px] text-red-500/80 mt-1">可在结构树里右键重命名旧笔记，或换一个子文件夹。</p>
+              <p v-if="b.kind === 'file'" class="text-[12px] text-danger/80 mt-1">单个文件超限无法通过分批绕过，需先在本地拆分。</p>
+              <p v-if="b.kind === 'total'" class="text-[12px] text-danger/80 mt-1">可分批导入（每批小于上限）。</p>
+              <p v-if="b.kind === 'dup'" class="text-[12px] text-danger/80 mt-1">可在结构树里右键重命名旧笔记，或换一个子文件夹。</p>
             </div>
 
             <template v-if="items.length">
               <!-- 两条上限计量条 -->
               <div class="space-y-2 mb-3">
                 <div>
-                  <div class="flex items-center justify-between text-[12px] text-slate-500 dark:text-slate-400">
+                  <div class="flex items-center justify-between text-[12px] text-ink-2">
                     <span>最大单文件</span>
                     <span class="font-mono">{{ fmtBytes(check.stats.maxSize) }} / {{ fmtLimit(MAX_FILE_BYTES) }}</span>
                   </div>
-                  <div class="h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden mt-1">
-                    <div class="h-full transition-all" :class="meterCls(filePct, check.stats.maxSize > MAX_FILE_BYTES)" :style="{ width: filePct + '%' }"></div>
+                  <div class="h-1.5 rounded-full bg-surface-3 overflow-hidden mt-1">
+                    <div class="h-full transition-colors" :class="meterCls(filePct, check.stats.maxSize > MAX_FILE_BYTES)" :style="{ width: filePct + '%' }"></div>
                   </div>
                 </div>
                 <div>
-                  <div class="flex items-center justify-between text-[12px] text-slate-500 dark:text-slate-400">
+                  <div class="flex items-center justify-between text-[12px] text-ink-2">
                     <span>待导入合计{{ check.stats.skipped ? `（已跳过 ${check.stats.skipped} 个不计入）` : '' }}</span>
                     <span class="font-mono">{{ fmtBytes(check.stats.willTotal) }} / {{ fmtLimit(MAX_TOTAL_BYTES) }}</span>
                   </div>
-                  <div class="h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden mt-1">
-                    <div class="h-full transition-all" :class="meterCls(totalPct, check.stats.willTotal > MAX_TOTAL_BYTES)" :style="{ width: totalPct + '%' }"></div>
+                  <div class="h-1.5 rounded-full bg-surface-3 overflow-hidden mt-1">
+                    <div class="h-full transition-colors" :class="meterCls(totalPct, check.stats.willTotal > MAX_TOTAL_BYTES)" :style="{ width: totalPct + '%' }"></div>
                   </div>
                 </div>
               </div>
 
               <!-- 逐文件清单 -->
-              <div class="rounded-xl border border-slate-200 dark:border-white/10 divide-y divide-slate-200 dark:divide-white/5 max-h-56 overflow-y-auto">
+              <div class="rounded-card border border-line divide-y divide-line max-h-56 overflow-y-auto">
                 <div v-for="r in check.rows" :key="r.relPath" class="flex items-center gap-2 px-3 py-1.5 text-[12px]">
                   <span class="px-1.5 py-0.5 rounded border shrink-0" :class="statusMeta[r.status].cls">{{ statusMeta[r.status].label }}</span>
-                  <span class="flex-1 truncate font-mono text-slate-700 dark:text-slate-300" :title="r.relPath">{{ r.relPath }}</span>
-                  <span class="hidden sm:inline font-mono text-slate-500 dark:text-slate-400 shrink-0">{{ fmtBytes(r.size) }}</span>
-                  <span class="text-slate-400 dark:text-slate-500 shrink-0 max-w-[45%] truncate" :title="r.why">{{ r.why }}</span>
+                  <span class="flex-1 truncate font-mono text-ink-2" :title="r.relPath">{{ r.relPath }}</span>
+                  <span class="hidden sm:inline font-mono text-ink-2 shrink-0">{{ fmtBytes(r.size) }}</span>
+                  <span class="text-ink-3 shrink-0 max-w-[45%] truncate" :title="r.why">{{ r.why }}</span>
                 </div>
               </div>
-              <p class="mt-1.5 text-[12px] text-slate-500 dark:text-slate-400">
+              <p class="mt-1.5 text-[12px] text-ink-2">
                 可导入 {{ check.stats.willImport }} · 跳过 {{ check.stats.skipped }} ·
                 超限 {{ check.rows.filter(r => r.status === 'bad').length }}
               </p>
             </template>
-            <p v-else class="text-xs text-slate-500 dark:text-slate-400">尚未选择文件。</p>
+            <p v-else class="text-xs text-ink-2">尚未选择文件。</p>
           </section>
 
           <!-- ④ 导入结果 -->
           <section v-if="result">
-            <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-garden-500/15 text-garden-700 dark:text-garden-400 text-[12px] flex items-center justify-center font-mono">4</span>
+            <h3 class="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent text-[12px] flex items-center justify-center font-mono">4</span>
               导入结果
             </h3>
-            <div class="rounded-xl border px-3 py-3" :class="result.ok ? 'border-garden-500/40 bg-garden-500/5' : 'border-red-500/40 bg-red-500/10'">
-              <p v-if="result.ok" class="text-xs text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                <Check class="w-3.5 h-3.5 text-garden-600 dark:text-garden-400" />
+            <div class="rounded-card border px-3 py-3" :class="result.ok ? 'border-accent/40 bg-accent/5' : 'border-danger/40 bg-danger/10'">
+              <p v-if="result.ok" class="text-xs text-ink flex items-center gap-1.5">
+                <Check class="w-3.5 h-3.5 text-accent" />
                 成功 {{ result.written }} 篇 · 写入 {{ fmtBytes(result.writtenBytes) }} · 目标目录
                 <span class="font-mono">{{ [parentDir, subDir.trim()].filter(Boolean).join('/') || '（vault 顶层）' }}</span>
               </p>
-              <p v-else class="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
+              <p v-else class="text-xs text-danger flex items-center gap-1.5">
                 <AlertTriangle class="w-3.5 h-3.5" />{{ result.error }}
               </p>
-              <p v-if="result.ingest" class="mt-1 text-[12px] text-slate-500 dark:text-slate-400">
+              <p v-if="result.ingest" class="mt-1 text-[12px] text-ink-2">
                 入库 {{ result.ingest.ingested }}/{{ result.ingest.total }} · 耗时 {{ (result.ingest.elapsedMs / 1000).toFixed(1) }}s
                 <span v-if="result.ingest.pending"> · 剩余 {{ result.ingest.pending }} 篇后台继续入库</span>
                 <span v-if="result.ingest.failed.length"> · 失败 {{ result.ingest.failed.length }} 篇</span>
               </p>
               <ul v-if="check.rows.some(r => r.status === 'skip')" class="mt-2 space-y-0.5">
-                <li v-for="r in check.rows.filter(r => r.status === 'skip')" :key="'s' + r.relPath" class="text-[12px] text-slate-500 dark:text-slate-400">
+                <li v-for="r in check.rows.filter(r => r.status === 'skip')" :key="'s' + r.relPath" class="text-[12px] text-ink-2">
                   跳过 {{ r.relPath }} —— {{ r.why }}
                 </li>
               </ul>
-              <p class="mt-2 text-[12px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <p class="mt-2 text-[12px] text-ink-2 flex items-center gap-1">
                 <Info class="w-3 h-3" />服务端已按写入后的真实字节数复核一次。
               </p>
             </div>
@@ -412,12 +412,12 @@ const statusMeta = {
 
           <!-- 上传进度 -->
           <section v-if="running">
-            <div class="flex items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 mb-1">
+            <div class="flex items-center justify-between text-[12px] text-ink-2 mb-1">
               <span class="truncate font-mono">{{ progress.current || '正在上传…' }}</span>
               <span class="font-mono">{{ progress.uploaded }}/{{ progress.total }} · {{ fmtBytes(progress.bytes) }}</span>
             </div>
-            <div class="h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
-              <div class="h-full bg-garden-500 transition-all" :style="{ width: (progress.total ? Math.round(progress.uploaded / progress.total * 100) : 0) + '%' }"></div>
+            <div class="h-1.5 rounded-full bg-surface-3 overflow-hidden">
+              <div class="h-full bg-accent transition-colors" :style="{ width: (progress.total ? Math.round(progress.uploaded / progress.total * 100) : 0) + '%' }"></div>
             </div>
           </section>
         </div>
@@ -427,7 +427,7 @@ const statusMeta = {
           class="shrink-0 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 px-5 pt-4 border-t border-line"
           style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px))"
         >
-          <p class="text-[12px] text-slate-500 dark:text-slate-400 text-center sm:text-left">
+          <p class="text-[12px] text-ink-2 text-center sm:text-left">
             <template v-if="!canManage">当前身份为普通用户，没有导入权限</template>
             <template v-else-if="loadingTree">正在读取目录树…</template>
             <template v-else-if="blocked">存在阻止项，处理后可重新校验</template>
@@ -435,13 +435,13 @@ const statusMeta = {
             <template v-else>导入只在通过校验后才会写入 vault</template>
           </p>
           <div class="flex items-center gap-2 w-full sm:w-auto">
-            <button v-if="!result" class="flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs glass-card hover:border-garden-500/50 transition-all" @click="reset">清空选择</button>
-            <button class="flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs glass-card hover:border-garden-500/50 transition-all" @click="close">
+            <button v-if="!result" class="flex-1 sm:flex-none px-3 py-2 rounded-ctl text-xs border border-line bg-surface hover:border-accent/50 transition-colors" @click="reset">清空选择</button>
+            <button class="flex-1 sm:flex-none px-3 py-2 rounded-ctl text-xs border border-line bg-surface hover:border-accent/50 transition-colors" @click="close">
               {{ result ? '关闭' : '取消' }}
             </button>
             <button
               v-if="!result"
-              class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-garden-500 to-emerald-600 shadow-lg shadow-garden-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              class="flex-1 sm:flex-none px-4 py-2 rounded-ctl text-xs font-semibold text-white bg-accent shadow-lg shadow-accent/20 disabled:opacity-40 disabled:cursor-not-allowed"
               :disabled="!canImport"
               :title="blocked ? '存在阻止项：' + check.blocks.map(b => b.title).join('；') : ''"
               @click="startImport"

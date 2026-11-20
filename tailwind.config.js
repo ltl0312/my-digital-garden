@@ -18,6 +18,9 @@ export default {
         'surface-2': 'var(--surface-2)',
         'surface-3': 'var(--surface-3)',
         line: 'var(--line)',
+        // 控件边界专用强描边：--line 对白仅 1.28:1，达不到 WCAG 1.4.11 的 3:1，
+        // 所以「线」与「控件边框」拆成两个令牌，可点控件的边框必须用这一个。
+        'line-strong': 'var(--line-strong)',
         ink: 'var(--ink)',
         'ink-2': 'var(--ink-2)',
         'ink-3': 'var(--ink-3)',
@@ -56,9 +59,19 @@ export default {
         title: '1.28',
       },
       borderRadius: {
+        // 全站只允许这几档圆角：6 / 8 / 16 / 20 / 999
+        //   xs      徽标、勾选框、行内 mark 这类小件（6px）
+        //   ctl     按钮、输入框、行内控件（8px）
+        //   card    卡片、面板、弹层容器（16px）
+        //   overlay 模态框、右键菜单（20px）
+        //   pill    胶囊（状态、标签、TabBar）
+        //   fab     悬浮新建按钮（16px，52×52 下的 squircle）
+        xs: 'var(--r-6)',
         ctl: 'var(--r-8)',
         card: 'var(--r-16)',
         overlay: 'var(--r-20)',
+        pill: '999px',
+        fab: 'var(--r-16)',
       },
       boxShadow: {
         ds1: 'var(--shadow-1)',
@@ -69,6 +82,11 @@ export default {
         rail: 'var(--rail-w)',
         header: 'var(--header-h)',
         toc: 'var(--toc-w)',
+        measure: 'var(--measure)',
+      },
+      // v3 的 maxWidth 不继承 spacing，所以 max-w-measure 必须在这里单独声明，
+      // 否则 --measure 令牌全库 0 引用（正文容器历史上写死 max-w-[720px]）
+      maxWidth: {
         measure: 'var(--measure)',
       },
       transitionTimingFunction: {

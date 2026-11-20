@@ -33,7 +33,7 @@ const emit = defineEmits<{
 
     <button
       type="button"
-      class="w-[52px] h-[52px] rounded-[17px] bg-accent text-[var(--accent-ink)] shadow-ds3 flex items-center justify-center transition-[transform,opacity] duration-base ease-dawn"
+      class="w-[52px] h-[52px] rounded-fab bg-accent text-[var(--accent-ink)] shadow-ds3 flex items-center justify-center transition-[transform,opacity] duration-base ease-dawn"
       :class="props.hidden && !open ? 'translate-y-[160%] opacity-0 pointer-events-none scale-90' : 'translate-y-0 opacity-100 scale-100'"
       title="新建（笔记 / 文件夹 / 导入）"
       aria-label="新建"

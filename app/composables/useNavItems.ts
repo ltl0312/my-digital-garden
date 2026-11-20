@@ -1,4 +1,4 @@
-import { Home, FileText, Settings, KeyRound } from 'lucide-vue-next'
+import { Home, FileText, Compass, Settings, KeyRound } from 'lucide-vue-next'
 
 // 主导航单源：图标栏 RailNav（≥1024）与底部 TabBar（<640）共用同一份定义，
 // 避免两处漂移（历史上图标栏与会话菜单的角色化可见性就曾各自为政）。
@@ -15,6 +15,9 @@ export function useNavItems() {
   return computed(() => [
     { to: '/', icon: Home, label: '首页', short: '首页' },
     { to: '/notes', icon: FileText, label: '笔记', short: '笔记', match: '/notes' },
+    // 分类浏览（/browse）原先只从首页的分类卡进得去，手机端等于没有出口：
+    // 底栏只有「首页 / 笔记 / 后台」，分类卡又要先滚到主列才能看见。
+    { to: '/browse', icon: Compass, label: '分类', short: '分类', match: '/browse' },
     {
       to: '/admin',
       icon: canManage.value ? Settings : KeyRound,

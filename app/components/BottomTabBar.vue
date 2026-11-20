@@ -6,7 +6,7 @@
 //   · 手机上不会出现「先渲染再消失」的首帧闪烁（useViewport 的 width 首帧恒为桌面）。
 // 这里是全局结构，只要不满足「CSS 能表达」才考虑用 JS。
 //
-// 条目与图标栏同源（useNavItems），3 项 = 首页 / 笔记 / 管理后台（或「我的密钥」）。
+// 条目与图标栏同源（useNavItems），4 项 = 首页 / 笔记 / 分类 / 管理后台（或「我的密钥」）。
 // 每项都有 ≥44px 的触控高度（icon 18 + label 12 + 内边距），符合 spec 触控目标要求。
 const route = useRoute()
 const items = useNavItems()
@@ -20,13 +20,13 @@ const items = useNavItems()
     data-testid="bottom-tabbar"
   >
     <div
-      class="flex items-center p-1 rounded-[36px] border border-line bg-surface/90 backdrop-blur shadow-ds3"
+      class="flex items-center p-1 rounded-pill border border-line bg-surface/90 backdrop-blur shadow-ds3"
     >
       <NuxtLink
         v-for="item in items"
         :key="item.to"
         :to="item.to"
-        class="flex-1 h-[54px] flex flex-col items-center justify-center gap-1 rounded-[26px] transition-colors duration-micro"
+        class="flex-1 h-[54px] flex flex-col items-center justify-center gap-1 rounded-pill transition-colors duration-micro"
         :class="navItemActive(item, route.path)
           ? 'bg-[var(--accent-soft)] text-accent'
           : 'text-ink-3'"

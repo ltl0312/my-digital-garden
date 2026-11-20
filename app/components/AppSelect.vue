@@ -157,7 +157,7 @@ onBeforeUnmount(() => {
       class="w-full flex items-center justify-between gap-2 rounded-ctl border text-left transition-colors duration-micro disabled:opacity-45 disabled:cursor-not-allowed"
       :class="[
         size === 'sm' ? 'px-2.5 py-1.5' : 'px-3 py-2',
-        'text-ds-sm bg-surface-2 border-line text-ink',
+        'text-ds-sm bg-surface-2 border-line-strong text-ink',
         open ? 'border-accent/60' : 'hover:border-ink-3/40'
       ]"
       @click="open ? close(true) : openMenu()"
@@ -181,7 +181,7 @@ onBeforeUnmount(() => {
           v-if="open"
           ref="listEl"
           role="listbox"
-          class="fixed z-[130] overflow-y-auto rounded-card border border-line bg-surface shadow-ds3 p-1"
+          class="fixed z-[1300] overflow-y-auto rounded-card border border-line bg-surface shadow-ds3 p-1"
           :style="{ left: pos.left + 'px', top: pos.top + 'px', width: pos.width + 'px', maxHeight: maxHeight + 'px' }"
         >
           <button

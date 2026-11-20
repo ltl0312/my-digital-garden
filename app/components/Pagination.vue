@@ -34,7 +34,7 @@ const go = (p: number) => {
 <template>
   <nav class="flex items-center justify-center gap-1.5" aria-label="分页">
     <button
-      class="w-9 h-9 rounded-ctl border border-line text-ink-2 flex items-center justify-center disabled:opacity-35 hover:bg-surface-3 transition-colors duration-micro"
+      class="w-11 h-11 rounded-ctl border border-line-strong text-ink-2 flex items-center justify-center disabled:opacity-35 hover:bg-surface-3 transition-colors duration-micro"
       :disabled="page <= 1"
       aria-label="上一页"
       @click="go(page - 1)"
@@ -46,17 +46,17 @@ const go = (p: number) => {
       <span v-if="it === '…'" class="w-9 h-9 flex items-center justify-center text-ink-3 text-ds-sm">…</span>
       <button
         v-else
-        class="min-w-9 h-9 px-2 rounded-ctl text-ds-sm border transition-colors duration-micro"
+        class="min-w-11 h-11 px-2 rounded-ctl text-ds-sm border transition-colors duration-micro"
         :class="it === page
           ? 'bg-accent text-[var(--accent-ink)] border-transparent font-semibold'
-          : 'border-line text-ink-2 hover:bg-surface-3'"
+          : 'border-line-strong text-ink-2 hover:bg-surface-3'"
         :aria-current="it === page ? 'page' : undefined"
         @click="go(it)"
       >{{ it }}</button>
     </template>
 
     <button
-      class="w-9 h-9 rounded-ctl border border-line text-ink-2 flex items-center justify-center disabled:opacity-35 hover:bg-surface-3 transition-colors duration-micro"
+      class="w-11 h-11 rounded-ctl border border-line-strong text-ink-2 flex items-center justify-center disabled:opacity-35 hover:bg-surface-3 transition-colors duration-micro"
       :disabled="page >= totalPages"
       aria-label="下一页"
       @click="go(page + 1)"

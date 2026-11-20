@@ -101,10 +101,11 @@ ok('390 · TabBar 高度 ≈ 95', tb && Math.abs(tb.h - 95) < 8, tb ? `h=${tb.h.
 ok('390 · FAB 不与 TabBar 重叠', !!(fab && tb && fab.bottom <= tb.top + 0.5), fab && tb ? `fab.bottom=${fab.bottom.toFixed(1)} tabbar.top=${tb.top.toFixed(1)}` : 'null')
 
 const tabCount = await page.evaluate(() => document.querySelectorAll('[data-testid="bottom-tabbar"] a').length)
-ok('390 · TabBar 条目数 = 3（首页/笔记/后台）', tabCount === 3, `count=${tabCount}`)
+// v2.2.0：/browse 提升为一级导航（底栏 3 → 4 项），列表页与分类页在移动端都有出口
+ok('390 · TabBar 条目数 = 4（首页/笔记/分类/后台）', tabCount === 4, `count=${tabCount}`)
 const tabLabels = await page.evaluate(() =>
   Array.from(document.querySelectorAll('[data-testid="bottom-tabbar"] a')).map((a) => a.textContent.trim()))
-ok('390 · TabBar 文案', JSON.stringify(tabLabels) === JSON.stringify(['首页', '笔记', '后台']), tabLabels.join(' / '))
+ok('390 · TabBar 文案', JSON.stringify(tabLabels) === JSON.stringify(['首页', '笔记', '分类', '后台']), tabLabels.join(' / '))
 
 // 吸顶：滚动后顶栏仍在视口顶部
 const h0 = await box('header')

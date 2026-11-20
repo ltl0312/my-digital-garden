@@ -19,9 +19,12 @@ const searchInput = ref(activeQ.value)
 const requestFetch = useRequestFetch()
 const list = ref<any>(null)
 const loading = ref(false)
+// 失败与「没匹配」必须分开：搜索无结果要提示改关键词，请求失败要给重试
+const loadError = ref<unknown>(null)
 
 const loadNotes = async () => {
   loading.value = true
+  loadError.value = null
   try {
     list.value = await requestFetch('/api/notes', {
       query: {
@@ -33,6 +36,9 @@ const loadNotes = async () => {
         sort: sort.value
       }
     })
+  } catch (e) {
+    loadError.value = e
+    list.value = null
   } finally {
     loading.value = false
   }
@@ -123,7 +129,7 @@ useHead({ title: '全部笔记 · 拾光' })
           <input
             v-model="searchInput"
             placeholder="搜索标题或正文…"
-            class="w-full pl-9 pr-9 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+            class="w-full pl-9 pr-9 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
             @keyup.enter="submitSearch"
           />
           <button
@@ -141,7 +147,7 @@ useHead({ title: '全部笔记 · 拾光' })
           <button
             v-for="o in sortOptions"
             :key="o.key"
-            class="px-2.5 h-7 rounded-[6px] text-[12px] transition-colors duration-micro"
+            class="px-2.5 h-7 rounded-xs text-[12px] transition-colors duration-micro"
             :class="sort === o.key ? 'bg-accent text-[var(--accent-ink)] font-semibold' : 'text-ink-2 hover:bg-surface-3'"
             :aria-pressed="sort === o.key"
             @click="updateQuery({ sort: o.key === 'updated' ? undefined : o.key, page: undefined })"
@@ -151,7 +157,7 @@ useHead({ title: '全部笔记 · 拾光' })
         <!-- 密度切换 -->
         <div class="inline-flex items-center rounded-ctl border border-line bg-surface-2 p-0.5" role="group" aria-label="列表密度">
           <button
-            class="w-7 h-7 rounded-[6px] flex items-center justify-center transition-colors duration-micro"
+            class="w-7 h-7 rounded-xs flex items-center justify-center transition-colors duration-micro"
             :class="density === 'standard' ? 'bg-accent text-[var(--accent-ink)]' : 'text-ink-2 hover:bg-surface-3'"
             title="标准密度"
             aria-label="标准密度"
@@ -159,7 +165,7 @@ useHead({ title: '全部笔记 · 拾光' })
             @click="setDensity('standard')"
           ><LayoutList class="w-4 h-4" /></button>
           <button
-            class="w-7 h-7 rounded-[6px] flex items-center justify-center transition-colors duration-micro"
+            class="w-7 h-7 rounded-xs flex items-center justify-center transition-colors duration-micro"
             :class="density === 'compact' ? 'bg-accent text-[var(--accent-ink)]' : 'text-ink-2 hover:bg-surface-3'"
             title="紧凑密度"
             aria-label="紧凑密度"
@@ -188,7 +194,15 @@ useHead({ title: '全部笔记 · 拾光' })
       </div>
     </header>
 
-    <div v-if="loading" class="py-10 text-center text-ds-sm text-ink-3">加载中…</div>
+    <NoteListSkeleton v-if="loading" :rows="8" />
+
+    <EmptyState
+      v-else-if="loadError"
+      variant="error"
+      title="没能取到笔记列表"
+      reason="请求没有返回结果，可能是网络中断或服务正在重启。已有的笔记不会因此丢失。"
+      @retry="loadNotes"
+    />
 
     <ul v-else-if="list?.notes?.length" class="space-y-1 mb-8" :class="density === 'compact' ? 'space-y-0.5' : ''">
       <li v-for="note in list.notes" :key="note.slug">

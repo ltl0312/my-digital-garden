@@ -17,7 +17,7 @@ defineProps<{ facets: DomainFacet[]; activeDir?: string }>()
           : 'hover:bg-surface-3 text-ink-2 hover:text-ink'"
         :title="f.dir ? `筛选：${f.dir}（${f.count} 篇）` : `其他（${f.count} 篇）`"
       >
-        <span class="w-2.5 h-2.5 rounded-[3px] shrink-0 hue-chip" :style="{ '--h': `var(${f.hueVar})` }"></span>
+        <span class="w-2.5 h-2.5 rounded-xs shrink-0 hue-chip" :style="{ '--h': `var(${f.hueVar})` }"></span>
         <span class="flex-1 text-ds-sm truncate">{{ f.name }}</span>
         <span class="w-14 h-1 rounded-full bg-surface-3 overflow-hidden shrink-0">
           <span

@@ -124,8 +124,8 @@ const submit = async () => {
         <span class="block text-[12px] text-ink-3 mb-1.5">新名称</span>
         <input
           v-model="name"
-          class="w-full px-3 py-2 rounded-ctl bg-surface-2 border text-ds-sm text-ink placeholder-ink-3 focus:outline-none transition-colors duration-micro"
-          :class="problem ? 'border-danger/60' : 'border-line focus:border-accent/60'"
+          class="w-full px-3 py-2 rounded-ctl bg-surface-2 border text-ds-sm text-ink placeholder-ink-3 transition-colors duration-micro"
+          :class="problem ? 'border-danger/60' : 'border-line-strong focus:border-accent/60'"
           placeholder="输入新名称"
           @keyup.enter="submit"
         />

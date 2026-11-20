@@ -143,7 +143,7 @@ const dash = computed(() => `${(progress.value / 100) * C} ${C}`)
       <ul ref="listEl" class="space-y-0.5 max-h-[46vh] overflow-y-auto">
         <li v-for="(it, i) in toc" :key="i">
           <button
-            class="w-full text-left py-1 leading-snug rounded-ctl transition-colors duration-micro border-l-2"
+            class="w-full text-left min-h-[40px] flex items-center py-2 leading-snug rounded-ctl transition-colors duration-micro border-l-2"
             :class="[
               it.level === 3 ? 'pl-5' : 'pl-2.5',
               i === activeIdx

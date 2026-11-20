@@ -374,7 +374,7 @@ onBeforeUnmount(stopPoll)
           <input
             v-model="keyword"
             placeholder="如：缓存 / 索引"
-            class="w-full px-3 py-2 rounded-ctl bg-surface border border-line text-ds-sm text-ink placeholder-ink-3 focus:outline-none focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
           />
         </div>
       </div>
@@ -387,7 +387,7 @@ onBeforeUnmount(stopPoll)
             type="number"
             min="1"
             max="200"
-            class="w-[110px] px-2.5 py-1.5 rounded-ctl bg-surface border border-line text-ds-sm text-ink font-mono focus:outline-none focus:border-accent/60"
+            class="w-[110px] px-2.5 py-1.5 rounded-ctl bg-surface border border-line-strong text-ds-sm text-ink font-mono focus:border-accent/60"
           />
         </label>
         <button

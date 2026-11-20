@@ -99,7 +99,7 @@ const pick = (item: MenuItem) => {
     <div
       v-if="open"
       ref="root"
-      class="fixed z-[120] py-1.5 rounded-overlay border border-line bg-surface shadow-ds3 outline-none"
+      class="fixed z-[1300] py-1.5 rounded-overlay border border-line bg-surface shadow-ds3 outline-none"
       :style="pos"
       role="menu"
       tabindex="-1"
