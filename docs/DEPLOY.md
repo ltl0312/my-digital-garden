@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-11-14（v2.1.0 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-11-20（v2.1.1 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v2.1.0` | `ee065a95720d` | **移除知识图谱页**（D3 力导向图整页 + `/api/graph/*` 配色与规则接口 + 全部 `GraphView`/`components/graph`/`useGraph*`/`lib/graph-*`，`shared/graph-domain.ts`→`shared/domain.ts`）；首页改为**笔记总览仪表盘**（笔记总数/双向链接/孤立笔记/目录数 + 按目录、按类型、按成熟度三段卡片），新增 `/browse?kind=dir|type|maturity&value=…` 分类浏览页；新增 `GET /api/overview`（单次 findMany + 内存分桶，30s 进程内缓存），`/api/notes` 增 `type` / `maturity` 参数（**当前**） |
+| `latest` / `v2.1.1` | `9236911f1af8` | **三个线上缺陷**：①侧栏宽度被 localStorage 脏值（`NaN`/`abc`/`1280`/`640`）撑宽且拖拽未做 pointer capture 导致 `resizing` 卡死、整页点不动——现在脏值一律丢弃回默认 320、拖拽四路收尾、补 `onBeforeUnmount`；②右键删除文件夹对非 root 管理员静默失效——菜单项不再用原生 `disabled`（浏览器不派发 click）改 `aria-disabled` + toast 说明，权限收紧为「有写权限即可、结构目录除外」，删除后同时刷新标签与统计；③侧栏「未分组」消失——新增 `shared/tag-group.ts` 按「人工映射 → 同篇共存证据 support≥2 → 目录派生领域 → 自身命名空间」推导 974 个历史裸标签的分组，标签真名不动（**当前**） |
+| `v2.1.0` | `ee065a95720d` | **移除知识图谱页**（D3 力导向图整页 + `/api/graph/*` 配色与规则接口 + 全部 `GraphView`/`components/graph`/`useGraph*`/`lib/graph-*`，`shared/graph-domain.ts`→`shared/domain.ts`）；首页改为**笔记总览仪表盘**（笔记总数/双向链接/孤立笔记/目录数 + 按目录、按类型、按成熟度三段卡片），新增 `/browse?kind=dir|type|maturity&value=…` 分类浏览页；新增 `GET /api/overview`（单次 findMany + 内存分桶，30s 进程内缓存），`/api/notes` 增 `type` / `maturity` 参数 |
 | `v2.0.5` | `d024300f6fac` | 行内代码不再显示字面反引号：覆盖 @tailwindcss/typography 的 `code::before/::after{content:"`"}` 并改为胶囊底色；解析前清洗 `markdown-sanitize.ts`（表格单元格代码内的裸 `\|`、代码跨度内 `$` 防 remark-math 误吞）+ `RENDER_VERSION` 6 |
 | `v2.0.4` | `0ef8aff138fa` | AI 审计：截断时自动放大重试并**抢救已写完的建议**、失败原因在界面上可见、扫描上限 60 → 200（详见下方 v2.0.4 说明）。实测同一范围 60 篇：失败 59 → 25 → **0** |
 | `v2.0.3` | `38c799d7cb9d` | 审计失败第一步：截断自动放大重试（×1.8）+ failReasons 可见 + 上限 200。实测失败 59/60 → 25/60，但截断仍在发生，故随后有 v2.0.4 |
@@ -64,7 +65,7 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.1.0.tar`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚；v2.0.5 曾用 `.tar.gz`，v2.1.0 回到裸 `.tar` —— 上传统计 332,249,088 B，秒传约 2 分钟）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.1.0.tar`，以及 `/opt/garden-image-v2.1.1.tar.gz`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚；v2.0.5 与 v2.1.1 用 `.tar.gz`（316 MB，上传约 49 秒），其余是裸 `.tar` —— 上传统计 332,249,088 B，秒传约 2 分钟）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
@@ -87,7 +88,36 @@ https://liutianle.cn
 > ① **库备份与恢复（仅初始管理员）** —— `server/utils/backup.ts` 自研容器格式 `GMZ1`（**不用 tar/zip**：本地 `content/vault` 是 Windows junction，系统 `tar` 不跟随会静默打出空包；恢复时全量读进内存又会撞 640M 容器 / 384M 堆限制），`createGzip` 流式写、`createGunzip` 流式读；每份备份同时含 `vault.gmz`（全库 Markdown）+ `db.json`（`Note` 的 maturity/isPublished/domainLevel1/domainSource/时间戳 + 标签名 + 图谱颜色 + `AppSetting`）—— **必须含 DB 元数据**，因为领域的事实源是 `Note.domainLevel1` 而不在 frontmatter 里。保留最近 10 份，可看清单/差异（按 sha256 对比，不解压）/一键恢复；恢复前自动再备一份（kind=`pre-restore`）。
 > ② **恢复的两个坑（本轮实测踩到并修掉）** —— 清空 vault 再复制回会触发 524 个 `unlink`，watcher 把整库 Note 行删光又全量重建，`createdAt` 全部变成恢复当天、`updatedAt` 全被刷成同一秒，进而 `scheduleSuggestScan` 认为「全库刚导入」而排队生成 514 条建议。修法：新增 `server/utils/vault-busy.ts`（`beginVaultBusy`/`endVaultBusy`/`isVaultBusy`），watcher 的 `add`/`change`/`unlink` 与 `scheduleSuggestScan` 在整库操作期间直接跳过（结束留 5s 宽限，因为 chokidar 的 `awaitWriteFinish` 稳定窗口是 1s）；重建索引后用 `$executeRawUnsafe` 写回原始时间戳（Prisma 的 `update` 会强行把 `updatedAt` 设为 `now()`）。
 > ③ **AI 全库审计（仅初始管理员）** —— `server/utils/audit.ts`：范围可按文件夹/标签/领域/关键词任意组合，先「看看会扫多少篇」再真正跑；每篇交给模型产出**建议**（`append-section` / `add-tags` / `set-domain` 三种动作，刻意不提供「重写正文」），建议与执行分离，**执行前强制整库备份**（备份失败则一条都不执行）。报告按文件存在 `data/audits/<id>.json`，不进数据库（恢复备份时不该带回旧报告）。
-> ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。
+> ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。**v2.1.1 起这条已过时**：无前缀标签改由 `shared/tag-group.ts` 按共存证据与笔记目录派生分组，「未分组」组不再出现（标签真名与筛选行为不变）。
+### v2.1.1（侧栏宽度与拖拽卡死、右键删除静默失效、标签归组）
+
+**上线记录**：2026-11-20 15:23 CST。本地 `docker build -f deploy/Dockerfile -t my-digital-garden-app:v2.1.1 .` → `docker tag …:v2.1.1 …:latest` → `docker save …:v2.1.1 | gzip -1 > garden-image-v2.1.1.tar.gz`（316 MB，md5 `542e42ed62d92adc8f628012b8d0a8e3`，scp 49 秒）→ 服务器 `docker load -i /opt/garden-image-v2.1.1.tar.gz` → 显式 `docker tag my-digital-garden-app:v2.1.1 my-digital-garden-app:latest` → `cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate`。启动日志 `No pending migrations to apply.` + `[garden] watcher: 开始监听 /app/content/vault`；容器内存 165 MiB / 640 MiB，宿主余 913 MB。回滚镜像 `ee065a95720d`（v2.1.0）。
+
+**改了什么**：
+
+- **侧栏宽度（`app/layouts/default.vue`）**：`onMounted` 只接受 240~440 的整数，`NaN`/`abc`/`1280`/`640` 这类 localStorage 脏值一律丢弃并**删键**回默认 320（此前脏值会让 `--sidebar-w` 变成 `NaNpx` 由内容撑宽、或被 `Math.min(440, …)` 夹到 440，两种都表现为「打开网站侧栏比默认宽」且会一直跟着刷新走）。
+- **拖拽卡死**：`startResize` 补 `setPointerCapture`（捕获丢失时仍能收到 `pointerup`），`finishResize` 幂等收尾并挂到 `pointerup` / `pointercancel` / `window.blur` / `visibilitychange` 四路——此前 `resizing` 永久为 true，之后鼠标一动侧栏宽度就跟着跑、`body` 的 `col-resize`/`user-select:none` 撤不掉，表现就是「侧栏变宽、整页点不动」。
+- **补 `onBeforeUnmount`**：此前 4 个全局监听（pointermove / pointerup / keydown / click）一个都没移除。
+- **窄→宽切回**：`watch(isNarrow)` 记录「是不是被自动收起的」，切回宽屏时自动恢复，否则容器宽 0 且拖拽手柄被 `v-if="sidebarOpen"` 隐藏，桌面上再也拖不出来。
+- **右键删除（`TreeContextMenu.vue` / `ContextSidebar.vue` / `server/api/vault/nodes/index.delete.ts`）**：菜单项不再用原生 `disabled`（浏览器对 disabled 按钮不派发 click，这正是「点了毫无反应」的根因），改 `aria-disabled` + 置灰 + `emit('blocked')` 由侧栏 toast 说明原因；权限从「非空文件夹仅初始管理员可删」收紧为「有写权限即可，结构目录仍受保护」，服务端同步去掉那条 403；删除成功后刷新 `vault-tree` / `sidebar-tags` / `overview`（原来只刷树，标签面板与状态栏统计不更新），失败 toast 附 HTTP 状态码。
+- **标签归组（新增 `shared/tag-group.ts` + `server/api/tags/index.get.ts` + `app/composables/useFacets.ts` + `app/components/TagGroups.vue`）**：服务端一次遍历 `NoteTag` 建立「同篇共存」与「笔记目录」统计，按 ①人工映射（currently 只有 `专题索引 → type`）②共存证据 support ≥ 2（排除 `type`/`status`/`maturity`/`来源`/`source` 与 `NN-xxx` 目录式命名空间）③笔记所在目录派生的领域 ④标签自身命名空间（`T/xxx` → `T`）⑤其余才是 `其他` 的顺序给每个标签定组；`/api/tags` 多返回一个 `group` 字段，**标签真名不动**，点击筛选仍按原名走，「未分组」组随之消失。同组内出现同名标签（`前端/CSS` 与裸标签 `CSS`）时整组改用全名显示，避免两个长得一样的 chip。
+
+**验收**：
+
+- `npx pnpm typecheck`：只剩 `server/utils/markdown-sanitize.ts` 的 5 条 pre-existing 错误；`npx pnpm build` 通过。
+- 本地 prod（`:3211`）+ CDP 实测：localStorage 写 `abc`/`1280`/`640` → 侧栏 320 且键被清空；`400` → 400；`440` 保留；拖拽到 440 上限后 `window.blur` 再移动指针，宽度稳定、`cursor=""`、`user-select=auto`。视口 1536↔900↔1536 与 `ctrl+\` 开关正常。
+- 本地临时 admin 身份删非空文件夹：确认弹窗 → `DELETE /api/vault/nodes` 200 → 树/标签/统计三处刷新 → toast（此前是 403）。
+- 线上：`/api/tags` 3563 条、534 组、`group` 缺失 0 条、含「未分组」0 条；抽样 `专题索引→type`、`类型系统→编程语言`、`React/CSS/Web-API→前端`、`Flutter→客户端`。CDP 在 `https://liutianle.cn` 上复测脏值/合法值/宽度全部符合预期；客户端 bundle（`/_nuxt/CgKWojlp.js`）含新文案「文件夹会连同其中的全部笔记一起删除，不可撤销」且旧文案「未分组」说明已消失。
+
+> **v2.1.1 无 schema 变更**（没动 `prisma/migrations`，启动日志 `No pending migrations to apply.`），与 v2.1.0 双向回滚都不丢数据。回滚：
+>
+> ```bash
+> docker tag my-digital-garden-app:v2.1.0 my-digital-garden-app:latest
+> cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate
+> ```
+
+---
+
 ### v2.1.0（移除知识图谱页，首页改笔记总览仪表盘）
 
 **上线记录**：2026-11-14 16:25 CST。`docker load -i /opt/garden-image-v2.1.0.tar` → 显式 `docker tag my-digital-garden-app:v2.1.0 my-digital-garden-app:latest` → `cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate`；第 3 次探测（约 6 秒）`/login` 返回 200；启动日志含 `No pending migrations to apply.` 与 `[garden] watcher: 开始监听 /app/content/vault`；容器内存 93 MiB / 640 MiB。回滚镜像 `d024300f6fac`（v2.0.5）已记入 `/opt/garden-backup/rollback-image-id.*.txt`。
