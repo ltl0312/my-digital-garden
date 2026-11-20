@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-11-20（v2.1.1 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-11-20（v2.1.2 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v2.1.1` | `9236911f1af8` | **三个线上缺陷**：①侧栏宽度被 localStorage 脏值（`NaN`/`abc`/`1280`/`640`）撑宽且拖拽未做 pointer capture 导致 `resizing` 卡死、整页点不动——现在脏值一律丢弃回默认 320、拖拽四路收尾、补 `onBeforeUnmount`；②右键删除文件夹对非 root 管理员静默失效——菜单项不再用原生 `disabled`（浏览器不派发 click）改 `aria-disabled` + toast 说明，权限收紧为「有写权限即可、结构目录除外」，删除后同时刷新标签与统计；③侧栏「未分组」消失——新增 `shared/tag-group.ts` 按「人工映射 → 同篇共存证据 support≥2 → 目录派生领域 → 自身命名空间」推导 974 个历史裸标签的分组，标签真名不动（**当前**） |
+| `latest` / `v2.1.2` | `7f56115fa52b` | **首屏文档 802,626 → 82,426 B（-89.7%）**：侧栏目录树（`/api/vault/tree` 449,862 B）与标签（`/api/tags` 204,228 B）改 `server: false` 客户端取数，首屏 payload 722,128 → 10,643 B；配合 nginx 的 `proxy_buffering` 兜底，根治「文档被 CDN 512 KiB 掐断 → 不水合 → 侧栏点不动、要刷新 1~3 次」；另修 `markdown-sanitize.ts` 5 处 `noUncheckedIndexedAccess` 类型错误（**当前**） |
+| `v2.1.1` | `9236911f1af8` | **三个线上缺陷**：①侧栏宽度被 localStorage 脏值（`NaN`/`abc`/`1280`/`640`）撑宽且拖拽未做 pointer capture 导致 `resizing` 卡死、整页点不动——现在脏值一律丢弃回默认 320、拖拽四路收尾、补 `onBeforeUnmount`；②右键删除文件夹对非 root 管理员静默失效——菜单项不再用原生 `disabled`（浏览器不派发 click）改 `aria-disabled` + toast 说明，权限收紧为「有写权限即可、结构目录除外」，删除后同时刷新标签与统计；③侧栏「未分组」消失——新增 `shared/tag-group.ts` 按「人工映射 → 同篇共存证据 support≥2 → 目录派生领域 → 自身命名空间」推导 974 个历史裸标签的分组，标签真名不动 |
 | `v2.1.0` | `ee065a95720d` | **移除知识图谱页**（D3 力导向图整页 + `/api/graph/*` 配色与规则接口 + 全部 `GraphView`/`components/graph`/`useGraph*`/`lib/graph-*`，`shared/graph-domain.ts`→`shared/domain.ts`）；首页改为**笔记总览仪表盘**（笔记总数/双向链接/孤立笔记/目录数 + 按目录、按类型、按成熟度三段卡片），新增 `/browse?kind=dir|type|maturity&value=…` 分类浏览页；新增 `GET /api/overview`（单次 findMany + 内存分桶，30s 进程内缓存），`/api/notes` 增 `type` / `maturity` 参数 |
 | `v2.0.5` | `d024300f6fac` | 行内代码不再显示字面反引号：覆盖 @tailwindcss/typography 的 `code::before/::after{content:"`"}` 并改为胶囊底色；解析前清洗 `markdown-sanitize.ts`（表格单元格代码内的裸 `\|`、代码跨度内 `$` 防 remark-math 误吞）+ `RENDER_VERSION` 6 |
 | `v2.0.4` | `0ef8aff138fa` | AI 审计：截断时自动放大重试并**抢救已写完的建议**、失败原因在界面上可见、扫描上限 60 → 200（详见下方 v2.0.4 说明）。实测同一范围 60 篇：失败 59 → 25 → **0** |
@@ -65,7 +66,7 @@ https://liutianle.cn
 | `v1.1.0` | `1c983fe652b1` | 图谱三区重构 |
 | `v1.0.0` | `36800e565796` | 重构前基线 |
 
-服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.1.0.tar`，以及 `/opt/garden-image-v2.1.1.tar.gz`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚；v2.0.5 与 v2.1.1 用 `.tar.gz`（316 MB，上传约 49 秒），其余是裸 `.tar` —— 上传统计 332,249,088 B，秒传约 2 分钟）。
+服务器上现存的镜像归档：`/opt/garden-image-v1.2.0.tar` ~ `/opt/garden-image-v2.1.0.tar`，以及 `/opt/garden-image-v2.1.1.tar.gz`、`/opt/garden-image-v2.1.2.tar.gz`（v1.1.0 的 `garden-image-new.tar` 已删；每个版本一份，按版本号即可回滚；v2.0.5 起改用 `.tar.gz`（v2.1.1 316 MB、上传 49 秒；v2.1.2 331 MB、上传 68 秒），其余是裸 `.tar` —— 上传统计 332,249,088 B，秒传约 2 分钟）。
 
 > **v1.4.0 起有 schema 变更**：新增 `GraphColor` 表（迁移 `20261001000000_graph_colors`），由 `entrypoint.sh` 的 `prisma migrate deploy` 在启动时自动应用。**回滚到 v1.3.0 及更早版本时该表会被保留但不再被读取**（老代码不认识它），无需手动 drop；反过来从老版本升到 v1.4.0 也不需要预操作。
 
@@ -89,6 +90,38 @@ https://liutianle.cn
 > ② **恢复的两个坑（本轮实测踩到并修掉）** —— 清空 vault 再复制回会触发 524 个 `unlink`，watcher 把整库 Note 行删光又全量重建，`createdAt` 全部变成恢复当天、`updatedAt` 全被刷成同一秒，进而 `scheduleSuggestScan` 认为「全库刚导入」而排队生成 514 条建议。修法：新增 `server/utils/vault-busy.ts`（`beginVaultBusy`/`endVaultBusy`/`isVaultBusy`），watcher 的 `add`/`change`/`unlink` 与 `scheduleSuggestScan` 在整库操作期间直接跳过（结束留 5s 宽限，因为 chokidar 的 `awaitWriteFinish` 稳定窗口是 1s）；重建索引后用 `$executeRawUnsafe` 写回原始时间戳（Prisma 的 `update` 会强行把 `updatedAt` 设为 `now()`）。
 > ③ **AI 全库审计（仅初始管理员）** —— `server/utils/audit.ts`：范围可按文件夹/标签/领域/关键词任意组合，先「看看会扫多少篇」再真正跑；每篇交给模型产出**建议**（`append-section` / `add-tags` / `set-domain` 三种动作，刻意不提供「重写正文」），建议与执行分离，**执行前强制整库备份**（备份失败则一条都不执行）。报告按文件存在 `data/audits/<id>.json`，不进数据库（恢复备份时不该带回旧报告）。
 > ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。**v2.1.1 起这条已过时**：无前缀标签改由 `shared/tag-group.ts` 按共存证据与笔记目录派生分组，「未分组」组不再出现（标签真名与筛选行为不变）。
+### v2.1.2（首屏树与标签改客户端取数，根治「文档被掐断 → 侧栏点不动」）
+
+**为什么发这一版**：用户录屏复现「打开站点后左侧目录树点不开、过滤框只输入不生效，刷新 1~3 次才好」。定位链条：本地 prod 同代码同构建正常 → 线上 CDP 点行 `aria-expanded` 不变、`elementFromPoint` 命中在行内（没被遮挡）、`_nuxt/*.js` 全 200、console 零报错 → 典型「HTML 文档被截断 ⇒ 不水合」→ `curl` 复现 `curl: (18) transfer closed with outstanding read data remaining`，`Accept-Encoding: identity` 时正好断在 **524,288 B（512 KiB）** → 直连 `127.0.0.1:3000` 6/6 完整、直连 nginx 443 8/8 完整、走 CDN 8 次坏 2 次 ⇒ 掐断发生在云厂商 CDN 边缘，只对「chunked + 近 800 KB 的 HTML」这条路径发作。
+
+**上线记录**：2026-11-20 19:2x CST。本地 `docker build -f deploy/Dockerfile -t my-digital-garden-app:v2.1.2 .` → 镜像 `7f56115fa52b` → `docker tag …:v2.1.2 …:latest` → `docker save …:v2.1.2 | gzip -1 > garden-image-v2.1.2.tar.gz`（331,179,741 B，md5 `6ba67082fd886ddee262e6346a31a3aa`，scp 68 秒）→ 服务器 `docker load -i /opt/garden-image-v2.1.2.tar.gz` → 显式 `docker tag my-digital-garden-app:v2.1.2 my-digital-garden-app:latest` → `cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate`。日志 `[garden] 迁移完成，启动应用...` + `[garden] watcher: 开始监听 /app/content/vault` + `Listening on http://[::]:3000`；容器 `4aa727285a0b`。回滚镜像 `18d4f9aaa78f`（v2.1.1）。
+
+**改了什么**：
+
+- **目录树改客户端取数（`app/composables/useFacets.ts`）**：`useAsyncData('vault-tree', () => requestFetch('/api/vault/tree'), { server: false, lazy: true })`。树 449,862 B 曾整体序列化进首屏 `__NUXT_DATA__`，是 795 KB 文档的 90%；服务端不渲染它，文档就再也长不大（vault 继续涨也不怕）。顺带把 `treePending` / `treeError` / `reloadTree` 暴露出去。
+- **侧栏三态（`app/components/ContextSidebar.vue`）**：`error` → 「目录树没能加载出来」+ 重试按钮；`pending` → 6 条 `h-6 rounded-md bg-surface-3 animate-pulse` 骨架；否则 `<FileTree>`。用 `const mounted = ref(false)` + `onMounted` 钉住首帧——否则服务端 pending 恒 false、data 恒 null，SSR 出空树而客户端首帧出骨架，实测报 `Hydration completed but contains mismatches.`，加 mounted 后归零。
+- **标签同样改客户端取数**：`useAsyncData('sidebar-tags', () => requestFetch('/api/tags'), { server: false, lazy: true })`；侧栏标签面板与首页「常用标签」各有骨架（`h-5` 条 / 8 个 pill 占位）。标签 3,563 个 / 204,228 B，只是侧栏三面板之一、首页只用前 12 个。
+- **`server/utils/markdown-sanitize.ts`**：修 5 处既有 typecheck 错误——`let body = m[2] ?? ''`、`const line = lines[i] ?? ''`（`noUncheckedIndexedAccess` 下 `CODE_SPAN_RE` 的分组与数组下标都是 `string | undefined`）。
+
+**验收**：
+
+- `npx pnpm typecheck` **0 错误**（v2.1.1 时还剩这 5 条）；`npx pnpm build` 通过。
+- 首屏文档（本地 prod `:3211`）：802,626 B → 324,817 B（树拿掉）→ **81,666 B**（标签再拿掉），payload 722,128 → 249,342 → 10,309 B；`/notes 107,252`、`/browse 31,402`、`/admin 68,688`。
+- 线上 `https://liutianle.cn/`：连抓 3 次全部 200、**82,426 B**（gzip 16,453 B）、payload 10,643 B、以 `</html>` 收尾、文档内已无 `/api/vault/tree`。
+- 线上 CDP 真浏览器：树 4.2 s 出现（改为客户端 fetch 后的等待）、点首行 `4 → 15` 行展开、标签面板 1,104 个 chip、首页常用标签 12 个 pill、`aside` 宽 320、`__vue_app__` 存在、**console 零报错**。
+- 镜像内容自检：`docker run --rm --entrypoint sh …:v2.1.2 -c "grep -rl treePending /app/.output"` 命中 `_nuxt/BrCLAq9U.js`、`_nuxt/CZj8W443.js`、`server/chunks/build/useFacets-vkJ2yjtX.mjs`。
+
+**同期的 nginx 兜底（不随镜像走，独立生效）**：在 `/etc/nginx/conf.d/garden.conf` 的 `location /` 内加 `proxy_buffering on; proxy_buffers 32 64k; proxy_buffer_size 64k; proxy_busy_buffers_size 128k; proxy_max_temp_file_size 0; gzip on; gzip_proxied any; gzip_min_length 1024; gzip_types text/html text/plain text/css application/json application/javascript application/xml;`（备份 `/etc/nginx/conf.d/garden.conf.bak-<时间戳>`，`nginx -t` 通过后 `nginx -s reload`）。改前 CDN 8 次坏 2 次，改后服务器 20 次 + 本机 30 次 = **50/50 完整**。回滚：`cp -a /etc/nginx/conf.d/garden.conf.bak-* /etc/nginx/conf.d/garden.conf && nginx -t && nginx -s reload`。
+
+> **v2.1.2 无 schema 变更**，双向回滚不丢数据。回滚：
+>
+> ```bash
+> docker tag my-digital-garden-app:v2.1.1 my-digital-garden-app:latest
+> cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate
+> ```
+
+---
+
 ### v2.1.1（侧栏宽度与拖拽卡死、右键删除静默失效、标签归组）
 
 **上线记录**：2026-11-20 15:23 CST。本地 `docker build -f deploy/Dockerfile -t my-digital-garden-app:v2.1.1 .` → `docker tag …:v2.1.1 …:latest` → `docker save …:v2.1.1 | gzip -1 > garden-image-v2.1.1.tar.gz`（316 MB，md5 `542e42ed62d92adc8f628012b8d0a8e3`，scp 49 秒）→ 服务器 `docker load -i /opt/garden-image-v2.1.1.tar.gz` → 显式 `docker tag my-digital-garden-app:v2.1.1 my-digital-garden-app:latest` → `cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate`。启动日志 `No pending migrations to apply.` + `[garden] watcher: 开始监听 /app/content/vault`；容器内存 165 MiB / 640 MiB，宿主余 913 MB。回滚镜像 `ee065a95720d`（v2.1.0）。
