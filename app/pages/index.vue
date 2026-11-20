@@ -30,7 +30,7 @@ const { data: list } = await useAsyncData('notes-recent', () =>
   requestFetch<{ notes: RecentNote[] }>('/api/notes', { query: { pageSize: 6 } })
 )
 
-const { tags, stats, overview } = useFacets()
+const { tags, tagsPending, stats, overview } = useFacets()
 
 const total = computed(() => stats.value.total)
 const sectionBuckets = computed<Bucket[]>(() => (overview.value as any)?.sections || [])
@@ -267,7 +267,10 @@ useHead({ title: '拾光' })
 
         <section v-if="topTags.length" class="rounded-card border border-line bg-surface p-4">
           <h3 class="text-ds-sm font-semibold text-ink mb-3">常用标签</h3>
-          <div class="flex flex-wrap gap-1.5">
+          <div v-if="!topTags.length && tagsPending" class="flex flex-wrap gap-1.5" aria-busy="true">
+            <span v-for="i in 8" :key="i" class="h-5 w-16 rounded-full bg-surface-3 animate-pulse" />
+          </div>
+          <div v-else class="flex flex-wrap gap-1.5">
             <TagPill
               v-for="t in topTags"
               :key="t.name"

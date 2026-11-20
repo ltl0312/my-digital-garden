@@ -24,6 +24,8 @@ const props = defineProps<{
   treePending?: boolean
   /** 目录树取数失败：显示可重试的提示，而不是伪装成「空 vault」 */
   treeError?: boolean
+  /** 标签同样是客户端取数（见 useFacets）：首帧给骨架，别显示成「没有标签」 */
+  tagsPending?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -410,7 +412,12 @@ const onMenuBlocked = (item: MenuItem) => {
         />
       </template>
       <FacetList v-else-if="panel === 'dir'" :facets="sections" :active-dir="activeDir" />
-      <TagGroups v-else :groups="tagGroups" :active-tag="activeTag" />
+      <template v-else>
+        <ul v-if="!tagGroups.length && (tagsPending || !mounted)" class="space-y-2 px-1 py-2" aria-busy="true">
+          <li v-for="i in 8" :key="i" class="h-5 rounded-md bg-surface-3 animate-pulse" />
+        </ul>
+        <TagGroups v-else :groups="tagGroups" :active-tag="activeTag" />
+      </template>
     </div>
 
     <!-- 剪贴板提示条（spec 6：复制 / 粘贴的可见状态） -->

@@ -171,7 +171,14 @@ export const useFacets = () => {
     error: treeError,
     refresh: reloadTree
   } = useAsyncData('vault-tree', () => requestFetch('/api/vault/tree'), { server: false, lazy: true })
-  const { data: tags } = useAsyncData('sidebar-tags', () => requestFetch('/api/tags'))
+  // 标签是首屏 payload 里第二大的块（3563 个标签 → identity 204KB），
+  // 而「标签」只是侧栏三个面板之一、首页只用到前 12 个。同样改成客户端取数：
+  // 文档再少 200KB，代价是首帧那一栏先空一下（有骨架兜着）。
+  const {
+    data: tags,
+    pending: tagsPending,
+    refresh: reloadTags
+  } = useAsyncData('sidebar-tags', () => requestFetch('/api/tags'), { server: false, lazy: true })
   // 首页仪表盘与状态栏共用这一份：一次请求拿到 总量/连接/领域/类型/成熟度
   const { data: overview } = useAsyncData('overview', () => requestFetch('/api/overview'))
 
@@ -205,6 +212,8 @@ export const useFacets = () => {
     treeError,
     reloadTree,
     tags,
+    tagsPending,
+    reloadTags,
     overview,
     totalNotes,
     domains,
