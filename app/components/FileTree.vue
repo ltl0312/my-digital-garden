@@ -54,7 +54,10 @@ const onContextMenu = (node: TreeNode, path: string, ev: MouseEvent) => {
 }
 // 折叠态必须跨递归层级共享：FileTree 是自递归组件，每个实例各有自己的 setup 作用域，
 // 若用局部 ref，则「展开某目录」只对本层生效、子实例仍是全折叠（reveal 会只展开第一层）。
-const expandedArr = useState<string[]>('shell-tree-expanded', () => [])
+// 再往上还有两层要求，见 useStickyList 的注释：切面板不能丢（useState 共享）、
+// 刷新与第二天打开要记得（localStorage 持久化）。早先只有 useState，于是 F5 一次就全收。
+const stickyExpanded = useStickyList('shell-tree-expanded', 'garden-tree-expanded')
+const expandedArr = stickyExpanded.list
 const expanded = computed(() => new Set(expandedArr.value))
 const setExpanded = (s: Set<string>) => { expandedArr.value = [...s] }
 // 「在结构树中定位」（spec 5.4）：由外部写入 slug，本组件展开全部祖先并滚动高亮
@@ -135,7 +138,7 @@ const hasQuery = computed(() => !!props.query?.trim())
 
 // 提升根的默认展开态：默认展开（刷新后依旧展开，避免整棵树空空），但必须能被折叠。
 // 不能用 `path === rootPath` 恒真 —— 那样点击 toggle 就完全无效，是死按钮。
-const promotedCollapsed = useState<boolean>('shell-promoted-collapsed', () => false)
+const promotedCollapsed = useStickyFlag('shell-promoted-collapsed', 'garden-tree-promoted-collapsed')
 
 const isExpanded = (path: string) => {
   if (expanded.value.has(path)) return true

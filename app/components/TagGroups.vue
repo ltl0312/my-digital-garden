@@ -3,26 +3,15 @@ import { ChevronRight } from 'lucide-vue-next'
 import type { TagGroup } from '~/composables/useFacets'
 
 // TagGroups（spec ch.6）：按命名空间前缀分组的标签云，组头带组内计数。
-// 组默认展开「status / type + 数量最多的 3 组」，其余折叠；点击标签跳 /notes?tag=<全名>
+// 组**默认全收**（旧实现自动展开前 3 组，type / 前端 / 编程语言 一打开就摊着，等于把面板
+// 变成了噪音墙）；点过的组会被记住 —— 切面板不丢（useState）、刷新也还在（localStorage），
+// 见 useStickyList。点击标签跳 /notes?tag=<全名>
 const props = defineProps<{ groups: TagGroup[]; activeTag?: string }>()
 
-const EXPANDED_DEFAULT = 3
-const open = ref<Set<string>>(new Set())
+const stickyOpen = useStickyList('shell-tag-open-groups', 'garden-tag-open-groups')
 
-const isOpen = (g: TagGroup, i: number) => open.value.has(g.ns) || (i < EXPANDED_DEFAULT && !closed.value.has(g.ns))
-const closed = ref<Set<string>>(new Set())
-
-const toggle = (g: TagGroup) => {
-  const next = new Set(open.value)
-  if (isOpen(g, 999)) {
-    next.delete(g.ns)
-    closed.value = new Set([...closed.value, g.ns])
-  } else {
-    next.add(g.ns)
-    const c = new Set(closed.value); c.delete(g.ns); closed.value = c
-  }
-  open.value = next
-}
+const isOpen = (g: TagGroup) => stickyOpen.has(g.ns)
+const toggle = (g: TagGroup) => stickyOpen.toggle(g.ns)
 
 /**
  * 分组名由接口给（`/api/tags` 的 `group`，规则见 shared/tag-group.ts）。
@@ -37,20 +26,21 @@ const nsTitle = (ns: string) => `${ns} · 组内标签合计计数`
 </script>
 
 <template>
-  <div class="space-y-2">
-    <div v-for="(g, i) in props.groups" :key="g.ns">
+  <div class="space-y-2" data-tag-groups>
+    <div v-for="g in props.groups" :key="g.ns">
       <button
+        data-tag-group
         class="w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs uppercase tracking-wider font-bold transition-colors duration-micro"
-        :class="isOpen(g, i) ? 'text-ink-2 hover:bg-surface-3' : 'text-ink-3 hover:bg-surface-3'"
-        :aria-expanded="isOpen(g, i)"
+        :class="isOpen(g) ? 'text-ink-2 hover:bg-surface-3' : 'text-ink-3 hover:bg-surface-3'"
+        :aria-expanded="isOpen(g)"
         :title="nsTitle(g.ns)"
         @click="toggle(g)"
       >
-        <ChevronRight class="w-3 h-3 transition-transform duration-base ease-dawn" :class="isOpen(g, i) ? 'rotate-90' : ''" />
+        <ChevronRight class="w-3 h-3 transition-transform duration-base ease-dawn" :class="isOpen(g) ? 'rotate-90' : ''" />
         <span class="flex-1 text-left">{{ g.ns }}</span>
         <span class="font-mono tabular-nums">{{ g.total }}</span>
       </button>
-      <div v-if="isOpen(g, i)" class="flex flex-wrap gap-1 pl-4 pt-1">
+      <div v-if="isOpen(g)" class="flex flex-wrap gap-1 pl-4 pt-1">
         <NuxtLink
           v-for="t in g.items"
           :key="t.name"

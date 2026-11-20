@@ -211,6 +211,17 @@ const { tree, treePending, treeError, reloadTree, tags, tagsPending, totalNotes,
 void tags
 
 const route = useRoute()
+
+// 换一篇笔记要回到顶部（用户反馈：滚着读完甲篇，打开乙篇仍停在甲篇的位置）。
+// 根因是内容区 `<main>` 是自绘滚动容器（不是 window），浏览器不会替它复位；而详情页是
+// `/notes/[...slug]` 这个 catch-all 路由，同一篇换另一篇时组件被复用，`scrollTop` 原样留着。
+// 只在 **path 变化**时复位：列表页切 `?tag=` / `?dir=` 属同页筛选，path 不变，保持原位更自然。
+watch(() => route.path, () => {
+  void nextTick(() => {
+    const el = scrollEl.value
+    if (el) el.scrollTop = 0
+  })
+})
 const currentSlug = computed(() => decodeURIComponent(route.path.replace(/^\/notes\//, '')))
 
 // FAB 的启用页面：交付物 §5 ②「仅首页 / 列表启用；详情与编辑态不显示」。
