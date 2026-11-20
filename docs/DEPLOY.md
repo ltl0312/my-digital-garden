@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-11-20（v2.1.2 已上线）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-11-20 23:05 CST（v2.2.0 已上线，容器 `garden-app` 内存 98.88 MiB / 640 MiB，宿主磁盘 82%）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v2.1.2` | `7f56115fa52b` | **首屏文档 802,626 → 82,426 B（-89.7%）**：侧栏目录树（`/api/vault/tree` 449,862 B）与标签（`/api/tags` 204,228 B）改 `server: false` 客户端取数，首屏 payload 722,128 → 10,643 B；配合 nginx 的 `proxy_buffering` 兜底，根治「文档被 CDN 512 KiB 掐断 → 不水合 → 侧栏点不动、要刷新 1~3 次」；另修 `markdown-sanitize.ts` 5 处 `noUncheckedIndexedAccess` 类型错误（**当前**） |
+| `latest` / `v2.2.0` | `15b3aea45c6e` | **全链路体验升级（可达性 / 触控 / 状态闭环 / 信息架构）**：`--ink-3` 亮 `#7B838F`→`#616A77`（对四底色 5.47/4.97/5.20/4.76 全部达 AA）、暗 `#78829A`→`#828CA0`（surface-3 由 4.14 提到 4.71）；新增 `--line-strong`（亮 `#8E8778` 3.57/3.24、暗 `#5C6A7B` 5.52/5.01）接管控件描边；删 17 处 `focus:outline-none` + `:focus-visible` 去掉 `border-radius`（焦点环不再被工具类压掉、胶囊聚焦不再 9999→6px 跳变）；`TagPill` 无 `to` 时渲染 span 而非空 button（60 个死按钮归零）；胶囊/图标钮加 `.tap-y`/`.tap-44` 透明热区（390 宽下 under44 由 75 → 0）；列表骨架 `NoteListSkeleton.vue` + `EmptyState` 错误态与重试；首页「最近更新」上提到统计卡之后（top 1437→424）、`/browse` 提为一级导航（底栏 3→4）、正文 16→17px（仍 720px 列宽，42.4 字/行）；Tailwind 补 `pill`/`fab`/`xs` 圆角键与 `max-w-measure`，`z-index` 定为 command 1000 < sheet 1100 < dialog 1200 < popover 1300 < toast 1400；`ImportDialog` 58 处 legacy 调色板类归入设计令牌（**当前**） |
+| `v2.1.2` | `bf9400a5d018`（运行时 `7f56115fa52b`） | **首屏文档 802,626 → 82,426 B（-89.7%）**：侧栏目录树（`/api/vault/tree` 449,862 B）与标签（`/api/tags` 204,228 B）改 `server: false` 客户端取数，首屏 payload 722,128 → 10,643 B；配合 nginx 的 `proxy_buffering` 兜底，根治「文档被 CDN 512 KiB 掐断 → 不水合 → 侧栏点不动、要刷新 1~3 次」；另修 `markdown-sanitize.ts` 5 处 `noUncheckedIndexedAccess` 类型错误（v2.2.0 的回滚点） |
 | `v2.1.1` | `9236911f1af8` | **三个线上缺陷**：①侧栏宽度被 localStorage 脏值（`NaN`/`abc`/`1280`/`640`）撑宽且拖拽未做 pointer capture 导致 `resizing` 卡死、整页点不动——现在脏值一律丢弃回默认 320、拖拽四路收尾、补 `onBeforeUnmount`；②右键删除文件夹对非 root 管理员静默失效——菜单项不再用原生 `disabled`（浏览器不派发 click）改 `aria-disabled` + toast 说明，权限收紧为「有写权限即可、结构目录除外」，删除后同时刷新标签与统计；③侧栏「未分组」消失——新增 `shared/tag-group.ts` 按「人工映射 → 同篇共存证据 support≥2 → 目录派生领域 → 自身命名空间」推导 974 个历史裸标签的分组，标签真名不动 |
 | `v2.1.0` | `ee065a95720d` | **移除知识图谱页**（D3 力导向图整页 + `/api/graph/*` 配色与规则接口 + 全部 `GraphView`/`components/graph`/`useGraph*`/`lib/graph-*`，`shared/graph-domain.ts`→`shared/domain.ts`）；首页改为**笔记总览仪表盘**（笔记总数/双向链接/孤立笔记/目录数 + 按目录、按类型、按成熟度三段卡片），新增 `/browse?kind=dir|type|maturity&value=…` 分类浏览页；新增 `GET /api/overview`（单次 findMany + 内存分桶，30s 进程内缓存），`/api/notes` 增 `type` / `maturity` 参数 |
 | `v2.0.5` | `d024300f6fac` | 行内代码不再显示字面反引号：覆盖 @tailwindcss/typography 的 `code::before/::after{content:"`"}` 并改为胶囊底色；解析前清洗 `markdown-sanitize.ts`（表格单元格代码内的裸 `\|`、代码跨度内 `$` 防 remark-math 误吞）+ `RENDER_VERSION` 6 |
@@ -90,6 +91,46 @@ https://liutianle.cn
 > ② **恢复的两个坑（本轮实测踩到并修掉）** —— 清空 vault 再复制回会触发 524 个 `unlink`，watcher 把整库 Note 行删光又全量重建，`createdAt` 全部变成恢复当天、`updatedAt` 全被刷成同一秒，进而 `scheduleSuggestScan` 认为「全库刚导入」而排队生成 514 条建议。修法：新增 `server/utils/vault-busy.ts`（`beginVaultBusy`/`endVaultBusy`/`isVaultBusy`），watcher 的 `add`/`change`/`unlink` 与 `scheduleSuggestScan` 在整库操作期间直接跳过（结束留 5s 宽限，因为 chokidar 的 `awaitWriteFinish` 稳定窗口是 1s）；重建索引后用 `$executeRawUnsafe` 写回原始时间戳（Prisma 的 `update` 会强行把 `updatedAt` 设为 `now()`）。
 > ③ **AI 全库审计（仅初始管理员）** —— `server/utils/audit.ts`：范围可按文件夹/标签/领域/关键词任意组合，先「看看会扫多少篇」再真正跑；每篇交给模型产出**建议**（`append-section` / `add-tags` / `set-domain` 三种动作，刻意不提供「重写正文」），建议与执行分离，**执行前强制整库备份**（备份失败则一条都不执行）。报告按文件存在 `data/audits/<id>.json`，不进数据库（恢复备份时不该带回旧报告）。
 > ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。**v2.1.1 起这条已过时**：无前缀标签改由 `shared/tag-group.ts` 按共存证据与笔记目录派生分组，「未分组」组不再出现（标签真名与筛选行为不变）。
+### v2.2.0（全链路 UI/UX 升级：可达性 / 触控 / 状态闭环 / 信息架构）
+
+**为什么发这一版**：专家团（UX 架构 / persona 走查 / UI 设计 / 像素验收）对本机 3000 端口外的临时实例 `:3100` 做了实测走查，用 Puppeteer 量出六类**能量化**的缺陷，而不是凭观感改样式：①浅色 `--ink-3 #7B838F` 对 `surface / canvas / surface-2 / surface-3` 实测 3.83 / 3.48 / 3.63 / 3.33，12px 说明文字全部不过 WCAG AA 4.5；②控件描边 `--line #E6E3D9` 对白 1.28、对 canvas 1.17，远低于 WCAG 1.4.11 要求的 3:1；③`focus:outline-none` 17 处，Tailwind 把它编译进 utilities 层、优先级压过 `main.css` 的 `:focus-visible`，`/notes` 与 `/admin` 各有 2 个可聚焦元素**完全没有可见焦点**；④`TagPill` 在没有 `to` 时渲染成没有 `@click` 的 `<button>`，列表页 20 行 × 3 = 60 个死按钮，同时它们都是 22px 触控目标；⑤三个主屏的加载态只有一行「加载中…」文字、没有错误态，首页「常用标签」的骨架分支与外层 `v-if` 互斥成了恒假死代码；⑥首页「最近更新」在 1440×900 视口里 top = **1437px**，要滚 537px 才看得到——而它恰恰是最高频入口。
+
+**上线记录**：2026-11-20 23:0x CST。本地 `docker build -f deploy/Dockerfile -t my-digital-garden-app:v2.2.0 .`（镜像 `ca532d149a1c`，1.5 GB）→ `docker tag …:v2.2.0 …:latest` → `docker save my-digital-garden-app:v2.2.0 | gzip -1 > garden-image-v2.2.0.tar.gz`（**316 MB**）→ `scp -i ~/.ssh/garden.pem garden-image-v2.2.0.tar.gz root@8.163.35.246:/opt/garden-docker/` → 服务器 `docker load -i garden-image-v2.2.0.tar.gz` → 显式 `docker tag my-digital-garden-app:v2.2.0 my-digital-garden-app:latest` → `cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate`。启动日志 `No pending migrations to apply.` → `[garden] 迁移完成，启动应用...` → `[garden] watcher: 开始监听 /app/content/vault` → `Listening on http://[::]:3000`；容器即起后 `/login` 200。服务器 classic store ImageID `15b3aea45c6e`（`latest` 与 `v2.2.0` 同一 ID），内存 98.88 MiB / 640 MiB。回滚镜像 `bf9400a5d018`（v2.1.2）。
+
+**改了什么**：
+
+- **令牌（`app/assets/css/main.css`）**：亮色 `--ink-3` `#7B838F` → `#616A77`（对四底色 5.47 / 4.97 / 5.20 / 4.76）；暗色 `--ink-3` `#78829A` → `#828CA0`（暗色原值对 `surface-3 #1C222E` 只有 4.14，改后 4.71，与 `--ink-2 #A8B1C1` 仍留 1.57 层次差）；新增 `--line-strong`（亮 `#8E8778`、暗 `#5C6A7B`）专管控件边界与输入框描边，实测 3.57 / 3.24（暗 5.52 / 5.01），卡片装饰描边继续用 `--line`（非交互元素不受 1.4.11 约束，全库 116 处一并改强会让界面发脏）。
+- **焦点**：删 17 处 `focus:outline-none`（13 个文件）+ `app/pages/notes/[...slug].vue` 编辑用 textarea 的 `outline-none`；`:focus-visible` 规则去掉 `border-radius: var(--r-6)`——胶囊聚焦时不再从 9999px 跳到 6px。`AppDialog` / `TreeContextMenu` 的**容器级** `outline-none` 保留（`role="dialog"` 与菜单容器由脚本管理焦点，容器描边只是噪声）。
+- **死控件**：`app/components/TagPill.vue` 改成三态——有 `to` 走 `NuxtLink`、有 `@click`（`useAttrs().onClick`）走 `button`、否则渲染 `<span>`。列表页 60 个死按钮归零，同时消掉 60 个 22px 触控违规。
+- **触控热区**：`main.css` 加 `.tap-y`（只纵向撑到 `max(100%, 44px)`，横向保持原宽以免相邻胶囊抢点击）与 `.tap-44`（四向），用 `::after` 覆盖层而不是放大盒子——放大盒子会改行高把列表撑变形。命中判定用 `document.elementFromPoint` 从中线上下各探 24px 量「有效命中高度」，390px 宽下 under44 由 **75 → 0**（首页 58 个可交互元素、`/notes` 40 个）；`StatusBadge` / `DomainChip` / `TagPill` 三个胶囊加 `tap-y`，`TocRail` 目录项 21 → 40px，`Pagination` 与顶栏抽屉/搜索/用户菜单/新建按钮 36~38 → 44px。
+- **状态闭环**：新增 `app/components/NoteListSkeleton.vue`（`min-h-[76px]` 行 + `animate-pulse`，与真实行同高避免 CLS）；`EmptyState.vue` 增 `variant="error"` 与 `retry` 事件；`/browse`、`/notes` 的 `加载中…` 换成骨架、并补 `loadError` + 重试；首页「最近更新」补错误态；`v-if="topTags.length"` 改为 `|| tagsPending`（原内层 `!length && pending` 与外层互斥，是恒假死分支），整块再包 `<ClientOnly>` 消除 hydration mismatch（标签是 `server:false` 取数，SSR 出空、hydration 出骨架）。
+- **信息架构**：首页「最近更新」从主列末尾提到统计卡之后（top 1437 → **424**，进入首屏）；`/browse` 由「首页分类卡里的链接」提为一级导航（`useNavItems.ts` 增 `{ to:'/browse', icon: Compass, label:'分类' }`，RailNav 与 BottomTabBar 同源自动生效，底栏 3 → 4 项）；正文 `.prose` 16 → 17px（仍是 720px 定宽列，45 → 42.4 字/行，落在中文舒适区）。
+- **Tailwind 键补齐（`tailwind.config.js`）**：`borderRadius` 3 → 6 键（`xs 6` / `ctl 8` / `card 16` / `overlay 20` / `pill 999` / `fab 16`）——补上 `pill` 后原先 4 处 `rounded-pill` 才真正生成圆角；新增 `maxWidth.measure = var(--measure)`（v3 的 `maxWidth` 不继承 `spacing`，这是 `--measure` 令牌全库 0 引用的根因），详情页 `max-w-[720px]` 改 `max-w-measure`；19 处任意值圆角（`rounded-[3px]/[4px]/[6px]/[17px]/[26px]/[36px]`）收敛到 `rounded-xs/rounded/rounded-fab/rounded-pill`。
+- **z-index 定档**：command `1000` < sheet `1100` < dialog `1200` < popover/菜单 `1300` < toast `1400`（旧值 100/110/120/130 里 dialog 与 sheet 同为 110/120，对话框会被抽屉盖住）。
+- **`ImportDialog.vue` legacy 调色板**：58 处 `garden-*` / `slate-*` / `red-*` / `amber-500` / `rounded-xl|lg` / `glass-card` / `transition-all` 批量替换为设计令牌（`accent`、`ink` / `ink-2` / `ink-3`、`line` / `line-strong`、`surface-*`、`danger*`、`seedling`、`rounded-card|ctl`、`transition-colors`），白字 `bg-garden-500` 3.32 与 `text-slate-400` 2.56 两处低对比一并消失。
+
+**验收**（全部为 `:3100` 生产构建上的实测，非估算）：
+
+- 双主题探针：亮色 `--ink-3 #616a77` 六处采样 5.47 / 4.97 / 5.20 / 4.76 / 5.20 / 4.97，暗色 `#828ca0` 5.40 / 5.75 / 5.15 / 4.71 / 5.15 / 5.75；控件描边亮 3.57 / 3.24、暗 5.52 / 5.01。
+- 焦点：`/notes` 与 `/admin` 各 30 个可聚焦元素，两主题下不可见焦点 **0 / 0**（改前各 2）。
+- 死按钮：`tagLikeButtons` **0**（改前 60），列表行仍 20 行。
+- 触控：390×844 下 under44 首页 0 / `/notes` 0（改前 113 个里 75 个）。
+- 信息架构：`homeOrder` 最近更新 424 → 按目录 1630 → 按类型 2063 → 按成熟度 2412；`navItems` `["/","/notes","/browse","/admin"]`；正文 `fontSize 17px / lineHeight 31.45px / width 720`。
+- hydration：四路由（`/`、`/notes`、`/browse`、`/admin`）控制台 **0 报错**（改前 `/` 报 `Hydration completed but contains mismatches.`）。
+- 验收套件：`m-verify` **47/47**、`m34-verify` **39/39**、`e4-check` **49/49**、`e4-regression` **44/44**、`picker-verify` **16/16**。`suggest-verify` / `suggest-entries` 在本机有 FAIL，根因是**环境**：`/api/admin/suggestions/meta` 显示 `{"pending":1490,"llm":{"enabled":false}}`（本机无 LLM 密钥，建议生成走回退），且服务端报 `Foreign key constraint violated on the constraint: Suggestion_noteId_fkey`（笔记文件刚落盘、`Note` 行尚未入库就触发建议生成）；历史日志里 v2.0.2 时期同一条也 FAIL，与本次改动无关。
+- 线上核验：`https://liutianle.cn/login` **200**；首屏 CSS `/_nuxt/entry.1EBWAXHk.css` 实测含 `--ink-3:#616a77`、`--ink-3:#828ca0`、`--line-strong:#8e8778`、`--line-strong:#5c6a7b`、`rounded-pill{border-radius:999px}`、`max-w-measure{max-width:var(--measure)}`。
+
+> **v2.2.0 无 schema 变更**（未动 `prisma/migrations`，启动日志 `No pending migrations to apply.`），与 v2.1.2 双向回滚都不丢数据。回滚：
+>
+> ```bash
+> cd /opt/garden-docker
+> docker tag my-digital-garden-app:v2.1.2 my-digital-garden-app:latest
+> docker compose -f docker-compose.prod.yml up -d --force-recreate
+> docker inspect -f '{{.Image}}' garden-app   # 应为 sha256:bf9400a5d018...
+> ```
+>
+> 回滚后功能层面**只剩前端资源差异**（旧 CSS/JS 由旧镜像自带），无需清理数据库。
+
 ### v2.1.2（首屏树与标签改客户端取数，根治「文档被掐断 → 侧栏点不动」）
 
 **为什么发这一版**：用户录屏复现「打开站点后左侧目录树点不开、过滤框只输入不生效，刷新 1~3 次才好」。定位链条：本地 prod 同代码同构建正常 → 线上 CDP 点行 `aria-expanded` 不变、`elementFromPoint` 命中在行内（没被遮挡）、`_nuxt/*.js` 全 200、console 零报错 → 典型「HTML 文档被截断 ⇒ 不水合」→ `curl` 复现 `curl: (18) transfer closed with outstanding read data remaining`，`Accept-Encoding: identity` 时正好断在 **524,288 B（512 KiB）** → 直连 `127.0.0.1:3000` 6/6 完整、直连 nginx 443 8/8 完整、走 CDN 8 次坏 2 次 ⇒ 掐断发生在云厂商 CDN 边缘，只对「chunked + 近 800 KB 的 HTML」这条路径发作。
