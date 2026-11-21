@@ -131,13 +131,13 @@ const dash = computed(() => `${(progress.value / 100) * C} ${C}`)
       </svg>
       <div class="min-w-0">
         <p class="text-ds-sm font-semibold text-ink tabular-nums">{{ Math.round(progress) }}%</p>
-        <p class="text-[12px] text-ink-3">已读</p>
+        <p class="text-ds-xs text-ink-3">已读</p>
       </div>
     </div>
 
     <!-- 目录 -->
     <nav v-if="toc.length" class="rounded-card border border-line bg-surface p-3.5" aria-label="文章目录">
-      <p class="text-[12px] font-semibold text-ink-3 mb-2 flex items-center gap-1.5">
+      <p class="text-ds-xs font-semibold text-ink-3 mb-2 flex items-center gap-1.5">
         <ListTree class="w-3.5 h-3.5" />目录
       </p>
       <ul ref="listEl" class="space-y-0.5 max-h-[46vh] overflow-y-auto">
@@ -147,7 +147,7 @@ const dash = computed(() => `${(progress.value / 100) * C} ${C}`)
             :class="[
               it.level === 3 ? 'pl-5' : 'pl-2.5',
               i === activeIdx
-                ? 'border-accent text-accent font-semibold bg-[var(--accent-soft)]'
+                ? 'border-accent text-accent-text font-semibold bg-[var(--accent-soft)]'
                 : 'border-transparent text-ink-2 hover:text-ink hover:bg-surface-3'
             ]"
             :aria-current="i === activeIdx ? 'location' : undefined"
@@ -159,30 +159,30 @@ const dash = computed(() => `${(progress.value / 100) * C} ${C}`)
 
     <!-- 属性面板 -->
     <div class="rounded-card border border-line bg-surface p-3.5">
-      <p class="text-[12px] font-semibold text-ink-3 mb-2.5">属性</p>
+      <p class="text-ds-xs font-semibold text-ink-3 mb-2.5">属性</p>
       <dl class="space-y-2">
         <div class="flex items-center justify-between gap-2">
-          <dt class="text-[12px] text-ink-3">成熟度</dt>
+          <dt class="text-ds-xs text-ink-3">成熟度</dt>
           <dd><StatusBadge :maturity="note?.maturity || 'SEEDLING'" /></dd>
         </div>
         <div v-if="meta.domain" class="flex items-center justify-between gap-2">
-          <dt class="text-[12px] text-ink-3">领域</dt>
+          <dt class="text-ds-xs text-ink-3">领域</dt>
           <dd><DomainChip :name="meta.domain" size="sm" /></dd>
         </div>
         <div class="flex items-center justify-between gap-2">
-          <dt class="text-[12px] text-ink-3 flex items-center gap-1"><Clock class="w-3 h-3" />时长</dt>
-          <dd class="text-[12px] text-ink-2 tabular-nums">{{ mins }} 分钟</dd>
+          <dt class="text-ds-xs text-ink-3 flex items-center gap-1"><Clock class="w-3 h-3" />时长</dt>
+          <dd class="text-ds-xs text-ink-2 tabular-nums">{{ mins }} 分钟</dd>
         </div>
         <div class="flex items-center justify-between gap-2">
-          <dt class="text-[12px] text-ink-3 flex items-center gap-1"><Link2 class="w-3 h-3" />反链</dt>
-          <dd class="text-[12px] text-ink-2 tabular-nums">{{ backCount }}</dd>
+          <dt class="text-ds-xs text-ink-3 flex items-center gap-1"><Link2 class="w-3 h-3" />反链</dt>
+          <dd class="text-ds-xs text-ink-2 tabular-nums">{{ backCount }}</dd>
         </div>
         <div class="flex items-center justify-between gap-2">
-          <dt class="text-[12px] text-ink-3 flex items-center gap-1"><Calendar class="w-3 h-3" />更新</dt>
-          <dd class="text-[12px] text-ink-2">{{ dateText }}</dd>
+          <dt class="text-ds-xs text-ink-3 flex items-center gap-1"><Calendar class="w-3 h-3" />更新</dt>
+          <dd class="text-ds-xs text-ink-2">{{ dateText }}</dd>
         </div>
       </dl>
-      <p v-if="meta.dirPath" class="mt-3 pt-3 border-t border-line font-mono text-[12px] text-ink-3 break-all leading-summary">
+      <p v-if="meta.dirPath" class="mt-3 pt-3 border-t border-line font-mono text-ds-xs text-ink-3 break-all leading-summary">
         {{ meta.dirPath }}
       </p>
     </div>

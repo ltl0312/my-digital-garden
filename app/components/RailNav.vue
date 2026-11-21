@@ -26,7 +26,7 @@ const emit = defineEmits<{ (e: 'toggle-sidebar'): void; (e: 'logout'): void }>()
          必须保持 40px 不参与压缩，否则会被挤成一条线，看起来像「图标消失了」 -->
     <NuxtLink
       to="/"
-      class="w-10 h-10 mb-2 shrink-0 rounded-xl flex items-center justify-center bg-accent text-[var(--accent-ink)] shadow-ds1 hover:scale-105 transition-transform duration-micro"
+      class="w-10 h-10 mb-2 shrink-0 rounded-ctl flex items-center justify-center bg-accent text-[var(--accent-ink)] shadow-ds1 hover:scale-105 transition-transform duration-micro"
       title="拾光 · 数字花园"
     >
       <Sprout class="w-5 h-5" :stroke-width="2.5" />
@@ -36,9 +36,9 @@ const emit = defineEmits<{ (e: 'toggle-sidebar'): void; (e: 'logout'): void }>()
       v-for="item in items"
       :key="item.to"
       :to="item.to"
-      class="relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-micro group"
+      class="relative w-10 h-10 rounded-ctl flex items-center justify-center transition-colors duration-micro group"
       :class="navItemActive(item, route.path)
-        ? 'bg-[var(--accent-soft)] text-accent'
+        ? 'bg-[var(--accent-soft)] text-accent-text'
         : 'text-ink-3 hover:text-ink hover:bg-surface-3'"
       :aria-current="navItemActive(item, route.path) ? 'page' : undefined"
       :title="item.label"
@@ -49,7 +49,7 @@ const emit = defineEmits<{ (e: 'toggle-sidebar'): void; (e: 'logout'): void }>()
         class="absolute -left-3 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r bg-accent"
       ></span>
       <component :is="item.icon" class="w-[18px] h-[18px]" />
-      <span class="pointer-events-none absolute left-12 px-2 py-1 rounded-lg bg-surface border border-line shadow-ds2 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-micro z-50">
+      <span class="pointer-events-none absolute left-12 px-2 py-1 rounded-ctl bg-surface border border-line shadow-ds2 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-micro z-50">
         {{ item.label }}
       </span>
     </NuxtLink>
@@ -57,8 +57,8 @@ const emit = defineEmits<{ (e: 'toggle-sidebar'): void; (e: 'logout'): void }>()
     <div class="flex-1"></div>
 
     <button
-      class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-micro"
-      :class="sidebarOpen ? 'bg-[var(--accent-soft)] text-accent' : 'text-ink-3 hover:text-ink hover:bg-surface-3'"
+      class="w-10 h-10 rounded-ctl flex items-center justify-center transition-colors duration-micro"
+      :class="sidebarOpen ? 'bg-[var(--accent-soft)] text-accent-text' : 'text-ink-3 hover:text-ink hover:bg-surface-3'"
       title="收起 / 展开侧栏（⌘\）"
       :aria-pressed="sidebarOpen"
       @click="emit('toggle-sidebar')"
@@ -67,7 +67,7 @@ const emit = defineEmits<{ (e: 'toggle-sidebar'): void; (e: 'logout'): void }>()
     </button>
 
     <button
-      class="w-10 h-10 rounded-xl flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-colors duration-micro"
+      class="w-10 h-10 rounded-ctl flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-colors duration-micro"
       title="切换主题"
       @click="toggleTheme"
     >
@@ -76,7 +76,7 @@ const emit = defineEmits<{ (e: 'toggle-sidebar'): void; (e: 'logout'): void }>()
     </button>
 
     <button
-      class="w-10 h-10 mt-1 rounded-xl flex items-center justify-center text-ink-3 hover:text-danger hover:bg-surface-3 transition-colors duration-micro"
+      class="w-10 h-10 mt-1 rounded-ctl flex items-center justify-center text-ink-3 hover:text-danger hover:bg-surface-3 transition-colors duration-micro"
       title="退出登录"
       @click="emit('logout')"
     >

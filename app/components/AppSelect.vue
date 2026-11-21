@@ -200,7 +200,7 @@ onBeforeUnmount(() => {
             @mousemove="activeIndex = i"
           >
             <span class="flex-1 truncate">{{ o.label }}</span>
-            <Check v-if="o.value === modelValue" class="w-3.5 h-3.5 shrink-0 text-accent" />
+            <Check v-if="o.value === modelValue" class="w-3.5 h-3.5 shrink-0 text-accent-text" />
           </button>
           <p v-if="!options.length" class="px-2.5 py-2 text-ds-sm text-ink-3">无可选项</p>
         </div>

@@ -28,7 +28,7 @@ const items = useNavItems()
         :to="item.to"
         class="flex-1 h-[54px] flex flex-col items-center justify-center gap-1 rounded-pill transition-colors duration-micro"
         :class="navItemActive(item, route.path)
-          ? 'bg-[var(--accent-soft)] text-accent'
+          ? 'bg-[var(--accent-soft)] text-accent-text'
           : 'text-ink-3'"
         :aria-current="navItemActive(item, route.path) ? 'page' : undefined"
         :title="item.label"

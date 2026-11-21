@@ -22,7 +22,7 @@ const meta = computed(() => {
 <template>
   <span class="inline-flex items-center gap-1.5 shrink-0">
     <span
-      class="inline-flex items-center gap-1 h-[24px] px-2 rounded-full border text-[12px] font-semibold"
+      class="inline-flex items-center gap-1 h-[24px] px-2 rounded-full border text-ds-xs font-semibold"
       :class="meta.cls"
     >
       <component :is="meta.icon" class="w-3.5 h-3.5" />
@@ -30,7 +30,7 @@ const meta = computed(() => {
     </span>
     <span
       v-if="builtin || role === 'root'"
-      class="inline-flex items-center gap-1 text-[12px] text-ink-3"
+      class="inline-flex items-center gap-1 text-ds-xs text-ink-3"
       title="内置唯一身份，不可禁用 / 删除 / 再创建"
     >
       <Lock class="w-3 h-3" />内置

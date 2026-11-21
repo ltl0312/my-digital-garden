@@ -2,7 +2,7 @@
 
 > 本文档按**时间线**记录项目从搭建到生产运维全过程中遇到的**问题（bug / 代码格式 / 代码问题）**与**优化细节**，含全部历史与最新记录。
 > 定位：开发历程日志，与 `PROJECT-SUMMARY.md`（总结）、`PROJECT_NOTES.md`（架构认知 + 审查清单）、`API.md`（接口参考）互补。
-> 最后更新：2026-11-14
+> 最后更新：2026-11-21
 
 ---
 
@@ -365,3 +365,43 @@
 7. **图谱 >500 节点**：d3 SVG 改 Canvas 渲染
 8. **多实例缓存独立**：PM2 多 worker 时 tree/graph 缓存各进程一份（短 TTL 兜底可接受）；若扩实例需共享缓存（Redis）
 9. **服务器回滚备份保留**：`.output.bak-2026-08-16-0008` 等备份确认稳定后可清理
+
+---
+
+## 2026-11-21 · 体验升级批次（R1 修复 + R2 体验）
+
+> 一批围绕「写路径可靠性、搜索一次到位、读路径位置感、状态可见性」的改动。全部只改 app/ 与 server/，未动 `prisma/schema.prisma` 与 migrations。
+
+**写路径（最要紧的一处）**
+- `server/api/vault/notes/[...slug].put.ts` 整体重写：写盘前按「文件不存在 → 404 / frontmatter 坏 → 400 / 版本冲突 → 409」固定顺序判定，判定不过绝不写盘；写盘后 `await processMarkdownFile(full)` 同步入库（原实现写完只失效缓存就走，靠 watcher 异步补，表现为「保存成功但页面没变」）。
+- 文件版本串 = `${Math.round(mtimeMs)}:${sha256(全文).slice(0,16)}`；`GET /api/notes/<slug>` 新增 `version`，前端保存时原样回传为 `baseVersion`。mtimeMs 必须取整，否则 Linux 浮点毫秒会让两端永远不相等、稳定 409。
+- `app/pages/notes/[...slug].vue` 重写：单次 PUT，六态状态条（saving/queued/saved/timeout/conflict），409 给「覆盖磁盘 / 放弃我的修改 / 取消」三选一，localStorage 草稿（key `garden:draft:<slug>:<userId>`，防抖 800ms，beforeunload 立即 flush）+ 三处离开守卫。
+
+**搜索一次到位**
+- `GET /api/notes` 的 `q` 命中面从 title/content 扩到 slug + 标签名；命中时返回 `snippet`（≤120 字，命中词居中）与 `matchField`；标题命中在当页稳定置顶，`total`/分页语义不变。
+- 列表与 ⌘K 都渲染片段并高亮命中段（先按原文切片再逐段转义，服务端字符串从不直接 v-html）。
+
+**位置感与可见性**
+- 面包屑改「中间段可点（→ `/notes?dir=…`）、末段不可点」；新增 `GET /api/notes/neighbors` 与阅读页上/下一篇。
+- 侧栏底部「Vault Synced」不再是恒亮假动效，改为 loading/ok/error 三态并显示真实同步时刻；过滤 0 命中时给「在全部笔记中搜索」出口。
+- 首页四张统计卡不再全部跳 `/notes`：双向链接 → `?health=linked`，孤立笔记 → `?health=isolated`（where 与 `/api/overview` 的 `isolated = total - linked.size` 同口径）。
+- 新建笔记可选落点；修掉 `startCreateRoot` 不清 `newNoteParent` 导致顶栏新建继承上次树内目录的泄漏。
+
+**断链巡检**：新增 `GET|POST /api/admin/health/broken`（admin 后台面板，手动触发，结果落 `data/health/broken.json`，不建表；分页 100 篇一批避免 OOM）。
+
+**设计令牌收口**：`text-[12px]`/`text-[11px]` 等硬写值收成 `text-ds-xs`；越界圆角（`rounded-md`/`rounded-lg`/`rounded-xl`）归到 `rounded-xs`/`rounded-ctl`；`--seedling` #A85B0B→#96500A、`--evergreen` #0E7C5A→#0B6E50、暗色 `--line-strong`→#627184、新增 `--accent-text`（正文用强调色，与填充色拆开）；表单输入框边框从 `border-line`（1.22:1）改 `border-line-strong`（3.57:1）。
+
+**已知遗留**
+- 首屏 JS gzip 目标（≤130KB）未达成：全部 37 个 JS gzip 181,842B（本批新增 useNoteList/useDraft/SaveState 与编辑器重写约 +19KB）。浮层 Lazy 改造未做，因为它要动 layout 的 `ClientOnly` 块，与既有 hydration 修复方案耦合。
+- `useFacets` 不暴露 `tagsError`，标签接口单独失败时侧栏仍显示「已同步」。
+- `resolveTargetSlugs` 在 `server/utils/markdown.ts` 未导出，断链巡检里复制了一份同语义三级解析，改解析规则需两处同步。
+
+### 2026-11-21 19:10 · 保存链路补丁（本地验收驱动）
+
+- 真缺陷①：坏 frontmatter 会被「先落盘再入库」，落 500 且文件已写坏 → `server/api/vault/notes/[...slug].put.ts` 现在在写盘前用 **js-yaml 直接解析正文自带的头块**，失败返 `400 FRONTMATTER_INVALID` 且不写盘。
+  关键坑：`gray-matter` 的引擎探测带模块级缓存，`matter(坏头部)` **只在进程内第一次抛错**，之后静默返回 `{}`，用它做守卫会随服务运行时间失效（第一份坏载荷 400、第二份起 200 并覆盖正文）。
+- 真缺陷②：超长标题/非法名落 500（`ENAMETOOLONG`/`ENOENT`）→ `server/utils/vault.ts` 的 `isValidNodeName` 增加 200 字符上限，`server/api/vault/notes/index.post.ts` 改用它并把 `ENAMETOOLONG|EINVAL|ENOENT` 映射成 400。
+- 真缺陷③：空保存必等 10s 再弹「同步稍慢」→ PUT 增加同内容短路，返回 `unchanged:true` 且不推进 mtime（实测 6–16ms）。
+- 真缺陷④：保存成功但入库抛错会变 500 → `processMarkdownFile` 包 try/catch，降级为「磁盘已写、交给 watcher 兜底」。
+- 验收证据：`.tmp-verify/accept.mjs` **25/25 PASS**、`.tmp-verify/accept2.mjs` **19/19 PASS**，两者在同一 `pnpm dev` 进程上连续执行。
+- 环境坑：`pnpm dev` 对 `server/api/**` 的热重载不可靠，改完服务端代码必须 `kill` 后重启再验，否则拿到上一版行为。

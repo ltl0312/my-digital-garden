@@ -42,7 +42,35 @@ const emit = defineEmits<{
 type Panel = 'tree' | 'dir' | 'tag'
 // 面板选择跨组件共享：详情页「在结构树中定位」需要把面板切回「结构」
 const panel = useState<Panel>('shell-sidebar-panel', () => 'tree')
+
+/**
+ * 过滤词分成两份：`query` 是**已提交**、真正驱动过滤的值，`queryInput` 是输入框里的即时内容。
+ *
+ * 为什么要拆开：中文用拼音输入时，compositionstart→compositionend 之间每敲一个字母
+ * 都会触发 input 事件。直接拿它过滤，输入「工程」的过程会先按 g / en / go 反复重排整棵树，
+ * 命中数来回跳、滚动位置也跟着乱。这里只把 compositionend 后的结果提交给 `query`。
+ */
 const query = ref('')
+const queryInput = ref('')
+const composing = ref(false)
+
+const onQueryInput = (e: Event) => {
+  const v = (e.target as HTMLInputElement).value
+  queryInput.value = v
+  if (!composing.value) query.value = v
+}
+const onQueryCompositionStart = () => { composing.value = true }
+const onQueryCompositionEnd = (e: Event) => {
+  composing.value = false
+  const v = (e.target as HTMLInputElement).value
+  queryInput.value = v
+  query.value = v
+}
+/** 清除按钮 / 程序化重置：两份值一起清，避免输入框空了但过滤还在生效 */
+const resetQuery = () => {
+  queryInput.value = ''
+  query.value = ''
+}
 
 // 树是客户端取数的（见 useFacets）：服务端 pending 永远是 false、data 永远是 null，
 // 若直接按 treePending 渲染，SSR 出「空树」而客户端首帧出「骨架」——两者 DOM 不同，
@@ -73,6 +101,45 @@ const filteredTree = computed(() => {
     return out
   }
   return walk(props.tree)
+})
+
+// 过滤只在**已加载的树节点**里比 name/slug，所以「有过滤词却 0 命中」有两种可能：
+// 真的没有，或者那篇笔记在没展开/没加载的分支里。给一条去全库搜索的出路，
+// 而不是让人对着一个空面板怀疑 vault 是不是空的。
+const filterEmpty = computed(() => query.value.trim().length > 0 && filteredTree.value.length === 0)
+const filterKeyword = computed(() => query.value.trim())
+const searchAllNotes = () => navigateTo(`/notes?q=${encodeURIComponent(filterKeyword.value)}`)
+
+/**
+ * 底部同步状态三态。以前那颗绿点是恒亮 + animate-pulse 的纯装饰：
+ * 取数失败也照样转圈，用户没有任何办法判断「侧栏里的数据到底是不是新的」。
+ *
+ * 判定只用父组件已经传进来的真实取数状态，不额外发请求：
+ *   loading = 首帧未挂载（SSR 与客户端首帧保持同一形态，避免 hydration 错配）/ 树或标签仍在取
+ *   error   = 目录树取数失败（tags 的失败没有传进来，但树失败足以说明这一轮同步没成）
+ *   ok      = 两者都不再 pending，且树确实到了
+ */
+const syncPhase = computed<'loading' | 'error' | 'ok'>(() => {
+  if (!mounted.value) return 'loading'
+  if (props.treeError) return 'error'
+  if (props.treePending || props.tagsPending) return 'loading'
+  return props.tree.length ? 'ok' : 'loading'
+})
+
+// 完成时刻只在「进入 ok」的那一刻记一次；后续 props 抖动（重取、切页）会先回到 loading
+// 再重新记时，这样显示的一直是**本轮数据到齐**的时间，而不是组件挂载时间。
+const syncedAt = ref<Date | null>(null)
+watch(syncPhase, (p) => {
+  syncedAt.value = p === 'ok' ? new Date() : null
+}, { immediate: true })
+
+const syncText = computed(() => {
+  if (syncPhase.value === 'loading') return '同步中…'
+  if (syncPhase.value === 'error') return '同步失败'
+  const t = syncedAt.value
+  if (!t) return '已同步'
+  // 固定 24h 制、两位补零，避免 09:05 在某语言环境下变成 9:05 让底栏宽度来回跳
+  return `已同步 · ${t.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })}`
 })
 
 // ── 结构树右键菜单（spec 6 / 8.9）────────────────────────────
@@ -344,14 +411,14 @@ const onMenuBlocked = (item: MenuItem) => {
         </div>
         <div v-if="canManage" class="flex items-center gap-1 shrink-0">
           <button
-            class="w-7 h-7 rounded-ctl flex items-center justify-center text-ink-3 hover:text-accent hover:bg-surface-3 transition-colors duration-micro"
+            class="w-7 h-7 rounded-ctl flex items-center justify-center text-ink-3 hover:text-accent-text hover:bg-surface-3 transition-colors duration-micro"
             title="导入笔记（.md / .markdown / .txt，单文件 ≤ 5MB）"
             @click="emit('import')"
           >
             <Upload class="w-3.5 h-3.5" />
           </button>
           <button
-            class="w-7 h-7 rounded-ctl flex items-center justify-center text-ink-3 hover:text-accent hover:bg-surface-3 transition-colors duration-micro"
+            class="w-7 h-7 rounded-ctl flex items-center justify-center text-ink-3 hover:text-accent-text hover:bg-surface-3 transition-colors duration-micro"
             title="新建文件夹（vault 顶层）"
             @click="emit('new-folder', '')"
           >
@@ -361,14 +428,18 @@ const onMenuBlocked = (item: MenuItem) => {
       </div>
 
       <div class="relative">
+        <!-- 不用 v-model：v-model 会在每次 input（含拼音输入中间态）就写回，绕不过 IME 守卫 -->
         <input
-          v-model="query"
+          :value="queryInput"
           type="text"
           placeholder="过滤笔记…"
-          class="w-full bg-surface border border-line-strong rounded-ctl pl-8 pr-7 py-1.5 text-ds-sm text-ink placeholder-ink-3 focus:border-accent transition-colors duration-micro"
+          class="w-full bg-surface border border-line-strong-strong rounded-ctl pl-8 pr-7 py-1.5 text-ds-sm text-ink placeholder-ink-3 focus:border-accent transition-colors duration-micro"
+          @input="onQueryInput"
+          @compositionstart="onQueryCompositionStart"
+          @compositionend="onQueryCompositionEnd"
         />
         <Filter class="w-3.5 h-3.5 absolute left-2.5 top-2 text-ink-3" />
-        <button v-if="query" class="absolute right-2 top-2 text-ink-3 hover:text-ink" title="清除" @click="query = ''">
+        <button v-if="queryInput" class="absolute right-2 top-2 text-ink-3 hover:text-ink" title="清除" @click="resetQuery">
           <X class="w-3.5 h-3.5" />
         </button>
       </div>
@@ -397,13 +468,25 @@ const onMenuBlocked = (item: MenuItem) => {
         <!-- 树改成客户端取数后，首屏有一小段真空期：给骨架而不是「空 vault」 -->
         <div v-if="!tree.length && treeError" class="px-2 py-6 text-center space-y-2">
           <p class="text-xs text-ink-3">目录树没能加载出来</p>
-          <button class="text-xs text-accent hover:underline transition-colors duration-micro" @click="emit('reload-tree')">
+          <button class="text-xs text-accent-text hover:underline transition-colors duration-micro" @click="emit('reload-tree')">
             重试
           </button>
         </div>
         <ul v-else-if="!tree.length && (treePending || !mounted)" class="space-y-1.5 px-1 py-2" aria-busy="true">
-          <li v-for="i in 6" :key="i" class="h-6 rounded-md bg-surface-3 animate-pulse" />
+          <li v-for="i in 6" :key="i" class="h-6 rounded-xs bg-surface-3 animate-pulse" />
         </ul>
+        <div v-else-if="filterEmpty" class="px-2 py-6 text-center space-y-2">
+          <!-- 说清「只是这棵树里没有」，并给出全库搜索这条路（注释必须在本元素内：
+               夹在 v-else-if 分支之间的注释会让 Vue 认为链被断开，编译报错） -->
+          <p class="text-xs text-ink-3">当前树中没有匹配</p>
+          <p class="text-ds-xs font-mono text-ink-3/80 break-all">「{{ filterKeyword }}」</p>
+          <button
+            class="text-xs text-accent-text hover:underline transition-colors duration-micro"
+            @click="searchAllNotes"
+          >
+            在全部笔记中搜索
+          </button>
+        </div>
         <FileTree
           v-else
           :nodes="filteredTree"
@@ -414,7 +497,7 @@ const onMenuBlocked = (item: MenuItem) => {
       <FacetList v-else-if="panel === 'dir'" :facets="sections" :active-dir="activeDir" />
       <template v-else>
         <ul v-if="!tagGroups.length && (tagsPending || !mounted)" class="space-y-2 px-1 py-2" aria-busy="true">
-          <li v-for="i in 8" :key="i" class="h-5 rounded-md bg-surface-3 animate-pulse" />
+          <li v-for="i in 8" :key="i" class="h-5 rounded-xs bg-surface-3 animate-pulse" />
         </ul>
         <TagGroups v-else :groups="tagGroups" :active-tag="activeTag" />
       </template>
@@ -425,7 +508,7 @@ const onMenuBlocked = (item: MenuItem) => {
       v-if="clipboard"
       class="px-3 py-2 border-t border-line flex items-center gap-2 shrink-0 bg-[var(--accent-soft)]"
     >
-      <ClipboardPaste class="w-3.5 h-3.5 text-accent shrink-0" />
+      <ClipboardPaste class="w-3.5 h-3.5 text-accent-text shrink-0" />
       <span class="flex-1 text-xs text-ink truncate" :title="clipboard.path">已复制：{{ clipboard.name }}</span>
       <button class="text-xs text-ink-3 hover:text-ink shrink-0 transition-colors duration-micro" @click="clipboard = null">
         取消
@@ -461,13 +544,21 @@ const onMenuBlocked = (item: MenuItem) => {
       @renamed="onRenamed"
     />
 
-    <!-- 底部同步状态 -->
-    <div class="px-3 py-2 border-t border-line text-xs text-ink-3 flex items-center justify-between shrink-0">
-      <span class="flex items-center gap-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-evergreen animate-pulse"></span>
-        Vault Synced
+    <!-- 底部同步状态（真实三态）：同步中… / 已同步 · HH:mm / 同步失败 -->
+    <div class="px-3 py-2 border-t border-line text-xs text-ink-3 flex items-center justify-between gap-2 shrink-0">
+      <span
+        class="flex items-center gap-1.5 min-w-0"
+        :title="syncPhase === 'error' ? '目录树没有取到：可在结构面板点「重试」，或刷新页面' : syncText"
+      >
+        <span
+          class="w-1.5 h-1.5 rounded-full shrink-0"
+          :class="syncPhase === 'error'
+            ? 'bg-[var(--danger)]'
+            : ['bg-evergreen', syncPhase === 'loading' ? 'animate-pulse' : '']"
+        ></span>
+        <span class="truncate">{{ syncText }}</span>
       </span>
-      <span class="font-mono tabular-nums">{{ stats.total }} 篇 · {{ stats.links }} 连接</span>
+      <span class="font-mono tabular-nums shrink-0">{{ stats.total }} 篇 · {{ stats.links }} 连接</span>
     </div>
 
     <!-- 拖拽调宽手柄由 AppShell 提供（sidebar 右侧独立 1px 列），此处不再重复 -->

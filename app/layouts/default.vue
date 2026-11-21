@@ -229,21 +229,70 @@ const currentSlug = computed(() => decodeURIComponent(route.path.replace(/^\/not
 const FAB_ROUTES = new Set(['/', '/notes', '/browse'])
 const showFab = computed(() => canManage.value && FAB_ROUTES.has(route.path))
 
-// 面包屑：Garden Vault / …路径段（末段高亮）
+// 面包屑：Garden Vault / …路径段（末段高亮，中间段可点）
 /** 路由段 → 面包屑文案（slug 段保持原样，只有固定页面需要翻译） */
 const SEG_LABEL: Record<string, string> = { notes: '笔记', browse: '分类浏览', admin: '管理后台' }
 
+/**
+ * 面包屑带目标地址，而不是纯文本。
+ *
+ * 为什么中间段要指到 `/notes?dir=<累积路径>` 而不是 `/notes/<累积路径>`：
+ * 笔记详情是 `/notes/[...slug]` 这个 catch-all 路由，把目录路径直接塞进去会被当成
+ * 「一篇 slug 等于该目录的笔记」去查库，必然 404。目录筛选才是目录该去的地方。
+ * 末段（当前笔记 / 当前页面）保持不可点 —— 点自己没有意义，页面上也没有第二个自己去处。
+ */
 const crumbs = computed(() => {
   const segs = route.path.split('/').filter(Boolean).map(s => decodeURIComponent(s))
-  return ['Garden Vault', ...segs.map(s => SEG_LABEL[s] ?? s)]
+  const out: { label: string; to: string | null }[] = [{ label: 'Garden Vault', to: '/' }]
+  segs.forEach((s, i) => {
+    const last = i === segs.length - 1
+    let to: string | null = null
+    if (!last) {
+      to = (segs[0] === 'notes' && i > 0)
+        ? `/notes?dir=${encodeURIComponent(segs.slice(1, i + 1).join('/'))}`
+        : '/' + segs.slice(0, i + 1).join('/')
+    }
+    out.push({ label: SEG_LABEL[s] ?? s, to })
+  })
+  return out
 })
 
 const activeTag = computed(() => (typeof route.query.tag === 'string' ? route.query.tag : ''))
 const activeDir = computed(() => (typeof route.query.dir === 'string' ? route.query.dir : ''))
 
+/**
+ * 新建笔记的落点选项：把已加载的目录树扁平成 `01-工程/前端` 这样的路径串，
+ * 根目录用空串表示（服务端 POST 的 body.path 就是空串 → 直接落在 vault 根）。
+ *
+ * 为什么在前端 flatten：newNoteParent 从始至终只是一个字符串，接口收的也是字符串，
+ * 没必要为选择器再造一份结构。树还没加载完时只有「根目录」一项，够用且不会给错选项。
+ */
+const parentOptions = computed<{ value: string; label: string }[]>(() => {
+  const out: { value: string; label: string }[] = [{ value: '', label: '/ 根目录' }]
+  const walk = (nodes: any[], base: string) => {
+    for (const n of nodes || []) {
+      if (n?.type !== 'dir') continue
+      const path = base ? `${base}/${n.name}` : n.name
+      out.push({ value: path, label: `/${path}` })
+      walk(n.children, path)
+    }
+  }
+  walk((tree.value as any)?.tree, '')
+  // 残留值兜底：树还没到、或上次选中的目录刚被删掉时，当前值不在选项里。
+  // AppSelect 找不到匹配项就会退化成 placeholder，看着像「落点丢了」，而提交其实还会用它。
+  if (newNoteParent.value && !out.some(o => o.value === newNoteParent.value)) {
+    out.push({ value: newNoteParent.value, label: `/${newNoteParent.value}（未在当前树中）` })
+  }
+  return out
+})
+
 const startCreateRoot = () => {
   createMenuOpen.value = false
   newNoteTitle.value = ''
+  // 顶栏「新建笔记」= 新建到根目录。这里必须重置落点：不重置时，上一次在结构树里
+  // 「在某某目录下新建」（startCreateNoteIn 写进来的值）会残留在 newNoteParent 上，
+  // 顶栏这条路就会悄悄把笔记建到那个目录里，而旧对话框里没有任何控件能改回去。
+  newNoteParent.value = ''
   newNoteOpen.value = true
 }
 
@@ -341,16 +390,22 @@ const logout = async () => {
           <MenuIcon class="w-4 h-4" />
         </button>
 
-        <!-- 面包屑（<640 收敛为末段标题） -->
+        <!-- 面包屑（<640 收敛为末段标题；中间段可点，末段保持纯文本） -->
         <nav class="flex-1 min-w-0 flex items-center gap-1 text-ds-sm text-ink-3" aria-label="面包屑">
           <template v-for="(c, i) in crumbs" :key="i">
             <span v-if="i > 0" class="text-ink-3/60 hidden sm:inline">/</span>
+            <NuxtLink
+              v-if="c.to"
+              :to="c.to"
+              class="truncate hover:text-accent-text transition-colors duration-micro hidden sm:inline sm:max-w-[16ch] lg:max-w-none"
+            >{{ c.label }}</NuxtLink>
             <span
+              v-else
               class="truncate"
               :class="i === crumbs.length - 1
                 ? 'text-ink font-semibold'
                 : 'hidden sm:inline sm:max-w-[16ch] lg:max-w-none'"
-            >{{ c }}</span>
+            >{{ c.label }}</span>
           </template>
         </nav>
 
@@ -523,20 +578,30 @@ const logout = async () => {
       <!-- 新建文件夹（spec 6 NewFolderDialog）：替代原生 prompt -->
       <NewFolderDialog v-model:open="folderOpen" :tree="(tree as any)?.tree || []" :default-parent="folderParent" />
 
-      <!-- 新建笔记（替代原生 prompt） -->
+      <!-- 新建笔记（替代原生 prompt）：标题 + 落点目录 -->
       <AppDialog v-model:open="newNoteOpen" title="新建笔记" size="sm">
         <label class="block">
-          <span class="block text-[12px] text-ink-3 mb-1.5">笔记标题</span>
+          <span class="block text-ds-xs text-ink-3 mb-1.5">笔记标题</span>
           <input
             v-model="newNoteTitle"
             placeholder="如：Rust 所有权模型"
-            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
             @keyup.enter="submitCreateRoot"
           />
-          <span class="block mt-2 text-[12px] text-ink-3 font-mono break-all">
-            落点：Garden Vault{{ newNoteParent ? ' / ' + newNoteParent.split('/').join(' / ') : '' }} / {{ newNoteTitle.trim() || '（标题）' }}.md
-          </span>
         </label>
+
+        <!-- 落点选择器：直接 v-model 到 newNoteParent —— 对话框里改一次，提交用的就是这一份，
+             不存在「预览说 A、实际建到 B」的第二份状态。
+             入口的行为差别由打开对话框的人决定：顶栏/FAB = 根目录（startCreateRoot 重置），
+             结构树右键 = 那个目录（startCreateNoteIn 写入）。 -->
+        <div class="mt-3">
+          <span class="block text-ds-xs text-ink-3 mb-1.5">落点目录</span>
+          <AppSelect v-model="newNoteParent" :options="parentOptions" placeholder="选择目录" />
+          <span class="block mt-2 text-ds-xs text-ink-3 font-mono break-all">
+            将创建：Garden Vault{{ newNoteParent ? ' / ' + newNoteParent.split('/').join(' / ') : '' }} / {{ newNoteTitle.trim() || '（标题）' }}.md
+          </span>
+        </div>
+
         <template #footer>
           <button
             class="px-3.5 py-2 rounded-ctl text-ds-sm border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro"

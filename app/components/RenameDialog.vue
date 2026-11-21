@@ -121,33 +121,33 @@ const submit = async () => {
   >
     <div class="space-y-4">
       <label class="block">
-        <span class="block text-[12px] text-ink-3 mb-1.5">新名称</span>
+        <span class="block text-ds-xs text-ink-3 mb-1.5">新名称</span>
         <input
           v-model="name"
           class="w-full px-3 py-2 rounded-ctl bg-surface-2 border text-ds-sm text-ink placeholder-ink-3 transition-colors duration-micro"
-          :class="problem ? 'border-danger/60' : 'border-line-strong focus:border-accent/60'"
+          :class="problem ? 'border-danger/60' : 'border-line-strong-strong focus:border-accent/60'"
           placeholder="输入新名称"
           @keyup.enter="submit"
         />
-        <span v-if="problem" class="block mt-1.5 text-[12px] text-danger">{{ problem }}</span>
+        <span v-if="problem" class="block mt-1.5 text-ds-xs text-danger">{{ problem }}</span>
       </label>
 
       <!-- 笔记题名与文件名不一致时，交由用户决定（口径 ②）：勾上就连题名一起改 -->
       <label v-if="askSync" data-testid="rename-sync-title" class="flex items-start gap-2 cursor-pointer select-none">
         <input v-model="syncTitle" type="checkbox" class="mt-0.5 accent-[var(--accent)]" />
-        <span class="text-[12px] text-ink-2 leading-summary">
+        <span class="text-ds-xs text-ink-2 leading-summary">
           同时把笔记标题改为「{{ newName }}」
           <span class="block text-ink-3">
             这篇笔记的标题是「{{ oldTitle }}」，与文件名不同；不勾选则只改文件名，标题保持原样。
           </span>
         </span>
       </label>
-      <p v-else-if="titleMirrorsName" data-testid="rename-title-follows" class="text-[12px] text-ink-3">
+      <p v-else-if="titleMirrorsName" data-testid="rename-title-follows" class="text-ds-xs text-ink-3">
         标题与文件名相同，重命名后笔记标题会一起更新。
       </p>
 
-      <p class="text-[12px] text-ink-3 font-mono break-all leading-summary">落点预览：{{ preview }}</p>
-      <p v-if="isDir" class="text-[12px] text-ink-3">
+      <p class="text-ds-xs text-ink-3 font-mono break-all leading-summary">落点预览：{{ preview }}</p>
+      <p v-if="isDir" class="text-ds-xs text-ink-3">
         重命名文件夹只改路径，其中笔记的标题保持不变。
       </p>
     </div>

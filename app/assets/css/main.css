@@ -32,13 +32,18 @@
 
     /* 交互色 */
     --accent: #0E7C5A;
+    /* 强调色作「填充」与作「文字」的对比度要求不同：#0E7C5A 对 canvas 只有 4.51，
+       12px 文字一旦落到 --surface-3 就不足 4.5，所以文字色单独一档并留余量。 */
+    --accent-text: #0C6E4F;
     --accent-ink: #FFFFFF;
     --accent-soft: rgba(14, 124, 90, 0.10);
 
-    /* 语义色 */
-    --seedling: #A85B0B;
+    /* 语义色：三个成熟度色都要压在 10% 底色上当归档徽标文字用（全库 289 篇目前全是 seedling），
+       原值对 --surface-3 只有 3.86 / 4.30 / 3.97，都不达 AA 4.5 —— 按深一档取值修正：
+       seedling 3.86→4.62，evergreen 3.97→4.72，growing 在 surface-3 仍 4.30 偏紧但不作正文承载。 */
+    --seedling: #96500A;
     --growing: #0B6E99;
-    --evergreen: #0E7C5A;
+    --evergreen: #0B6E50;
     --danger: #B42318;
 
     /* 领域色族（同一色相在亮暗下取不同明度） */
@@ -101,7 +106,9 @@
     --surface-2: #151A24;
     --surface-3: #1C222E;
     --line: #222A37;
-    --line-strong: #5C6A7B;
+    /* 暗色 --line-strong 由 #5C6A7B 提到 #627184：对 --surface-3 只有 2.89，
+       控件边框达不到 WCAG 1.4.11 的 3:1。提亮后 3.20。 */
+    --line-strong: #627184;
 
     /* 暗色下 --edge-tag 刻意压得比 --edge-link 弱：标签共有边是多数（本例 1395/1675），
        若比显式链接还亮，层级就反了（旧值 #7A6A52 对比 3.7 反而高于链接的 3.3） */
@@ -116,6 +123,7 @@
     --ink-3: #828CA0;
 
     --accent: #3FD98B;
+    --accent-text: #3FD98B;
     --accent-ink: #08110C;
     --accent-soft: rgba(63, 217, 139, 0.14);
 
@@ -209,18 +217,8 @@ select optgroup {
 /* ========== 兼容层：既有类名改由 DAWN 令牌驱动 ==========
    （E2/E3 会逐步把这些写法换成语义化的 surface/ink/border 工具类） */
 
-.glass-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-1);
-}
-
-.glass-header {
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--line);
-}
+/* .glass-card / .glass-header 已删除：全库 0 引用，真实毛玻璃只有顶栏与 TabBar 两处直接写
+   bg-surface/90 + backdrop-blur，留着只会诱导新代码引用一套不存在的材质。 */
 
 .bg-mesh {
   background-color: var(--canvas);
@@ -237,7 +235,7 @@ select optgroup {
 /* 正文内的 WikiLink：浅底胶囊（spec 5.4） */
 .prose .wiki-link,
 .prose a {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
   border-bottom: 1.5px solid color-mix(in srgb, var(--accent) 40%, transparent);
   transition: background-color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
@@ -292,7 +290,9 @@ select optgroup {
 }
 .hue-soft {
   background: hsl(var(--h, 220) var(--hue-s) var(--hue-l) / 0.14);
-  color: hsl(var(--h, 220) 55% 32%);
+  /* 亮色下 55% 32% 对 10% 同相底色只有 4.35 / 4.23（前端 hue160、跨学科 hue88 实测），
+     压到 28% 后 5.32 / 5.19，仍与 --ink 有层次差。 */
+  color: hsl(var(--h, 220) 55% 28%);
 }
 .dark .hue-soft {
   color: hsl(var(--h, 220) var(--hue-s) 72%);

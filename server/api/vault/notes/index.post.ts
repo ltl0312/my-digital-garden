@@ -1,7 +1,7 @@
 import { createError, defineEventHandler, readBody } from 'h3'
 import fs from 'fs/promises'
 import path from 'path'
-import { resolveVaultPath, noteTemplate, stripNul, writeMarkdownAtomic } from '../../../utils/vault'
+import { resolveVaultPath, noteTemplate, stripNul, writeMarkdownAtomic, isValidNodeName } from '../../../utils/vault'
 import { requireAdmin } from '../../../utils/auth'
 import { invalidateGardenCache } from '../../../utils/cache'
 import { processMarkdownFile } from '../../../utils/markdown'
@@ -12,9 +12,10 @@ export default defineEventHandler(async (event) => {
   const dir = stripNul((body.path || '').replace(/^\/+/, '').replace(/\\/g, '/')).replace(/\.md$/i, '')
   const title = stripNul((body.title || '未命名笔记').trim())
 
-  // 文件名字符校验：路径分隔符（/ \）+ Windows 非法字符（? * < > " |）+ 控制字符
-  const INVALID_TITLE_CHARS = /[\/\\:?*<>"|\x00-\x1f]/
-  if (!title || INVALID_TITLE_CHARS.test(title)) {
+  // 节点名校验统一走 vault 工具：路径分隔符 / Windows 非法字符 / 控制字符 / 首尾空白与点号结尾
+  // / 长度上限 200。原先这里是自写的 INVALID_TITLE_CHARS，只查字符**没有长度卡点** ——
+  // 300 个字的标题会让 fs 抛 ENAMETOOLONG（NTFS 单组件 255 与 MAX_PATH 被吃满），最终落成 500。
+  if (!isValidNodeName(title)) {
     throw createError({ statusCode: 400, message: 'Invalid title' })
   }
 
@@ -46,7 +47,16 @@ export default defineEventHandler(async (event) => {
   }
 
   // 原子写入：先写临时文件再 rename，避免 watcher 读到半截内容（与批量导入共用同一实现）
-  await writeMarkdownAtomic(full, noteTemplate(title))
+  // 深目录 + 长标题叠加时整条路径仍可能超 MAX_PATH，fs 层错误一律折算成 400，不再冒成 500。
+  try {
+    await writeMarkdownAtomic(full, noteTemplate(title))
+  } catch (e: any) {
+    const code = e?.code
+    if (code === 'ENAMETOOLONG' || code === 'EINVAL' || code === 'ENOENT') {
+      throw createError({ statusCode: 400, message: 'Invalid path or name length' })
+    }
+    throw e
+  }
   // 写操作后立即失效 tree 缓存，避免前端刷新拿到 10s 内的旧树
   invalidateGardenCache()
 

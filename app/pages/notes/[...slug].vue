@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pencil, MoreHorizontal, Link2, FolderTree, FileText, Trash2, Save, X, Info, Tags as TagsIcon, ListTree, Sparkles } from 'lucide-vue-next'
+import { Pencil, MoreHorizontal, Link2, FolderTree, FileText, Trash2, Save, X, Info, History, Tags as TagsIcon, ListTree, Sparkles } from 'lucide-vue-next'
 
 const route = useRoute()
 const { canManage } = useRoles()
@@ -23,6 +23,7 @@ const slug = computed(() => {
 const encodedSlug = computed(() => slug.value.split('/').map(encodeURIComponent).join('/'))
 
 const requestFetch = useRequestFetch()
+const router = useRouter()
 const note = ref<any>(null)
 const error = ref<any>(null)
 
@@ -31,6 +32,9 @@ const loadNote = async () => {
     note.value = await requestFetch(`/api/notes/${encodedSlug.value}`)
     error.value = null
   } catch (e: any) {
+    // 失败必须连正文一起清掉：留着上一篇会让用户以为「已经切过去了」，
+    // 静默展示另一篇笔记比报错严重得多（旧实现只设 error，模板没有 error 分支）。
+    note.value = null
     error.value = e
   }
 }
@@ -40,7 +44,19 @@ await loadNote()
 
 const editing = ref(false)
 const draft = ref('')
-const saving = ref(false)
+
+// 保存状态机（取代原先的 saving 布尔）：一次 PUT 定输赢，失败也分得清是哪一种。
+// 字面量与 app/components/SaveState.vue 导出的 SaveStatus 逐字一致（结构相同即可赋值）。
+type SaveStatus = 'idle' | 'saving' | 'queued' | 'saved' | 'timeout' | 'conflict'
+const saveStatus = ref<SaveStatus>('idle')
+/** 最近一次成功写入的时刻：响应的 updatedAt，拿不到就用本地时刻 */
+const savedAt = ref('')
+/** 409 三选一对话框 */
+const conflictOpen = ref(false)
+/** 顶部「已恢复上次未保存的编辑」提示 */
+const draftRestored = ref(false)
+const busy = computed(() => saveStatus.value === 'saving')
+const draftStore = useDraft()
 
 // 编辑态同步到全局：手机端底部 TabBar 在编辑态需让位给编辑器底部操作条
 // （交付物 §5 ⑤ / 第 05 屏 —— 编辑态没有底部导航）。离开页面时复位，
@@ -49,15 +65,78 @@ const editorOpen = useState<boolean>('shell-editor-open', () => false)
 watch(editing, (v) => { editorOpen.value = v }, { immediate: true })
 onBeforeUnmount(() => { editorOpen.value = false })
 
-// 侧边栏跳转另一篇笔记时（组件实例复用），slug 变化立即重取（手动模式，不依赖 useAsyncData 语义）
-// 同时重置编辑态：否则会把上一篇笔记的草稿误保存到当前笔记
-watch(slug, () => {
+// ── 未保存修改的判定与草稿恢复 ────────────────────────────────
+// 只算「编辑态 + 与正文不同」：退出编辑后 draft 仍留着最后内容，那不算未保存。
+const isDirty = computed(() => editing.value && draft.value !== (note.value?.content ?? ''))
+
+/** 恢复本地草稿：命中且与正文不同才恢复，并直接进编辑态（只恢复不编辑等于没恢复） */
+const restoreDraft = (): boolean => {
+  if (!note.value) return false
+  const rec = draftStore.read(slug.value)
+  if (!rec) return false
+  if (rec.content === (note.value.content ?? '')) { draftStore.clear(slug.value); return false }
+  draft.value = rec.content
+  editing.value = true
+  draftRestored.value = true
+  return true
+}
+
+/** 顶部提示条上的「丢弃」：清 key、回到磁盘正文、退出编辑态 */
+const discardRestored = () => {
+  draftStore.clear(slug.value)
+  draft.value = note.value?.content ?? ''
+  editing.value = false
+  draftRestored.value = false
+  saveStatus.value = 'idle'
+}
+
+const encodeSlugPath = (s: string) => s.split('/').map(encodeURIComponent).join('/')
+
+/** 切篇 / 重试前的状态复位：旧正文、旧状态、旧草稿提示一律不带进下一篇 */
+const resetForSlug = () => {
   editing.value = false
   draft.value = ''
-  loadNote()
+  draftRestored.value = false
+  conflictOpen.value = false
+  saveStatus.value = 'idle'
+  savedAt.value = ''
+  note.value = null
+  error.value = null
+}
+
+// 路由回退会让 slug 再变一次；用这个标志跳过一次守卫，
+// 免得拿撤销后的路由再问用户一遍「要不要放弃」。
+let revertingRoute = false
+
+// 侧边栏跳转另一篇笔记时（组件实例复用），slug 变化立即重取（手动模式，不依赖 useAsyncData 语义）。
+// 切换前必须拦一次：草稿是「这一篇」的，静默丢弃正是原来最伤的那种丢失。
+watch(slug, async (_next, prev) => {
+  if (revertingRoute) { revertingRoute = false; return }
+  if (isDirty.value && prev) {
+    const ok = await confirm({
+      title: '放弃未保存的修改？',
+      message: '当前笔记还有未保存的修改。继续切换会先把它们存成本地草稿，重新进入这一篇时才能恢复。',
+      detail: `${prev}.md`,
+      confirmText: '仍然切换',
+      cancelText: '留在这里',
+      danger: true
+    })
+    if (!ok) {
+      revertingRoute = true
+      await router.replace(`/notes/${encodeSlugPath(prev)}`)
+      return
+    }
+    // 确认切换：先把草稿落盘（不是删掉），回头再进来还能恢复
+    draftStore.flush(prev, draft.value)
+  }
+  resetForSlug()
+  await loadNote()
+  if (!error.value) restoreDraft()
 })
 
-if (error.value) {
+// SSR 首次加载失败仍走整页错误页；客户端换篇失败走页内错误态 + 重试，
+// 否则一次网络抖动就得整页刷新
+if (error.value && !import.meta.client) {
   throw createError({
     statusCode: error.value.statusCode || 500,
     message: error.value.message || '笔记加载失败'
@@ -65,52 +144,210 @@ if (error.value) {
 }
 
 const startEdit = () => {
+  draftRestored.value = false
+  // 有本地草稿就先恢复：直接覆盖成磁盘正文等于悄悄丢掉上次的输入
+  if (restoreDraft()) return
   draft.value = note.value?.content || ''
   editing.value = true
 }
 
-const cancelEdit = () => {
+const cancelEdit = async () => {
+  if (isDirty.value) {
+    const ok = await confirm({
+      title: '放弃未保存的修改？',
+      message: '这次修改还没有保存，放弃后无法找回（这篇笔记的本地草稿也会一并清除）。',
+      detail: `${slug.value}.md`,
+      confirmText: '放弃修改',
+      cancelText: '继续编辑',
+      danger: true
+    })
+    if (!ok) return
+  }
+  draftStore.clear(slug.value)
+  draft.value = note.value?.content ?? ''
+  draftRestored.value = false
   editing.value = false
+  saveStatus.value = 'idle'
+}
+
+/** 页内错误态的重试：只重取当前这篇，不动其它状态 */
+const retryLoad = async () => {
+  await loadNote()
+  if (!error.value) restoreDraft()
 }
 
 // 编辑态底部工具栏：字数与预估阅读时长（spec 5.4）
 const draftChars = computed(() => draft.value.replace(/\s/g, '').length)
 const draftMinutes = computed(() => Math.max(1, Math.round(draft.value.length / 400)))
 
-const saveNote = async () => {
-  saving.value = true
-  try {
-    const prevUpdatedAt = note.value?.updatedAt
-    await $fetch(`/api/vault/notes/${encodedSlug.value}`, { method: 'PUT', body: { content: draft.value } })
+// ── 保存：一次 PUT 定输赢 ─────────────────────────────────────
+// 旧实现 PUT 后每 500ms 轮询 GET 比对 updatedAt、最长 10s，超时就报「同步稍慢」：
+// 但服务端在内容没变时**本来就会跳过重渲染**（不写库、updatedAt 不变），
+// 于是「打开编辑器不动就点保存」必然空等 10 秒再弹一句假故障。现在只发一次写请求，
+// 15s 只用于兜住真的挂死的请求。
+const SAVE_TIMEOUT_MS = 15_000
+let saveAbort: AbortController | null = null
+let settleTimer: ReturnType<typeof setTimeout> | null = null
 
-    // 轮询等待 watcher 串行队列同步入库（替代固定 1.5s 硬等待；最长 10s）
-    const deadline = Date.now() + 10_000
-    while (Date.now() < deadline) {
-      await new Promise(r => setTimeout(r, 500))
-      try {
-        // 显式声明所需字段：模板字符串形式的 URL 在类型化路由下推断不出唯一出参，
-        // 此处只用到 updatedAt 做「内容是否真的变了」的判断
-        const fresh = await requestFetch<{ updatedAt?: string | Date }>(`/api/notes/${encodedSlug.value}`)
-        // watcher 入库后 updatedAt 会变化（内容真实变化时）
-        if (fresh && fresh.updatedAt !== prevUpdatedAt) {
-          note.value = fresh
-          break
-        }
-      } catch { /* 尚未入库（watcher 队列忙） */ }
-    }
-    // 超时兜底：提示但不阻塞流程（vault 文件已写入，最终一致）
-    if (note.value?.updatedAt === prevUpdatedAt) {
-      toast.warn('已写入笔记文件，但同步稍慢，请稍后刷新查看最新内容')
-    } else {
-      toast.success('已保存并同步入库')
-    }
-    editing.value = false
+const isAbortError = (e: any) => e?.name === 'AbortError' || e?.cause?.name === 'AbortError'
+
+const isConflictError = (e: any) => {
+  const status = e?.statusCode ?? e?.status ?? e?.response?.status
+  const code = e?.data?.code ?? e?.response?._data?.code
+  return status === 409 && code === 'NOTE_CONFLICT'
+}
+
+/** 写入成功后的本地收敛：把细节交给服务端返回的 version/updatedAt，不再靠轮询猜 */
+const applySaved = (res: any) => {
+  const at = typeof res?.updatedAt === 'string' ? res.updatedAt : new Date().toISOString()
+  // 服务端回了 version 或 updatedAt（或显式 synced）才算「已入库」；只回 {ok:true} 说明
+  // 文件写完了、watcher 还没跟上 —— 那是 queued，不是失败
+  const synced = !!res && (res.version !== undefined || res.updatedAt !== undefined || res.synced === true)
+  note.value = {
+    ...note.value,
+    content: draft.value,
+    updatedAt: at,
+    ...(res?.version !== undefined ? { version: res.version } : {})
+  }
+  savedAt.value = at
+  draftStore.clear(slug.value)
+  draftRestored.value = false
+  editing.value = false
+  saveStatus.value = synced ? 'saved' : 'queued'
+  toast.success(synced ? '已保存' : '已写入 vault，等待入库')
+  if (!synced) settleQueued()
+}
+
+/** 入库滞后时补取一次（**一次性**，不是轮询）：补不到就停在 queued —— 文件已在 vault 里 */
+const settleQueued = () => {
+  if (settleTimer) clearTimeout(settleTimer)
+  const atSlug = encodedSlug.value
+  settleTimer = setTimeout(async () => {
+    settleTimer = null
+    try {
+      const fresh = await requestFetch<any>(`/api/notes/${atSlug}`)
+      if (!fresh || encodedSlug.value !== atSlug) return
+      if (fresh.content !== (note.value?.content ?? '')) return
+      note.value = fresh
+      savedAt.value = typeof fresh.updatedAt === 'string' ? fresh.updatedAt : savedAt.value
+      saveStatus.value = 'saved'
+    } catch { /* 入库慢不代表写失败：保持 queued 文案，不打扰用户 */ }
+  }, 1200)
+}
+
+const saveNote = async (opts: { forceOverwrite?: boolean } = {}) => {
+  if (!note.value) return
+  // 空保存短路：内容没变就不发请求（服务端也会跳过重渲染，请求本身就是噪声）
+  if (!opts.forceOverwrite && draft.value === (note.value.content ?? '')) {
+    toast.success('内容无变更')
+    saveStatus.value = 'idle'
+    return
+  }
+
+  saveAbort?.abort()
+  const ctrl = new AbortController()
+  saveAbort = ctrl
+  const timer = setTimeout(() => ctrl.abort(), SAVE_TIMEOUT_MS)
+  saveStatus.value = 'saving'
+  try {
+    // baseVersion = 详情响应里的 version；拿不到就不带（服务端按无版本处理，保持兼容）
+    const base = opts.forceOverwrite ? undefined : note.value?.version
+    const res = await $fetch<any>(`/api/vault/notes/${encodedSlug.value}`, {
+      method: 'PUT',
+      body: base === undefined || base === null
+        ? { content: draft.value }
+        : { content: draft.value, baseVersion: base },
+      signal: ctrl.signal
+    })
+    applySaved(res)
   } catch (e: any) {
+    if (isAbortError(e)) {
+      // 超时不是「肯定没写进去」：请求可能已到服务端，所以给「重试」而不是「重新加载」
+      saveStatus.value = 'timeout'
+      toast.error('写入超时，可重试')
+      return
+    }
+    if (isConflictError(e)) {
+      saveStatus.value = 'conflict'
+      conflictOpen.value = true
+      return
+    }
+    saveStatus.value = 'idle'
     toast.error(e?.data?.message || '保存失败')
   } finally {
-    saving.value = false
+    clearTimeout(timer)
+    if (saveAbort === ctrl) saveAbort = null
   }
 }
+
+// ── 409：覆盖磁盘 / 放弃我的修改 / 取消 ──────────────────────
+const conflictOverwrite = async () => {
+  conflictOpen.value = false
+  await saveNote({ forceOverwrite: true })
+  if (saveStatus.value !== 'saved' && saveStatus.value !== 'queued') return
+  // 覆盖成功后必须把 baseVersion 重新对齐，否则下一次保存还拿旧版本再撞一次 409
+  if (note.value?.version !== undefined) return
+  try {
+    const fresh = await requestFetch<any>(`/api/notes/${encodedSlug.value}`)
+    if (fresh && note.value) {
+      // 只取 version：正文以刚写下去的内容为准，不能被滞后的 DB 结果倒灌
+      note.value = { ...note.value, version: fresh.version }
+    }
+  } catch { /* 拿不到就等下次进页面再对齐 */ }
+}
+
+const conflictDiscard = async () => {
+  conflictOpen.value = false
+  try {
+    const fresh = await requestFetch<any>(`/api/notes/${encodedSlug.value}`)
+    note.value = fresh
+    draft.value = fresh?.content ?? ''
+  } catch (e: any) {
+    toast.error(e?.data?.message || '重新读取失败')
+    return
+  }
+  draftStore.clear(slug.value)
+  draftRestored.value = false
+  saveStatus.value = 'idle'
+  toast.warn('已放弃本地修改，载入磁盘最新内容')
+}
+
+// 取消：什么都不动 —— 保持编辑态、保住草稿，状态条停在 conflict 提醒用户还有冲突未决
+const conflictCancel = () => {
+  conflictOpen.value = false
+}
+
+// ── 草稿落盘（800ms 防抖在 useDraft 里） ─────────────────────
+// 只在编辑态写：非编辑态下 draft 是上一次编辑的残留，写下去会把磁盘上的真草稿覆盖成旧内容
+watch(draft, (v) => {
+  if (!editing.value) return
+  if (v === (note.value?.content ?? '')) return
+  draftStore.write(slug.value, v)
+}, { flush: 'post' })
+
+// ── 浏览器级离开拦截（client-only） ──────────────────────────
+// 单页路由切篇由 watch(slug) 拦；这里的 beforeunload 只管关标签页 / 刷新 / 外链跳转。
+const onBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (!isDirty.value) return
+  // 兜住最后 <800ms 的输入：用户可能马上选「离开」
+  draftStore.flush(slug.value, draft.value)
+  e.preventDefault()
+  e.returnValue = ''
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', onBeforeUnload)
+  // 进页面即恢复：SSR 首帧只有正文，本地草稿只能在客户端读
+  if (note.value) restoreDraft()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', onBeforeUnload)
+  if (settleTimer) clearTimeout(settleTimer)
+  saveAbort?.abort()
+  // 跳到别的页面（不是切篇）：草稿只活在内存里，先落盘再走
+  if (isDirty.value) draftStore.flush(slug.value, draft.value)
+})
 
 const removeNote = async () => {
   const ok = await confirm({
@@ -275,14 +512,14 @@ useHead({
         <template v-if="editing">
           <button
             class="h-[34px] px-2.5 rounded-ctl text-ds-sm border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
-            :disabled="saving"
+            :disabled="busy"
             @click="cancelEdit"
           >取消</button>
           <button
             class="h-[34px] px-3 rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] transition-opacity duration-micro disabled:opacity-50"
-            :disabled="saving"
-            @click="saveNote"
-          >{{ saving ? '保存中…' : '保存' }}</button>
+            :disabled="busy"
+            @click="saveNote()"
+          >{{ busy ? '保存中…' : '保存' }}</button>
         </template>
         <template v-else>
           <button
@@ -333,16 +570,30 @@ useHead({
           <template v-else>
             <button
               class="px-3 py-1.5 rounded-ctl text-ds-sm border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro inline-flex items-center gap-1.5"
-              :disabled="saving"
+              :disabled="busy"
               @click="cancelEdit"
             ><X class="w-3.5 h-3.5" />取消</button>
             <button
               class="px-3 py-1.5 rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] transition-opacity duration-micro disabled:opacity-50 inline-flex items-center gap-1.5"
-              :disabled="saving"
-              @click="saveNote"
-            ><Save class="w-3.5 h-3.5" />{{ saving ? '保存中…' : '保存' }}</button>
+              :disabled="busy"
+              @click="saveNote()"
+            ><Save class="w-3.5 h-3.5" />{{ busy ? '保存中…' : '保存' }}</button>
             </template>
           </template>
+        </div>
+
+        <!-- 恢复本地草稿（进页面 / 点编辑时命中未保存草稿才有） -->
+        <div
+          v-if="draftRestored"
+          class="mb-4 px-3.5 py-2.5 rounded-card border border-accent/40 bg-surface-2 flex items-center gap-2"
+        >
+          <History class="w-4 h-4 text-accent-text shrink-0" />
+          <p class="flex-1 text-ds-sm text-ink-2 leading-summary">已恢复上次未保存的编辑</p>
+          <button
+            type="button"
+            class="shrink-0 h-[26px] px-2 rounded-xs text-ds-xs border border-line text-ink-3 hover:text-ink hover:bg-surface-3 transition-colors duration-micro"
+            @click="discardRestored"
+          >丢弃</button>
         </div>
 
         <!-- 编辑态警示条（spec 5.4） -->
@@ -350,21 +601,39 @@ useHead({
           v-if="editing"
           class="mb-4 px-3.5 py-2.5 rounded-card border border-line bg-surface-2 flex items-start gap-2"
         >
-          <Info class="w-4 h-4 mt-0.5 text-accent shrink-0" />
+          <Info class="w-4 h-4 mt-0.5 text-accent-text shrink-0" />
           <p class="text-ds-sm text-ink-2 leading-summary">
             编辑的是 vault 中的 Markdown 源文件，<b class="font-semibold">保存后写入磁盘，watcher 自动同步入库</b>；同步完成前列表与统计可能短暂滞后。
           </p>
         </div>
 
-        <ArticleReader v-if="note && !editing" :note="note" />
+        <!-- 保存状态条：一行的位置说清「写没写进去、要不要重试、是不是被别处改过」 -->
+        <SaveState
+          v-if="editing || saveStatus !== 'idle'"
+          :status="saveStatus"
+          :saved-at="savedAt"
+          class="mb-4"
+          @retry="saveNote()"
+        />
+
+        <!-- 取数失败：先给错误态，绝不能退回上一篇正文（那会让用户以为切换成功了） -->
+        <EmptyState
+          v-if="error && !editing"
+          variant="error"
+          title="笔记加载失败"
+          :reason="error?.data?.message || error?.message || '网络或服务端异常，未能取到这篇笔记。'"
+          @retry="retryLoad"
+        />
+
+        <ArticleReader v-else-if="note && !editing" :note="note" />
 
         <div v-else-if="editing">
           <textarea
             v-model="draft"
-            class="w-full h-[62vh] p-4 rounded-card bg-surface-2 border border-line font-mono text-ds-sm leading-prose text-ink focus:border-accent/60 resize-y transition-colors duration-micro"
+            class="w-full h-[62vh] p-4 rounded-card bg-surface-2 border border-line-strong font-mono text-ds-sm leading-prose text-ink focus:border-accent/60 resize-y transition-colors duration-micro"
             spellcheck="false"
           ></textarea>
-          <div class="mt-2 flex items-center justify-between text-[12px] text-ink-3 font-mono">
+          <div class="mt-2 flex items-center justify-between text-ds-xs text-ink-3 font-mono">
             <span>{{ draftChars }} 字</span>
             <span>预计 {{ draftMinutes }} 分钟</span>
           </div>
@@ -381,7 +650,7 @@ useHead({
     <AppDialog v-model:open="metaOpen" title="标签与成熟度" size="sm">
       <div class="space-y-4">
         <div>
-          <span class="block text-[12px] text-ink-3 mb-1.5">标签（回车添加，最多 12 个）</span>
+          <span class="block text-ds-xs text-ink-3 mb-1.5">标签（回车添加，最多 12 个）</span>
           <div class="flex flex-wrap gap-1.5 mb-2">
             <span
               v-for="t in metaTags"
@@ -401,13 +670,13 @@ useHead({
           <input
             v-model="metaInput"
             placeholder="输入标签后回车"
-            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
             @keydown.enter.prevent="addMetaTag"
           />
         </div>
 
         <div>
-          <span class="block text-[12px] text-ink-3 mb-1.5">成熟度</span>
+          <span class="block text-ds-xs text-ink-3 mb-1.5">成熟度</span>
           <AppSelect
             v-model="metaMaturity"
             :options="[
@@ -417,7 +686,7 @@ useHead({
               { value: 'EVERGREEN', label: '常青 · 人工锁定' }
             ]"
           />
-          <p class="mt-1.5 text-[12px] text-ink-3 leading-summary">
+          <p class="mt-1.5 text-ds-xs text-ink-3 leading-summary">
             frontmatter 写了 maturity 会被视为人工指定、永不自动升档；选「跟随自动判定」即删除该行。
             自动升档条件 —— 成长中：正文 ≥400 字且章节区块 ≥3 个；常青：五个标准区块齐全 +
             正文 ≥800 字且含代码块/表格 ≥2 个 + 被其他笔记 [[链接]] ≥2 次 + 创建满 14 天。
@@ -435,6 +704,40 @@ useHead({
           @click="saveMeta"
         >{{ metaSaving ? '保存中…' : '保存' }}</button>
       </template>
+    </AppDialog>
+
+    <!-- 409 三选一：覆盖 / 放弃 / 取消。三个后果差别极大，所以每个选项都带一句后果说明，
+         而不是「确定 / 取消」这种要靠用户猜的出口。 -->
+    <AppDialog v-model:open="conflictOpen" title="内容已被其他位置修改" size="sm">
+      <div class="space-y-3">
+        <p class="text-ds-sm text-ink-2 leading-summary">
+          这篇笔记的磁盘内容在你编辑期间被改过。继续保存会覆盖磁盘上的新版本，请选择怎么处理。
+        </p>
+        <button
+          type="button"
+          class="w-full text-left px-3.5 py-2.5 rounded-ctl border border-line hover:bg-surface-3 transition-colors duration-micro"
+          @click="conflictOverwrite"
+        >
+          <span class="block text-ds-sm font-semibold text-ink">覆盖磁盘</span>
+          <span class="block text-ds-xs text-ink-3 mt-0.5 leading-summary">用编辑器里的内容写下磁盘，磁盘上的新版本会被替换。</span>
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-3.5 py-2.5 rounded-ctl border border-line hover:bg-surface-3 transition-colors duration-micro"
+          @click="conflictDiscard"
+        >
+          <span class="block text-ds-sm font-semibold text-ink">放弃我的修改</span>
+          <span class="block text-ds-xs text-ink-3 mt-0.5 leading-summary">重新读取磁盘最新内容覆盖编辑器，本地修改丢弃。</span>
+        </button>
+        <button
+          type="button"
+          class="w-full text-left px-3.5 py-2.5 rounded-ctl border border-line hover:bg-surface-3 transition-colors duration-micro"
+          @click="conflictCancel"
+        >
+          <span class="block text-ds-sm font-semibold text-ink">取消</span>
+          <span class="block text-ds-xs text-ink-3 mt-0.5 leading-summary">保持编辑态和草稿不动，稍后再决定。</span>
+        </button>
+      </div>
     </AppDialog>
 
     <!-- 目录与属性（<1280，交付物第 04 屏）：内容仍是同一个 TocRail 组件，

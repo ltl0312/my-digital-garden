@@ -48,7 +48,7 @@ const pick = (it: SheetItem) => {
     @update:open="(v: boolean) => emit('update:open', v)"
   >
     <template v-if="subtitle" #subtitle>
-      <p class="mt-1 text-[12px] text-ink-3 font-mono break-all leading-summary">{{ subtitle }}</p>
+      <p class="mt-1 text-ds-xs text-ink-3 font-mono break-all leading-summary">{{ subtitle }}</p>
     </template>
 
     <ul class="-mx-1 pb-1">
@@ -67,7 +67,7 @@ const pick = (it: SheetItem) => {
         >
           <component :is="it.icon" v-if="it.icon" class="w-4 h-4 shrink-0" />
           <span class="flex-1 truncate">{{ it.label }}</span>
-          <span v-if="it.hint" class="text-[12px] text-ink-3 shrink-0 max-w-[46%] truncate">{{ it.hint }}</span>
+          <span v-if="it.hint" class="text-ds-xs text-ink-3 shrink-0 max-w-[46%] truncate">{{ it.hint }}</span>
         </button>
       </li>
     </ul>

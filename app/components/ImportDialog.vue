@@ -223,7 +223,7 @@ const startImport = async () => {
 
 const close = () => { open.value = false }
 const statusMeta = {
-  ok: { label: '可导入', cls: 'text-accent bg-accent/10 border-accent/30' },
+  ok: { label: '可导入', cls: 'text-accent-text bg-accent/10 border-accent/30' },
   bad: { label: '超限', cls: 'text-danger bg-danger/10 border-danger/30' },
   skip: { label: '跳过', cls: 'text-ink-2 bg-surface-3 border-line-strong' }
 } as const
@@ -239,9 +239,9 @@ const statusMeta = {
         </div>
         <!-- 头部：关闭键绝对定位钉在右上角（spec 5.8 ② .modal-x），与标题长度/行数无关 -->
         <div class="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-3 sm:py-4 pr-14 border-b border-line shrink-0">
-          <Upload class="w-4 h-4 text-accent" />
+          <Upload class="w-4 h-4 text-accent-text" />
           <h2 class="text-ds-lg font-semibold text-ink">导入笔记</h2>
-          <span class="text-[12px] text-ink-3">单文件 ≤ {{ fmtLimit(MAX_FILE_BYTES) }} · 单批总量 ≤ {{ fmtLimit(MAX_TOTAL_BYTES) }}</span>
+          <span class="text-ds-xs text-ink-3">单文件 ≤ {{ fmtLimit(MAX_FILE_BYTES) }} · 单批总量 ≤ {{ fmtLimit(MAX_TOTAL_BYTES) }}</span>
         </div>
         <button class="modal-x" type="button" title="关闭" aria-label="关闭导入对话框" @click="close">
           <X class="w-4 h-4" />
@@ -251,9 +251,9 @@ const statusMeta = {
           <!-- ① 选择来源 -->
           <section>
             <h3 class="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent text-[12px] flex items-center justify-center font-mono">1</span>
+              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent-text text-ds-xs flex items-center justify-center font-mono">1</span>
               选择来源
-              <span v-if="items.length" class="text-[12px] font-normal text-ink-2">已选 {{ items.length }} 个文件</span>
+              <span v-if="items.length" class="text-ds-xs font-normal text-ink-2">已选 {{ items.length }} 个文件</span>
             </h3>
             <div
               class="rounded-card border-2 border-dashed transition-colors p-5 text-center"
@@ -281,7 +281,7 @@ const statusMeta = {
           <!-- ② 目标位置 -->
           <section>
             <h3 class="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent text-[12px] flex items-center justify-center font-mono">2</span>
+              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent-text text-ds-xs flex items-center justify-center font-mono">2</span>
               目标位置
             </h3>
             <div class="grid sm:grid-cols-2 gap-3">
@@ -295,28 +295,28 @@ const statusMeta = {
                   v-model="subDir"
                   placeholder="如：2026 新导入"
                   class="px-3 py-2 rounded-ctl bg-surface-2 border text-sm text-ink"
-                  :class="subDirError ? 'border-danger/60' : 'border-line'"
+                  :class="subDirError ? 'border-danger/60' : 'border-line-strong'"
                   @input="validateSubDir"
                 />
-                <span v-if="subDirError" class="text-[12px] text-danger">{{ subDirError }}</span>
+                <span v-if="subDirError" class="text-ds-xs text-danger">{{ subDirError }}</span>
               </label>
             </div>
             <label class="mt-3 flex items-center gap-2 text-xs text-ink-2">
               <input v-model="keepStructure" type="checkbox" class="[accent-color:var(--accent)]" />
               保留来源层级（取消勾选则全部拍平到同一目录）
             </label>
-            <p class="mt-2 text-[12px] font-mono text-ink-2 break-all">落点预览：{{ targetPreview }}</p>
+            <p class="mt-2 text-ds-xs font-mono text-ink-2 break-all">落点预览：{{ targetPreview }}</p>
           </section>
 
           <!-- ③ 大小校验 -->
           <section>
             <h3 class="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent text-[12px] flex items-center justify-center font-mono">3</span>
+              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent-text text-ds-xs flex items-center justify-center font-mono">3</span>
               大小校验
               <span
                 v-if="items.length"
-                class="text-[12px] px-2 py-0.5 rounded-full border"
-                :class="blocked ? 'text-danger bg-danger/10 border-danger/30' : 'text-accent bg-accent/10 border-accent/30'"
+                class="text-ds-xs px-2 py-0.5 rounded-full border"
+                :class="blocked ? 'text-danger bg-danger/10 border-danger/30' : 'text-accent-text bg-accent/10 border-accent/30'"
               >{{ blocked ? '已阻止' : '校验通过' }}</span>
             </h3>
 
@@ -325,25 +325,25 @@ const statusMeta = {
               <p class="text-xs font-semibold text-danger flex items-center gap-1.5">
                 <AlertTriangle class="w-3.5 h-3.5" />已阻止导入：{{ b.title }}
               </p>
-              <p v-if="b.over" class="text-[12px] text-danger/90 mt-1 font-mono">
+              <p v-if="b.over" class="text-ds-xs text-danger/90 mt-1 font-mono">
                 {{ b.kind === 'total' ? `待导入合计 ${fmtBytes(check.stats.willTotal)}　超出 ${fmtBytes(b.over)}` : '' }}
                 {{ b.kind === 'count' ? `待导入 ${check.stats.willImport} 个文件　超出 ${b.over} 个` : '' }}
               </p>
               <ul v-if="b.rows.length" class="mt-1 space-y-0.5">
-                <li v-for="r in b.rows.slice(0, 8)" :key="r.relPath" class="text-[12px] font-mono text-danger/90">
+                <li v-for="r in b.rows.slice(0, 8)" :key="r.relPath" class="text-ds-xs font-mono text-danger/90">
                   {{ r.relPath }}　{{ fmtBytes(r.size) }}{{ r.over ? ` · 超出 ${fmtBytes(r.over)}` : '' }} · {{ r.why }}
                 </li>
               </ul>
-              <p v-if="b.kind === 'file'" class="text-[12px] text-danger/80 mt-1">单个文件超限无法通过分批绕过，需先在本地拆分。</p>
-              <p v-if="b.kind === 'total'" class="text-[12px] text-danger/80 mt-1">可分批导入（每批小于上限）。</p>
-              <p v-if="b.kind === 'dup'" class="text-[12px] text-danger/80 mt-1">可在结构树里右键重命名旧笔记，或换一个子文件夹。</p>
+              <p v-if="b.kind === 'file'" class="text-ds-xs text-danger/80 mt-1">单个文件超限无法通过分批绕过，需先在本地拆分。</p>
+              <p v-if="b.kind === 'total'" class="text-ds-xs text-danger/80 mt-1">可分批导入（每批小于上限）。</p>
+              <p v-if="b.kind === 'dup'" class="text-ds-xs text-danger/80 mt-1">可在结构树里右键重命名旧笔记，或换一个子文件夹。</p>
             </div>
 
             <template v-if="items.length">
               <!-- 两条上限计量条 -->
               <div class="space-y-2 mb-3">
                 <div>
-                  <div class="flex items-center justify-between text-[12px] text-ink-2">
+                  <div class="flex items-center justify-between text-ds-xs text-ink-2">
                     <span>最大单文件</span>
                     <span class="font-mono">{{ fmtBytes(check.stats.maxSize) }} / {{ fmtLimit(MAX_FILE_BYTES) }}</span>
                   </div>
@@ -352,7 +352,7 @@ const statusMeta = {
                   </div>
                 </div>
                 <div>
-                  <div class="flex items-center justify-between text-[12px] text-ink-2">
+                  <div class="flex items-center justify-between text-ds-xs text-ink-2">
                     <span>待导入合计{{ check.stats.skipped ? `（已跳过 ${check.stats.skipped} 个不计入）` : '' }}</span>
                     <span class="font-mono">{{ fmtBytes(check.stats.willTotal) }} / {{ fmtLimit(MAX_TOTAL_BYTES) }}</span>
                   </div>
@@ -364,14 +364,14 @@ const statusMeta = {
 
               <!-- 逐文件清单 -->
               <div class="rounded-card border border-line divide-y divide-line max-h-56 overflow-y-auto">
-                <div v-for="r in check.rows" :key="r.relPath" class="flex items-center gap-2 px-3 py-1.5 text-[12px]">
+                <div v-for="r in check.rows" :key="r.relPath" class="flex items-center gap-2 px-3 py-1.5 text-ds-xs">
                   <span class="px-1.5 py-0.5 rounded border shrink-0" :class="statusMeta[r.status].cls">{{ statusMeta[r.status].label }}</span>
                   <span class="flex-1 truncate font-mono text-ink-2" :title="r.relPath">{{ r.relPath }}</span>
                   <span class="hidden sm:inline font-mono text-ink-2 shrink-0">{{ fmtBytes(r.size) }}</span>
                   <span class="text-ink-3 shrink-0 max-w-[45%] truncate" :title="r.why">{{ r.why }}</span>
                 </div>
               </div>
-              <p class="mt-1.5 text-[12px] text-ink-2">
+              <p class="mt-1.5 text-ds-xs text-ink-2">
                 可导入 {{ check.stats.willImport }} · 跳过 {{ check.stats.skipped }} ·
                 超限 {{ check.rows.filter(r => r.status === 'bad').length }}
               </p>
@@ -382,29 +382,29 @@ const statusMeta = {
           <!-- ④ 导入结果 -->
           <section v-if="result">
             <h3 class="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
-              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent text-[12px] flex items-center justify-center font-mono">4</span>
+              <span class="w-5 h-5 rounded-full bg-accent/15 text-accent-text text-ds-xs flex items-center justify-center font-mono">4</span>
               导入结果
             </h3>
             <div class="rounded-card border px-3 py-3" :class="result.ok ? 'border-accent/40 bg-accent/5' : 'border-danger/40 bg-danger/10'">
               <p v-if="result.ok" class="text-xs text-ink flex items-center gap-1.5">
-                <Check class="w-3.5 h-3.5 text-accent" />
+                <Check class="w-3.5 h-3.5 text-accent-text" />
                 成功 {{ result.written }} 篇 · 写入 {{ fmtBytes(result.writtenBytes) }} · 目标目录
                 <span class="font-mono">{{ [parentDir, subDir.trim()].filter(Boolean).join('/') || '（vault 顶层）' }}</span>
               </p>
               <p v-else class="text-xs text-danger flex items-center gap-1.5">
                 <AlertTriangle class="w-3.5 h-3.5" />{{ result.error }}
               </p>
-              <p v-if="result.ingest" class="mt-1 text-[12px] text-ink-2">
+              <p v-if="result.ingest" class="mt-1 text-ds-xs text-ink-2">
                 入库 {{ result.ingest.ingested }}/{{ result.ingest.total }} · 耗时 {{ (result.ingest.elapsedMs / 1000).toFixed(1) }}s
                 <span v-if="result.ingest.pending"> · 剩余 {{ result.ingest.pending }} 篇后台继续入库</span>
                 <span v-if="result.ingest.failed.length"> · 失败 {{ result.ingest.failed.length }} 篇</span>
               </p>
               <ul v-if="check.rows.some(r => r.status === 'skip')" class="mt-2 space-y-0.5">
-                <li v-for="r in check.rows.filter(r => r.status === 'skip')" :key="'s' + r.relPath" class="text-[12px] text-ink-2">
+                <li v-for="r in check.rows.filter(r => r.status === 'skip')" :key="'s' + r.relPath" class="text-ds-xs text-ink-2">
                   跳过 {{ r.relPath }} —— {{ r.why }}
                 </li>
               </ul>
-              <p class="mt-2 text-[12px] text-ink-2 flex items-center gap-1">
+              <p class="mt-2 text-ds-xs text-ink-2 flex items-center gap-1">
                 <Info class="w-3 h-3" />服务端已按写入后的真实字节数复核一次。
               </p>
             </div>
@@ -412,7 +412,7 @@ const statusMeta = {
 
           <!-- 上传进度 -->
           <section v-if="running">
-            <div class="flex items-center justify-between text-[12px] text-ink-2 mb-1">
+            <div class="flex items-center justify-between text-ds-xs text-ink-2 mb-1">
               <span class="truncate font-mono">{{ progress.current || '正在上传…' }}</span>
               <span class="font-mono">{{ progress.uploaded }}/{{ progress.total }} · {{ fmtBytes(progress.bytes) }}</span>
             </div>
@@ -427,7 +427,7 @@ const statusMeta = {
           class="shrink-0 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 px-5 pt-4 border-t border-line"
           style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px))"
         >
-          <p class="text-[12px] text-ink-2 text-center sm:text-left">
+          <p class="text-ds-xs text-ink-2 text-center sm:text-left">
             <template v-if="!canManage">当前身份为普通用户，没有导入权限</template>
             <template v-else-if="loadingTree">正在读取目录树…</template>
             <template v-else-if="blocked">存在阻止项，处理后可重新校验</template>

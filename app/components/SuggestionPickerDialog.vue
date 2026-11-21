@@ -216,7 +216,7 @@ const tagsOf = (row: NoteRow) =>
           <input
             v-model="q"
             placeholder="搜索标题或正文…"
-            class="w-full pl-8 pr-3 py-2 rounded-ctl bg-surface-2 border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
+            class="w-full pl-8 pr-3 py-2 rounded-ctl bg-surface-2 border border-line-strong-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
           />
         </div>
         <AppSelect v-model="domainName" size="sm" class="w-[150px] shrink-0" :options="domainOptions" />
@@ -232,25 +232,25 @@ const tagsOf = (row: NoteRow) =>
               { v: 'any', l: '全部' }
             ]"
             :key="o.v"
-            class="px-2.5 h-7 rounded-xs text-[12px] transition-colors duration-micro"
+            class="px-2.5 h-7 rounded-xs text-ds-xs transition-colors duration-micro"
             :class="pendingFilter === o.v ? 'bg-accent text-[var(--accent-ink)] font-semibold' : 'text-ink-2 hover:bg-surface-3'"
             :aria-pressed="pendingFilter === o.v"
             @click="pendingFilter = o.v as 'none' | 'has' | 'any'"
           >{{ o.l }}</button>
         </div>
 
-        <span class="text-[12px] text-ink-3">共 {{ total }} 篇</span>
+        <span class="text-ds-xs text-ink-3">共 {{ total }} 篇</span>
 
         <div class="flex-1"></div>
 
         <button
-          class="px-2.5 py-1.5 rounded-ctl text-[12px] border border-line bg-surface text-ink-2 hover:bg-surface-3 transition-colors duration-micro disabled:opacity-45"
+          class="px-2.5 py-1.5 rounded-ctl text-ds-xs border border-line bg-surface text-ink-2 hover:bg-surface-3 transition-colors duration-micro disabled:opacity-45"
           :disabled="!rows.length"
           @click="togglePage"
         >{{ allOnPageSelected ? '取消本页' : '全选本页' }}</button>
         <button
           v-if="selectedCount"
-          class="px-2.5 py-1.5 rounded-ctl text-[12px] text-ink-3 hover:bg-surface-3 hover:text-ink transition-colors duration-micro"
+          class="px-2.5 py-1.5 rounded-ctl text-ds-xs text-ink-3 hover:bg-surface-3 hover:text-ink transition-colors duration-micro"
           @click="clearAll"
         >清空选择</button>
       </div>
@@ -281,15 +281,15 @@ const tagsOf = (row: NoteRow) =>
               <span class="text-ds-sm text-ink font-medium truncate">{{ row.title }}</span>
               <span
                 v-if="row.hasPending"
-                class="shrink-0 px-1.5 py-0.5 rounded-pill text-[11px] border border-growing/40 text-growing"
+                class="shrink-0 px-1.5 py-0.5 rounded-pill text-ds-xs border border-growing/40 text-growing"
               >已有待审</span>
               <span
                 v-if="row.domainFrom === 'manual'"
-                class="shrink-0 px-1.5 py-0.5 rounded-pill text-[11px] border border-accent/40 text-accent"
+                class="shrink-0 px-1.5 py-0.5 rounded-pill text-ds-xs border border-accent/40 text-accent-text"
               >领域人工指定</span>
             </span>
-            <span class="mt-0.5 block text-[12px] text-ink-3 font-mono truncate">{{ row.slug }}.md</span>
-            <span class="mt-1 flex items-center gap-2 flex-wrap text-[12px] text-ink-3">
+            <span class="mt-0.5 block text-ds-xs text-ink-3 font-mono truncate">{{ row.slug }}.md</span>
+            <span class="mt-1 flex items-center gap-2 flex-wrap text-ds-xs text-ink-3">
               <span>{{ row.domain }}</span>
               <span v-if="tagsOf(row).length">· {{ tagsOf(row).slice(0, 4).join('、') }}{{ tagsOf(row).length > 4 ? ' 等' : '' }}</span>
               <span v-else>· 无标签</span>

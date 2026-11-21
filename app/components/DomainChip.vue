@@ -15,7 +15,7 @@ const hueVar = (n: string, h?: string) => h || hueVarOf(n)
 <template>
   <span
     class="tap-y inline-flex items-center gap-1.5 rounded-full hue-soft shrink-0 border border-line/60"
-    :class="size === 'sm' ? 'h-[22px] px-2 text-[12px]' : 'h-[24px] px-2.5 text-[12px]'"
+    :class="size === 'sm' ? 'h-[22px] px-2 text-ds-xs' : 'h-[24px] px-2.5 text-ds-xs'"
     :style="{ '--h': `var(${hueVar(name, hue)})` }"
   >
     <i class="w-1.5 h-1.5 rounded-full hue-chip" :style="{ '--h': `var(${hueVar(name, hue)})` }"></i>

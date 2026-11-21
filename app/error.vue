@@ -45,7 +45,7 @@ useHead({ title: `${status.value} · 拾光` })
         </div>
       </div>
 
-      <p class="mt-4 px-3 py-2 rounded-ctl bg-surface-3 border border-line font-mono text-[12px] text-ink-3 break-all">
+      <p class="mt-4 px-3 py-2 rounded-ctl bg-surface-3 border border-line font-mono text-ds-xs text-ink-3 break-all">
         {{ status }}<span v-if="error?.message"> · {{ error.message }}</span>
       </p>
 

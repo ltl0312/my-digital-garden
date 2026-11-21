@@ -20,10 +20,10 @@ const label = computed(() => props.name.includes('/') ? props.name.split('/').sl
   <NuxtLink
     v-if="to"
     :to="to"
-    class="tap-y inline-flex items-center gap-1 h-[22px] px-2 rounded-full border text-[12px] transition-colors duration-micro"
+    class="tap-y inline-flex items-center gap-1 h-[22px] px-2 rounded-full border text-ds-xs transition-colors duration-micro"
     :class="active
       ? 'bg-accent text-[var(--accent-ink)] border-transparent font-semibold'
-      : 'border-line text-ink-2 hover:border-accent/40 hover:text-accent'"
+      : 'border-line text-ink-2 hover:border-accent/40 hover:text-accent-text'"
     :title="name"
   >
     <span>#{{ label }}</span>
@@ -32,10 +32,10 @@ const label = computed(() => props.name.includes('/') ? props.name.split('/').sl
   <button
     v-else-if="clickable"
     type="button"
-    class="tap-y inline-flex items-center gap-1 h-[22px] px-2 rounded-full border text-[12px] transition-colors duration-micro"
+    class="tap-y inline-flex items-center gap-1 h-[22px] px-2 rounded-full border text-ds-xs transition-colors duration-micro"
     :class="active
       ? 'bg-accent text-[var(--accent-ink)] border-transparent font-semibold'
-      : 'border-line text-ink-2 hover:border-accent/40 hover:text-accent'"
+      : 'border-line text-ink-2 hover:border-accent/40 hover:text-accent-text'"
     :title="name"
     :aria-pressed="active"
   >
@@ -44,7 +44,7 @@ const label = computed(() => props.name.includes('/') ? props.name.split('/').sl
   </button>
   <span
     v-else
-    class="inline-flex items-center gap-1 h-[22px] px-2 rounded-full border border-line text-ink-2 text-[12px]"
+    class="inline-flex items-center gap-1 h-[22px] px-2 rounded-full border border-line text-ink-2 text-ds-xs"
     :title="name"
   >
     <span>#{{ label }}</span>

@@ -16,12 +16,12 @@ const ITEM_CLASS =
 
 <template>
   <button type="button" :class="ITEM_CLASS" @click="emit('note')">
-    <FilePlus class="w-3.5 h-3.5 text-accent shrink-0" />新建笔记
+    <FilePlus class="w-3.5 h-3.5 text-accent-text shrink-0" />新建笔记
   </button>
   <button type="button" :class="ITEM_CLASS" @click="emit('folder')">
-    <FolderPlus class="w-3.5 h-3.5 text-accent shrink-0" />新建文件夹
+    <FolderPlus class="w-3.5 h-3.5 text-accent-text shrink-0" />新建文件夹
   </button>
   <button type="button" :class="ITEM_CLASS" @click="emit('import')">
-    <Upload class="w-3.5 h-3.5 text-accent shrink-0" />导入笔记
+    <Upload class="w-3.5 h-3.5 text-accent-text shrink-0" />导入笔记
   </button>
 </template>

@@ -46,7 +46,7 @@ useHead({ title: '访问验证 · 拾光' })
   <div class="w-full max-w-[980px] grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
     <!-- 左栏：品牌与产品能力（窄屏隐藏，spec 5.1） -->
     <section class="hidden lg:block">
-      <p class="font-serif italic text-ds-base text-accent mb-2">Non-linear Knowledge Sanctuary</p>
+      <p class="font-serif italic text-ds-base text-accent-text mb-2">Non-linear Knowledge Sanctuary</p>
       <h1 class="text-[38px] leading-[1.15] font-extrabold tracking-tight text-ink mb-3">✨ 拾光</h1>
       <p class="text-ds-base text-ink-2 leading-summary max-w-[46ch] mb-8">
         一座私人的、会自己生长的知识花园。以下都是它现在就能做的事，不是口号。
@@ -76,11 +76,11 @@ useHead({ title: '访问验证 · 拾光' })
       <ul class="space-y-4">
         <li v-for="c in capabilities" :key="c.title" class="flex items-start gap-3">
           <span class="w-8 h-8 rounded-ctl bg-surface-2 border border-line flex items-center justify-center shrink-0">
-            <component :is="c.icon" class="w-4 h-4 text-accent" />
+            <component :is="c.icon" class="w-4 h-4 text-accent-text" />
           </span>
           <span class="min-w-0">
             <span class="block text-ds-sm font-semibold text-ink">{{ c.title }}</span>
-            <span class="block text-[12px] text-ink-3 leading-summary">{{ c.desc }}</span>
+            <span class="block text-ds-xs text-ink-3 leading-summary">{{ c.desc }}</span>
           </span>
         </li>
       </ul>
@@ -90,12 +90,12 @@ useHead({ title: '访问验证 · 拾光' })
     <section class="w-full">
       <div class="rounded-overlay border border-line bg-surface p-7 sm:p-8 shadow-ds2">
         <!-- 窄屏时左栏隐藏，此处补一个轻量品牌行 -->
-        <p class="lg:hidden font-serif italic text-ds-sm text-accent mb-1.5">Non-linear Knowledge Sanctuary</p>
+        <p class="lg:hidden font-serif italic text-ds-sm text-accent-text mb-1.5">Non-linear Knowledge Sanctuary</p>
         <h2 class="text-ds-xl font-bold tracking-tight text-ink mb-1.5">进入花园</h2>
         <p class="text-ds-sm text-ink-3 mb-6">请输入访问密钥，密钥由管理员发放</p>
 
         <label class="block mb-4">
-          <span class="block text-[12px] text-ink-3 mb-1.5">访问密钥</span>
+          <span class="block text-ds-xs text-ink-3 mb-1.5">访问密钥</span>
           <span class="relative block">
             <input
               v-model="key"
@@ -103,7 +103,7 @@ useHead({ title: '访问验证 · 拾光' })
               placeholder="粘贴或输入密钥"
               autocomplete="current-password"
               class="w-full pl-3 pr-10 py-2.5 rounded-ctl bg-surface-2 border text-ds-sm text-ink placeholder-ink-3 transition-colors duration-micro"
-              :class="error ? 'border-danger/60' : 'border-line-strong focus:border-accent/60'"
+              :class="error ? 'border-danger/60' : 'border-line-strong-strong focus:border-accent/60'"
               :aria-invalid="!!error"
               aria-describedby="login-error"
               @keyup.enter="submit"
@@ -123,7 +123,7 @@ useHead({ title: '访问验证 · 拾光' })
           <span
             v-if="error"
             id="login-error"
-            class="mt-2 flex items-center gap-1.5 text-[12px] text-danger"
+            class="mt-2 flex items-center gap-1.5 text-ds-xs text-danger"
             role="alert"
           >
             <AlertCircle class="w-3.5 h-3.5 shrink-0" />{{ error }}
@@ -139,7 +139,7 @@ useHead({ title: '访问验证 · 拾光' })
         </button>
 
         <!-- 有效期说明 -->
-        <p class="mt-4 text-[12px] text-ink-3 leading-summary">
+        <p class="mt-4 text-ds-xs text-ink-3 leading-summary">
           密钥永久有效；登录状态保持 30 天，过期后需重新输入密钥。
         </p>
       </div>

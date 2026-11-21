@@ -77,23 +77,23 @@ const submit = async () => {
   >
     <div class="space-y-4">
       <label class="block">
-        <span class="block text-[12px] text-ink-3 mb-1.5">父目录</span>
+        <span class="block text-ds-xs text-ink-3 mb-1.5">父目录</span>
         <AppSelect v-model="parent" :options="parentOptions" />
       </label>
 
       <label class="block">
-        <span class="block text-[12px] text-ink-3 mb-1.5">文件夹名</span>
+        <span class="block text-ds-xs text-ink-3 mb-1.5">文件夹名</span>
         <input
           v-model="name"
           placeholder="如：设计模式"
           class="w-full px-3 py-2 rounded-ctl bg-surface-2 border text-ds-sm text-ink placeholder-ink-3 transition-colors duration-micro"
-          :class="problem ? 'border-danger/60' : 'border-line-strong focus:border-accent/60'"
+          :class="problem ? 'border-danger/60' : 'border-line-strong-strong focus:border-accent/60'"
           @keyup.enter="submit"
         />
-        <span v-if="problem" class="block mt-1.5 text-[12px] text-danger">{{ problem }}</span>
+        <span v-if="problem" class="block mt-1.5 text-ds-xs text-danger">{{ problem }}</span>
       </label>
 
-      <p class="text-[12px] text-ink-3 font-mono break-all leading-summary">落点预览：{{ preview }}</p>
+      <p class="text-ds-xs text-ink-3 font-mono break-all leading-summary">落点预览：{{ preview }}</p>
     </div>
 
     <template #footer>

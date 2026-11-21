@@ -276,15 +276,15 @@ const domainFromLabel = (f: string) =>
     <!-- 判定进行中：面板是「先打开、后出结果」的，所以空名单要区分「真的没有」和「还在算」，
          否则用户看到「没有待审建议」会以为判定没生效。 -->
     <div v-else-if="!focused.length && generating" class="py-10 text-center">
-      <RefreshCw class="w-8 h-8 mx-auto mb-3 text-accent animate-spin" />
+      <RefreshCw class="w-8 h-8 mx-auto mb-3 text-accent-text animate-spin" />
       <p class="text-ds-sm text-ink-2">正在判定{{ progress ? `（${progress}）` : '' }}…</p>
-      <p class="mt-1 text-[12px] text-ink-3">结果出来后会立刻显示在这里，不用关掉重开。</p>
+      <p class="mt-1 text-ds-xs text-ink-3">结果出来后会立刻显示在这里，不用关掉重开。</p>
     </div>
 
     <div v-else-if="!focused.length" class="py-10 text-center">
       <ShieldQuestion class="w-8 h-8 mx-auto mb-3 text-ink-3" />
       <p class="text-ds-sm text-ink-2">没有待审建议</p>
-      <p class="mt-1 text-[12px] text-ink-3">
+      <p class="mt-1 text-ds-xs text-ink-3">
         在管理后台点「生成建议」，或直接导入笔记（导入完成后会自动排队生成）。
       </p>
     </div>
@@ -295,7 +295,7 @@ const domainFromLabel = (f: string) =>
       <div
         v-if="totalPending > focused.length"
         data-testid="review-truncated"
-        class="mb-3 rounded-ctl border border-line bg-surface-2 px-3 py-2 text-[12px] text-ink-2"
+        class="mb-3 rounded-ctl border border-line bg-surface-2 px-3 py-2 text-ds-xs text-ink-2"
       >
         待审共 <strong class="text-ink">{{ totalPending }}</strong> 条，这里载入前
         <strong class="text-ink">{{ focused.length }}</strong> 条（接口上限 500）。处理完这批后重新打开会载入剩余部分。
@@ -314,7 +314,7 @@ const domainFromLabel = (f: string) =>
           </span>
           全选（{{ focused.length }} 条 · 已选 {{ checkedIds.length }}）
         </button>
-        <span class="text-[12px] text-ink-3">按置信度从低到高排列</span>
+        <span class="text-ds-xs text-ink-3">按置信度从低到高排列</span>
       </div>
 
       <ul class="space-y-3 pb-2">
@@ -338,29 +338,29 @@ const domainFromLabel = (f: string) =>
 
             <div class="min-w-0 flex-1">
               <p class="text-ds-sm font-semibold text-ink truncate">{{ row.title }}</p>
-              <p class="mt-0.5 text-[12px] text-ink-3 font-mono truncate">{{ row.slug }}.md</p>
+              <p class="mt-0.5 text-ds-xs text-ink-3 font-mono truncate">{{ row.slug }}.md</p>
             </div>
 
             <div class="shrink-0 text-right">
-              <span class="text-[12px] font-semibold" :class="confClass(row.confidence)">{{ row.confidence }}%</span>
-              <p class="text-[11px] text-ink-3">{{ engineLabel(row.engine) }}</p>
+              <span class="text-ds-xs font-semibold" :class="confClass(row.confidence)">{{ row.confidence }}%</span>
+              <p class="text-ds-xs text-ink-3">{{ engineLabel(row.engine) }}</p>
             </div>
           </div>
 
           <!-- 低置信度提醒 -->
-          <p v-if="row.confidence < 40" class="mt-2 flex items-start gap-1.5 text-[12px] text-ink-3">
+          <p v-if="row.confidence < 40" class="mt-2 flex items-start gap-1.5 text-ds-xs text-ink-3">
             <AlertTriangle class="w-3.5 h-3.5 shrink-0 mt-0.5 text-growing" />
             置信度较低，建议逐项确认后再通过。
           </p>
 
           <!-- 现有标签 -->
           <div v-if="row.currentTags.length" class="mt-3">
-            <p class="text-[12px] text-ink-3 mb-1.5">现有标签（取消勾选即从笔记中移除）</p>
+            <p class="text-ds-xs text-ink-3 mb-1.5">现有标签（取消勾选即从笔记中移除）</p>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="t in row.currentTags"
                 :key="`cur-${t}`"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-pill border text-[12px] transition-colors duration-micro"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-pill border text-ds-xs transition-colors duration-micro"
                 :class="draftOf(row.id).tags.includes(t)
                   ? 'border-line bg-surface text-ink-2'
                   : 'border-danger/40 bg-transparent text-danger line-through'"
@@ -376,22 +376,22 @@ const domainFromLabel = (f: string) =>
 
           <!-- 建议标签 -->
           <div class="mt-3">
-            <p class="text-[12px] text-ink-3 mb-1.5 flex items-center gap-1.5">
-              <Sparkles class="w-3.5 h-3.5 text-accent" />建议新增标签
+            <p class="text-ds-xs text-ink-3 mb-1.5 flex items-center gap-1.5">
+              <Sparkles class="w-3.5 h-3.5 text-accent-text" />建议新增标签
               <span v-if="!row.tags.length" class="text-ink-3">（无——现有标签已覆盖，或标签库匹配不到候选）</span>
             </p>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="t in row.tags"
                 :key="`new-${t}`"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-pill border text-[12px] transition-colors duration-micro"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-pill border text-ds-xs transition-colors duration-micro"
                 :class="draftOf(row.id).tags.includes(t)
                   ? 'border-accent/50 bg-surface text-ink font-medium'
                   : 'border-line bg-surface text-ink-3'"
                 :title="draftOf(row.id).tags.includes(t) ? '点击取消采纳' : '点击采纳该标签'"
                 @click="toggleTag(row, t)"
               >
-                <Check v-if="draftOf(row.id).tags.includes(t)" class="w-3 h-3 text-accent" />
+                <Check v-if="draftOf(row.id).tags.includes(t)" class="w-3 h-3 text-accent-text" />
                 <Plus v-else class="w-3 h-3" />
                 {{ t }}
               </button>
@@ -402,37 +402,37 @@ const domainFromLabel = (f: string) =>
               <input
                 v-model="newTag[row.id]"
                 placeholder="手动添加标签（自动判定不会发明新标签）"
-                class="flex-1 min-w-0 px-2.5 py-1.5 rounded-ctl bg-surface border border-line-strong text-[12px] text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
+                class="flex-1 min-w-0 px-2.5 py-1.5 rounded-ctl bg-surface border border-line-strong-strong text-ds-xs text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
                 @keyup.enter="addTag(row)"
               />
               <button
-                class="shrink-0 px-2.5 py-1.5 rounded-ctl border border-line bg-surface text-[12px] text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
+                class="shrink-0 px-2.5 py-1.5 rounded-ctl border border-line bg-surface text-ds-xs text-ink-2 hover:bg-surface-3 transition-colors duration-micro"
                 @click="addTag(row)"
               >添加</button>
             </div>
 
             <!-- 最终结果预览 -->
-            <p v-if="draftOf(row.id).tags.length" class="mt-2 text-[12px] text-ink-3">
+            <p v-if="draftOf(row.id).tags.length" class="mt-2 text-ds-xs text-ink-3">
               通过后标签为：<span class="text-ink-2">{{ draftOf(row.id).tags.join('、') }}</span>
             </p>
-            <p v-else class="mt-2 text-[12px] text-ink-3">通过后该笔记<b>没有标签</b>（frontmatter 的 tags 会被移除）。</p>
+            <p v-else class="mt-2 text-ds-xs text-ink-3">通过后该笔记<b>没有标签</b>（frontmatter 的 tags 会被移除）。</p>
           </div>
 
           <!-- 领域 -->
           <div class="mt-3 pt-3 border-t border-line">
-            <p class="text-[12px] text-ink-3 mb-1.5">
+            <p class="text-ds-xs text-ink-3 mb-1.5">
               领域 · 当前为「{{ row.currentDomain }}」
               <span class="text-ink-3">（{{ domainFromLabel(row.domainFrom) }}）</span>
             </p>
             <div class="flex flex-wrap items-center gap-2">
               <div class="inline-flex items-center rounded-ctl border border-line bg-surface p-0.5" role="group">
                 <button
-                  class="px-2.5 h-7 rounded-xs text-[12px] transition-colors duration-micro"
+                  class="px-2.5 h-7 rounded-xs text-ds-xs transition-colors duration-micro"
                   :class="draftOf(row.id).domainMode === 'keep' ? 'bg-accent text-[var(--accent-ink)] font-semibold' : 'text-ink-2 hover:bg-surface-3'"
                   @click="drafts = { ...drafts, [row.id]: { ...draftOf(row.id), domainMode: 'keep' } }"
                 >保持当前</button>
                 <button
-                  class="px-2.5 h-7 rounded-xs text-[12px] transition-colors duration-micro"
+                  class="px-2.5 h-7 rounded-xs text-ds-xs transition-colors duration-micro"
                   :class="draftOf(row.id).domainMode === 'set' ? 'bg-accent text-[var(--accent-ink)] font-semibold' : 'text-ink-2 hover:bg-surface-3'"
                   :disabled="!domainOptions.length"
                   @click="drafts = { ...drafts, [row.id]: { ...draftOf(row.id), domainMode: 'set' } }"
@@ -446,7 +446,7 @@ const domainFromLabel = (f: string) =>
                 :options="domainOptions.map(d => ({ value: d, label: d }))"
                 @update:model-value="(v: string) => drafts = { ...drafts, [row.id]: { ...draftOf(row.id), domain: v } }"
               />
-              <span v-else-if="row.domain && !row.keepCurrentDir" class="text-[12px] text-ink-3">
+              <span v-else-if="row.domain && !row.keepCurrentDir" class="text-ds-xs text-ink-3">
                 自动化曾建议改为「{{ row.domain }}」（已选择保持当前）
               </span>
             </div>
@@ -454,22 +454,22 @@ const domainFromLabel = (f: string) =>
 
           <!-- 判定依据：必须能看见，否则审核就是盲签 -->
           <ul v-if="row.rationale.length" class="mt-3 space-y-1">
-            <li v-for="(why, i) in row.rationale" :key="i" class="text-[12px] text-ink-3 flex items-start gap-1.5">
+            <li v-for="(why, i) in row.rationale" :key="i" class="text-ds-xs text-ink-3 flex items-start gap-1.5">
               <span class="mt-1.5 w-1 h-1 rounded-full bg-[var(--line)] shrink-0"></span>{{ why }}
             </li>
           </ul>
 
           <!-- 逐条操作 -->
           <div class="mt-3 pt-3 border-t border-line flex items-center justify-between gap-2">
-            <span class="text-[12px] text-ink-3">将改动：{{ changeSummary(row) }}</span>
+            <span class="text-ds-xs text-ink-3">将改动：{{ changeSummary(row) }}</span>
             <div class="flex items-center gap-2">
               <button
-                class="px-2.5 py-1.5 rounded-ctl text-[12px] text-ink-3 hover:bg-surface-3 hover:text-ink transition-colors duration-micro disabled:opacity-45"
+                class="px-2.5 py-1.5 rounded-ctl text-ds-xs text-ink-3 hover:bg-surface-3 hover:text-ink transition-colors duration-micro disabled:opacity-45"
                 :disabled="busy"
                 @click="submit([row.id], 'reject')"
               >驳回</button>
               <button
-                class="px-3 py-1.5 rounded-ctl text-[12px] font-semibold bg-accent text-[var(--accent-ink)] transition-opacity duration-micro disabled:opacity-45"
+                class="px-3 py-1.5 rounded-ctl text-ds-xs font-semibold bg-accent text-[var(--accent-ink)] transition-opacity duration-micro disabled:opacity-45"
                 :disabled="busy"
                 @click="submit([row.id], 'approve')"
               >通过</button>

@@ -33,7 +33,7 @@ const emit = defineEmits<{ (e: 'retry'): void }>()
     <button
       v-if="variant === 'error'"
       type="button"
-      class="mt-5 inline-flex items-center px-4 h-10 rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] hover:opacity-90 transition-opacity duration-micro"
+      class="mt-5 inline-flex items-center justify-center px-4 h-11 rounded-ctl text-ds-sm font-semibold bg-accent text-[var(--accent-ink)] hover:opacity-90 transition-opacity duration-micro"
       @click="emit('retry')"
     >重试</button>
     <NuxtLink

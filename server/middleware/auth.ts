@@ -25,6 +25,9 @@ const ADMIN_ONLY_PREFIXES = [
   '/api/vault/nodes',
   '/api/vault/rename',
   '/api/vault/copy',
+  // 健康巡检：写方法（POST /api/admin/health/broken 全库扫描并落盘）由本中间件拦成 root/admin；
+  // 只读方法（GET 同路径）不经过 writeLike 分支，改由各 handler 内显式 requireAdmin 兜住。
+  '/api/admin/health',
   '/api/admin'
 ] as const
 

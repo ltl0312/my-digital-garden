@@ -19,7 +19,7 @@ withDefaults(defineProps<{
     <h2 class="text-ds-lg font-semibold text-ink mb-1.5">{{ title }}</h2>
     <p class="text-ds-sm text-ink-2 leading-summary max-w-[46ch] mx-auto">{{ message }}</p>
 
-    <p class="mt-4 inline-flex items-center gap-1.5 text-[12px] text-ink-3 px-2.5 py-1 rounded-full bg-surface-3 border border-line">
+    <p class="mt-4 inline-flex items-center gap-1.5 text-ds-xs text-ink-3 px-2.5 py-1 rounded-full bg-surface-3 border border-line">
       界面隐藏不等于权限放开：以上接口在服务端同样返回 403
     </p>
 

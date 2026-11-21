@@ -21,7 +21,7 @@ defineProps<{
       </span>
       <span class="min-w-0">
         <span class="text-ds-sm leading-summary text-ink-2">{{ it.text }}</span>
-        <span v-if="it.note" class="block text-[12px] text-ink-3 mt-0.5 leading-summary">{{ it.note }}</span>
+        <span v-if="it.note" class="block text-ds-xs text-ink-3 mt-0.5 leading-summary">{{ it.note }}</span>
       </span>
     </li>
   </ul>

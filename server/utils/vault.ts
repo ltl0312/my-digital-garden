@@ -78,6 +78,9 @@ export function noteTemplate(title: string): string {
 // 节点/文件名合法性：路径分隔符 + Windows 非法字符 + 控制字符 + 首尾空白与点号结尾（Windows 语义）
 export function isValidNodeName(name: string): boolean {
   if (!name || name.trim() !== name || name === '.' || name === '..') return false
+  // 长度上限：超过 200 字符后 NTFS 单组件上限（255）与 MAX_PATH 很快被吃满，
+  // fs 抛 ENAMETOOLONG/ENOENT —— 原先没有任何长度卡点，超长标题直接落成 500。
+  if (name.length > 200) return false
   if (/[\/\\:?*<>"|\x00-\x1f]/.test(name)) return false
   if (/[. ]$/.test(name)) return false
   return true

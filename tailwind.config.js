@@ -42,6 +42,9 @@ export default {
       },
       fontSize: {
         // 字号阶梯（spec 3.2）：11 / 12 / 13 / 14 / 15 / 17 / 20 / 24 / 30 / 38 / 46
+        // ds-xs = 12px 是全站用得最多的一档（历史上 206 处 text-[12px] 硬写绕过阶梯）；
+        // 单给它一个名字而不去覆写 Tailwind 的 xs：覆写会连带改掉 30 处既有 text-xs 的行高。
+        'ds-xs': ['12px', { lineHeight: '1.5' }],
         '2xs': ['11px', { lineHeight: '1.5' }],
         '3xs': ['10px', { lineHeight: '1.4' }], // 仅用于存量迁移过渡；界面文字硬性下限 12px
         'ds-sm': ['13px', { lineHeight: '1.6' }],
@@ -97,21 +100,8 @@ export default {
         base: '200ms',
         drawer: '320ms',
       },
-      animation: {
-        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        float: 'float 6s ease-in-out infinite',
-        glow: 'glow 2s ease-in-out infinite alternate',
-      },
-      keyframes: {
-        float: {
-          '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-6px)' },
-        },
-        glow: {
-          '0%': { opacity: '0.4', filter: 'drop-shadow(0 0 8px rgba(34, 160, 110, 0.35))' },
-          '100%': { opacity: '0.8', filter: 'drop-shadow(0 0 16px rgba(34, 160, 110, 0.7))' },
-        },
-      },
+      // 自定义动效已删：animate-glow / animate-float / animate-pulse-slow 全库 0 次使用，
+      // 只有对应 keyframes 存在，属于死代码。
     },
   },
   plugins: [require('@tailwindcss/typography')],

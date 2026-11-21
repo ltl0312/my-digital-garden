@@ -199,7 +199,7 @@ const countFiles = (children?: TreeNode[]): number => {
     <!-- 单根提升后的根行（可折叠，计数递归） -->
     <div v-if="promoted" class="mb-0.5">
       <div
-        class="group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-colors duration-micro"
+        class="group flex items-center gap-1.5 px-2 py-1.5 rounded-ctl cursor-pointer transition-colors duration-micro"
         :class="[isExpanded(rootPath) ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-surface-3', LONG_PRESS_CLASS]"
         :aria-expanded="isExpanded(rootPath)"
         :title="promoted.root.name"
@@ -214,9 +214,9 @@ const countFiles = (children?: TreeNode[]): number => {
       >
         <ChevronRight
           class="w-3 h-3 shrink-0 transition-transform duration-base ease-dawn"
-          :class="isExpanded(rootPath) ? 'rotate-90 text-accent' : 'text-ink-3'"
+          :class="isExpanded(rootPath) ? 'rotate-90 text-accent-text' : 'text-ink-3'"
         />
-        <FolderOpen v-if="isExpanded(rootPath)" class="w-3.5 h-3.5 text-accent shrink-0" />
+        <FolderOpen v-if="isExpanded(rootPath)" class="w-3.5 h-3.5 text-accent-text shrink-0" />
         <Folder v-else class="w-3.5 h-3.5 text-ink-3 shrink-0" />
         <span class="flex-1 text-ds-sm font-semibold truncate">{{ promoted.root.name }}</span>
         <span class="text-xs font-mono text-ink-3 tabular-nums px-1.5 rounded-full bg-surface-3">{{ countFiles(promoted.children) }}</span>
@@ -228,7 +228,7 @@ const countFiles = (children?: TreeNode[]): number => {
         <!-- 目录 -->
         <div v-if="node.type === 'dir'" class="group">
           <div
-            class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-colors duration-micro"
+            class="flex items-center gap-1.5 px-2 py-1.5 rounded-ctl cursor-pointer transition-colors duration-micro"
             :class="[isExpanded(pathOf(node)) ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-surface-3', LONG_PRESS_CLASS]"
             :aria-expanded="isExpanded(pathOf(node))"
             :title="node.name"
@@ -244,9 +244,9 @@ const countFiles = (children?: TreeNode[]): number => {
             <!-- 折叠双重信号：箭头旋转 90° + 文件夹实底着色 -->
             <ChevronRight
               class="w-3 h-3 shrink-0 transition-transform duration-base ease-dawn"
-              :class="isExpanded(pathOf(node)) ? 'rotate-90 text-accent' : 'text-ink-3'"
+              :class="isExpanded(pathOf(node)) ? 'rotate-90 text-accent-text' : 'text-ink-3'"
             />
-            <FolderOpen v-if="isExpanded(pathOf(node))" class="w-3.5 h-3.5 text-accent shrink-0" />
+            <FolderOpen v-if="isExpanded(pathOf(node))" class="w-3.5 h-3.5 text-accent-text shrink-0" />
             <Folder v-else class="w-3.5 h-3.5 text-ink-3 shrink-0" />
             <span class="flex-1 text-ds-sm truncate">{{ node.name }}</span>
             <span class="text-xs font-mono text-ink-3 tabular-nums px-1.5 rounded-full bg-surface-3">{{ countFiles(node.children) }}</span>
@@ -268,7 +268,7 @@ const countFiles = (children?: TreeNode[]): number => {
           :to="`/notes/${(node.slug || '').split('/').map(encodeURIComponent).join('/')}`"
           :data-tree-slug="node.slug"
           :data-tree-path="pathOf(node)"
-          class="group flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-ds-sm transition-colors duration-micro relative"
+          class="group flex items-center gap-1.5 px-2 py-1.5 rounded-ctl text-ds-sm transition-colors duration-micro relative"
           :class="[
             activeSlug === node.slug
               ? 'bg-[var(--accent-soft)] text-ink font-semibold'
@@ -288,7 +288,7 @@ const countFiles = (children?: TreeNode[]): number => {
             v-if="activeSlug === node.slug"
             class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r bg-accent"
           ></span>
-          <FileText class="w-3.5 h-3.5 shrink-0" :class="activeSlug === node.slug ? 'text-accent' : 'text-ink-3'" />
+          <FileText class="w-3.5 h-3.5 shrink-0" :class="activeSlug === node.slug ? 'text-accent-text' : 'text-ink-3'" />
           <span class="flex-1 truncate">{{ node.name }}</span>
           <span
             v-if="node.maturity"

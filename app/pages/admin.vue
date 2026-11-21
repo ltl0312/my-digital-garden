@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Copy, Check, Eye, EyeOff, ShieldAlert, ShieldCheck, KeyRound, Plus, Trash2, Tags, Sparkles, Play, Bot, PlugZap, Info, AlertTriangle, ListChecks } from 'lucide-vue-next'
+import { Copy, Check, Eye, EyeOff, ShieldAlert, ShieldCheck, KeyRound, Plus, Trash2, Tags, Sparkles, Play, Bot, PlugZap, Info, AlertTriangle, ListChecks, Link2Off } from 'lucide-vue-next'
 
 const requestFetch = useRequestFetch()
 const { me } = useAuth()
@@ -439,6 +439,50 @@ const testAi = async () => {
   }
 }
 
+// —— 断链巡检 ——
+// 扫描是全库遍历，成本不低，所以只在用户点按钮时 POST 触发；页面打开只 GET 上次结果。
+// 三份状态分开存：结果（broken）、进行中（brokenScanning）、失败（brokenError）。
+// 分开的理由是四态必须能区分：失败绝不能渲染成「没有断链」，那等于把 403/网络错误当好消息。
+interface BrokenSource { slug: string; title: string }
+interface BrokenItem { target: string; count: number; sources: BrokenSource[] }
+interface BrokenReport { scannedAt: string | null; items: BrokenItem[]; total: number }
+
+const broken = ref<BrokenReport | null>(null)
+const brokenScanning = ref(false)
+const brokenError = ref('')
+const brokenTouched = ref(false) // 用来区分「还没问过后端」与「后端说没扫过」
+
+const loadBroken = async () => {
+  brokenError.value = ''
+  try {
+    broken.value = await requestFetch<BrokenReport>('/api/admin/health/broken')
+  } catch (e: any) {
+    brokenError.value = e?.data?.message || e?.message || '没能读取巡检结果'
+  } finally {
+    brokenTouched.value = true
+  }
+}
+
+const scanBroken = async () => {
+  if (brokenScanning.value) return
+  brokenScanning.value = true
+  brokenError.value = ''
+  try {
+    await $fetch<{ ok: true; scannedAt: string; total: number }>('/api/admin/health/broken', { method: 'POST' })
+    // POST 只回 total，明细仍从 GET 取 —— 两处各拼一份结构迟早会漂
+    broken.value = await requestFetch<BrokenReport>('/api/admin/health/broken')
+  } catch (e: any) {
+    brokenError.value = e?.data?.message || e?.message || '扫描失败'
+  } finally {
+    brokenScanning.value = false
+    brokenTouched.value = true
+  }
+}
+
+onMounted(() => {
+  if (canManage.value) void loadBroken()
+})
+
 useHead({ title: '管理后台 · 拾光' })
 </script>
 
@@ -450,14 +494,14 @@ useHead({ title: '管理后台 · 拾光' })
     <!-- 我的密钥：所有角色可见（spec 8.4） -->
     <section class="mb-6 rounded-card border border-line bg-surface p-5">
       <h2 class="text-ds-lg font-semibold text-ink mb-4 flex items-center gap-2">
-        <KeyRound class="w-4 h-4 text-accent" />我的密钥
+        <KeyRound class="w-4 h-4 text-accent-text" />我的密钥
       </h2>
 
       <!-- 身份卡 -->
       <div class="rounded-card border border-line bg-surface-2 p-4">
         <div class="flex flex-wrap items-start gap-x-8 gap-y-3">
           <div class="min-w-0">
-            <p class="text-[12px] text-ink-3 mb-1">密钥</p>
+            <p class="text-ds-xs text-ink-3 mb-1">密钥</p>
             <div class="flex items-center gap-1.5">
               <code class="font-mono text-ds-sm text-ink-2">
                 {{ myKey ? (revealed.has(myKey.id) ? myKey.key : mask(myKey.key)) : '—' }}
@@ -487,12 +531,12 @@ useHead({ title: '管理后台 · 拾光' })
           </div>
 
           <div>
-            <p class="text-[12px] text-ink-3 mb-1">身份</p>
+            <p class="text-ds-xs text-ink-3 mb-1">身份</p>
             <RoleBadge :role="actorRole" :builtin="!!myKey?.isBuiltin" />
           </div>
 
           <div>
-            <p class="text-[12px] text-ink-3 mb-1">状态</p>
+            <p class="text-ds-xs text-ink-3 mb-1">状态</p>
             <span class="inline-flex items-center gap-1.5 text-ds-sm">
               <span class="w-1.5 h-1.5 rounded-full" :class="myKey?.isActive ? 'bg-evergreen' : 'bg-danger'"></span>
               <span :class="myKey?.isActive ? 'text-evergreen' : 'text-danger'">{{ myKey?.isActive ? '启用' : '已禁用' }}</span>
@@ -500,14 +544,14 @@ useHead({ title: '管理后台 · 拾光' })
           </div>
 
           <div>
-            <p class="text-[12px] text-ink-3 mb-1">创建者</p>
+            <p class="text-ds-xs text-ink-3 mb-1">创建者</p>
             <p class="text-ds-sm text-ink-2">{{ myKey?.creatorLabel || '内置' }}</p>
           </div>
         </div>
 
         <!-- 权限边界清单 -->
         <div class="mt-4 pt-4 border-t border-line">
-          <p class="text-[12px] font-semibold text-ink-3 mb-2.5">权限边界</p>
+          <p class="text-ds-xs font-semibold text-ink-3 mb-2.5">权限边界</p>
           <PermissionList :items="boundary" />
         </div>
       </div>
@@ -520,17 +564,17 @@ useHead({ title: '管理后台 · 拾光' })
 
         <div class="flex flex-wrap items-end gap-3">
           <label class="flex-1 min-w-[180px]">
-            <span class="block text-[12px] text-ink-3 mb-1.5">备注名</span>
+            <span class="block text-ds-xs text-ink-3 mb-1.5">备注名</span>
             <input
               v-model="label"
               placeholder="如：朋友小明"
-              class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
+              class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
               @keyup.enter="createKey"
             />
           </label>
 
           <div>
-            <span class="block text-[12px] text-ink-3 mb-1.5">角色</span>
+            <span class="block text-ds-xs text-ink-3 mb-1.5">角色</span>
             <div class="inline-flex items-center rounded-ctl border border-line bg-surface-2 p-0.5" role="group" aria-label="角色">
               <button
                 v-for="o in roleOptions"
@@ -570,12 +614,12 @@ useHead({ title: '管理后台 · 拾光' })
               <Copy v-else class="w-3.5 h-3.5" />复制
             </button>
           </div>
-          <p class="mt-2 text-[12px] text-ink-3">密钥永久有效，上述列表中可随时禁用或删除。</p>
+          <p class="mt-2 text-ds-xs text-ink-3">密钥永久有效，上述列表中可随时禁用或删除。</p>
         </div>
       </section>
 
       <!-- admin 形态：把「看不到什么」讲出来（spec 8.3 设计决定） -->
-      <p v-if="!isRoot" class="mb-4 text-[12px] text-ink-3 flex items-start gap-1.5">
+      <p v-if="!isRoot" class="mb-4 text-ds-xs text-ink-3 flex items-start gap-1.5">
         <ShieldAlert class="w-3.5 h-3.5 shrink-0 mt-0.5" />
         列表仅包含你自己的密钥与全部普通用户；初始管理员与其他管理员的密钥不在可见范围内。
       </p>
@@ -603,7 +647,7 @@ useHead({ title: '管理后台 · 拾光' })
             </div>
 
             <div class="mt-2 flex items-center gap-1 min-w-0">
-              <code class="font-mono text-[12px] text-ink-2 truncate">{{ revealed.has(k.id) ? k.key : mask(k.key) }}</code>
+              <code class="font-mono text-ds-xs text-ink-2 truncate">{{ revealed.has(k.id) ? k.key : mask(k.key) }}</code>
               <button
                 class="w-7 h-7 rounded-ctl flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-3 transition-colors duration-micro shrink-0"
                 :title="revealed.has(k.id) ? '隐藏' : '显示'"
@@ -624,7 +668,7 @@ useHead({ title: '管理后台 · 拾光' })
               </button>
             </div>
 
-            <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[12px]">
+            <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-ds-xs">
               <div class="min-w-0">
                 <dt class="text-ink-3">创建者</dt>
                 <dd class="text-ink-2 truncate">{{ k.creatorLabel || '内置' }}</dd>
@@ -652,21 +696,21 @@ useHead({ title: '管理后台 · 拾光' })
                     :style="{ left: k.isActive ? '19px' : '2px' }"
                   ></span>
                 </button>
-                <span class="text-[12px] truncate" :class="k.isActive ? 'text-evergreen' : 'text-danger'">
+                <span class="text-ds-xs truncate" :class="k.isActive ? 'text-evergreen' : 'text-danger'">
                   {{ k.isActive ? '启用' : '已禁用' }}
                 </span>
               </div>
 
               <button
                 v-if="canToggleKey(k).ok || canDeleteKey(k).ok"
-                class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-ctl text-[12px] text-danger hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] transition-colors duration-micro disabled:cursor-not-allowed"
+                class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-ctl text-ds-xs text-danger hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] transition-colors duration-micro disabled:cursor-not-allowed"
                 :disabled="!canDeleteKey(k).ok"
                 :title="canDeleteKey(k).ok ? '删除该密钥' : canDeleteKey(k).why"
                 @click="removeKey(k)"
               >
                 <Trash2 class="w-3.5 h-3.5" />删除
               </button>
-              <span v-else class="shrink-0 text-[12px] text-ink-3 truncate" :title="canToggleKey(k).why">
+              <span v-else class="shrink-0 text-ds-xs text-ink-3 truncate" :title="canToggleKey(k).why">
                 {{ canToggleKey(k).why }}
               </span>
             </div>
@@ -676,7 +720,7 @@ useHead({ title: '管理后台 · 拾光' })
         <div class="hidden sm:block overflow-x-auto -mx-5 px-5" data-testid="key-table">
           <table class="w-full text-ds-sm border-collapse">
             <thead>
-              <tr class="text-left text-[12px] text-ink-3">
+              <tr class="text-left text-ds-xs text-ink-3">
                 <th class="py-2 pr-3 font-medium">备注</th>
                 <th class="py-2 pr-3 font-medium">密钥</th>
                 <th class="py-2 pr-3 font-medium">角色</th>
@@ -697,7 +741,7 @@ useHead({ title: '管理后台 · 拾光' })
                 <!-- 密钥：默认打码 + 显示 / 复制 -->
                 <td class="py-2.5 pr-3">
                   <div class="flex items-center gap-1">
-                    <code class="font-mono text-[12px] text-ink-2">{{ revealed.has(k.id) ? k.key : mask(k.key) }}</code>
+                    <code class="font-mono text-ds-xs text-ink-2">{{ revealed.has(k.id) ? k.key : mask(k.key) }}</code>
                     <button
                       class="w-6 h-6 rounded-ctl flex items-center justify-center text-ink-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink hover:bg-surface-3 transition-all duration-micro"
                       :title="revealed.has(k.id) ? '隐藏' : '显示'"
@@ -752,19 +796,19 @@ useHead({ title: '管理后台 · 拾光' })
                   </button>
                 </td>
 
-                <td class="py-2.5 pr-3 text-[12px] text-ink-3">{{ k.creatorLabel || '内置' }}</td>
-                <td class="py-2.5 pr-3 text-[12px] text-ink-3">{{ rel(k.lastUsedAt) }}</td>
+                <td class="py-2.5 pr-3 text-ds-xs text-ink-3">{{ k.creatorLabel || '内置' }}</td>
+                <td class="py-2.5 pr-3 text-ds-xs text-ink-3">{{ rel(k.lastUsedAt) }}</td>
 
                 <!-- 行操作：默认半透明，悬停显形；不可操作项写明原因 -->
                 <td class="py-2.5 whitespace-nowrap">
                   <span
                     v-if="!canToggleKey(k).ok && !canDeleteKey(k).ok"
-                    class="text-[12px] text-ink-3"
+                    class="text-ds-xs text-ink-3"
                     :title="canDeleteKey(k).why || canToggleKey(k).why"
                   >{{ canToggleKey(k).why }}</span>
                   <button
                     v-else
-                    class="inline-flex items-center gap-1 px-2 py-1 rounded-ctl text-[12px] text-danger hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-micro disabled:cursor-not-allowed"
+                    class="inline-flex items-center gap-1 px-2 py-1 rounded-ctl text-ds-xs text-danger hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-micro disabled:cursor-not-allowed"
                     :disabled="!canDeleteKey(k).ok"
                     :title="canDeleteKey(k).ok ? '删除该密钥' : canDeleteKey(k).why"
                     @click="removeKey(k)"
@@ -782,9 +826,9 @@ useHead({ title: '管理后台 · 拾光' })
     <!-- 标签 · 领域自动分配与审核：仅 root/admin 可见（服务端同样 requireAdmin 兜底） -->
     <section v-if="canManage" class="mb-6 rounded-card border border-line bg-surface p-5">
       <h2 class="text-ds-lg font-semibold text-ink mb-1 flex items-center gap-2">
-        <Tags class="w-4 h-4 text-accent" />标签 · 领域自动分配
+        <Tags class="w-4 h-4 text-accent-text" />标签 · 领域自动分配
       </h2>
-      <p class="text-[12px] text-ink-3 mb-4">
+      <p class="text-ds-xs text-ink-3 mb-4">
         自动判定只生成<b>待审草稿</b>；审核通过后才会写入笔记 —— 标签写进 vault 文件的 frontmatter，领域写进笔记属性（不改文件路径，因此旧链接不会失效）。
       </p>
 
@@ -792,10 +836,10 @@ useHead({ title: '管理后台 · 拾光' })
       <div class="rounded-card border border-line bg-surface-2 p-4">
         <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
           <div>
-            <p class="text-[12px] text-ink-3 mb-1">待审建议</p>
+            <p class="text-ds-xs text-ink-3 mb-1">待审建议</p>
             <p class="text-ds-sm text-ink flex items-center gap-2">
               <span
-                class="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full text-[12px] font-semibold"
+                class="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full text-ds-xs font-semibold"
                 :class="pendingCount ? 'bg-accent text-[var(--accent-ink)]' : 'bg-surface-3 text-ink-3'"
               >{{ pendingCount }}</span>
               <span v-if="pendingCount" class="text-ink-2">条等待审核</span>
@@ -804,9 +848,9 @@ useHead({ title: '管理后台 · 拾光' })
           </div>
 
           <div>
-            <p class="text-[12px] text-ink-3 mb-1">判定引擎</p>
+            <p class="text-ds-xs text-ink-3 mb-1">判定引擎</p>
             <p class="text-ds-sm text-ink-2 flex items-center gap-1.5">
-              <Sparkles class="w-3.5 h-3.5" :class="llmStatus.enabled ? 'text-accent' : 'text-ink-3'" />
+              <Sparkles class="w-3.5 h-3.5" :class="llmStatus.enabled ? 'text-accent-text' : 'text-ink-3'" />
               {{ llmStatus.enabled ? `规则 + AI（${llmStatus.model}）` : '规则引擎（未配置 AI）' }}
             </p>
           </div>
@@ -843,9 +887,83 @@ useHead({ title: '管理后台 · 拾光' })
           ><Play class="w-3.5 h-3.5" />整库补跑</button>
         </div>
 
-        <p class="mt-2 text-[12px] text-ink-3">
+        <p class="mt-2 text-ds-xs text-ink-3">
           导入笔记后会自动排队生成；自动判定<b>不会发明新标签</b>，只从 vault 既有标签里选 —— 需要新标签时在审核面板里手动添加。
         </p>
+      </div>
+    </section>
+
+    <!-- 断链巡检：[[目标]] 指向不存在的笔记时，读者点进去是 404，作者自己通常发现不了 -->
+    <section v-if="canManage" class="mb-6 rounded-card border border-line bg-surface p-5">
+      <div class="flex items-start justify-between gap-3 mb-1">
+        <h2 class="text-ds-lg font-semibold text-ink flex items-center gap-2">
+          <Link2Off class="w-4 h-4 text-accent-text" />断链巡检
+        </h2>
+        <button
+          class="shrink-0 px-4 py-2 rounded-ctl text-ds-sm font-semibold transition-colors duration-base"
+          :class="brokenScanning
+            ? 'bg-surface-3 text-ink-3 cursor-not-allowed'
+            : 'bg-accent text-[var(--accent-ink)] hover:opacity-90'"
+          :disabled="brokenScanning"
+          @click="scanBroken"
+        >{{ brokenScanning ? '扫描中…' : '开始扫描' }}</button>
+      </div>
+      <p class="text-ds-xs text-ink-3 mb-4">
+        <template v-if="broken?.scannedAt">上次扫描：{{ rel(broken.scannedAt) }}</template>
+        <template v-else-if="!brokenTouched">正在读取上次扫描结果…</template>
+        <template v-else>还没有扫描记录 —— 点右上角按钮检查一遍全库双链。</template>
+      </p>
+
+      <!-- 失败：与「没有断链」必须长得完全不同，否则 403/超时会被读成好消息 -->
+      <div v-if="brokenError" class="rounded-card border border-danger/40 bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] p-4">
+        <p class="text-ds-sm font-semibold text-ink flex items-center gap-2">
+          <AlertTriangle class="w-4 h-4 text-danger" />巡检失败
+        </p>
+        <p class="text-ds-xs text-ink-2 mt-1 break-words">{{ brokenError }}</p>
+        <button
+          class="mt-3 px-3 py-1.5 rounded-ctl text-ds-xs border border-line bg-surface text-ink-2 hover:bg-surface-3"
+          @click="loadBroken"
+        >重试</button>
+      </div>
+
+      <!-- 扫描中 -->
+      <div v-else-if="brokenScanning" class="rounded-card border border-line bg-surface-2 p-4 text-ds-sm text-ink-3">
+        正在遍历全库双链…
+      </div>
+
+      <!-- 有结果：三列（目标 / 引用次数 / 来源笔记，来源可点进详情） -->
+      <div v-else-if="broken && broken.total > 0" class="rounded-card border border-line bg-surface-2 p-4">
+        <p class="text-ds-sm text-ink mb-2">
+          共 <span class="font-semibold text-danger">{{ broken.total }}</span> 个目标指向不存在的笔记
+        </p>
+        <table class="w-full text-ds-sm border-collapse">
+          <thead>
+            <tr class="text-left text-ds-xs text-ink-3">
+              <th class="py-1.5 pr-3 font-medium">目标</th>
+              <th class="py-1.5 pr-3 font-medium w-14">引用</th>
+              <th class="py-1.5 font-medium">来源笔记</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="it in broken.items" :key="it.target" class="border-t border-line hover:bg-surface-3 align-top">
+              <td class="py-2 pr-3 font-mono text-ds-xs text-ink break-all">{{ it.target }}</td>
+              <td class="py-2 pr-3 text-ink-2">{{ it.count }}</td>
+              <td class="py-2">
+                <NuxtLink
+                  v-for="s in it.sources"
+                  :key="s.slug"
+                  :to="`/notes/${s.slug.split('/').map(encodeURIComponent).join('/')}`"
+                  class="inline-block mr-2 mb-0.5 text-ds-xs text-accent-text hover:underline"
+                >{{ s.title || s.slug }}</NuxtLink>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 无结果：扫过、且 total 为 0（未扫过走上面的提示行，不会落到这里） -->
+      <div v-else-if="broken?.scannedAt" class="rounded-card border border-line bg-surface-2 p-4 text-ds-sm text-ink-2 flex items-center gap-2">
+        <ShieldCheck class="w-4 h-4 text-accent-text" />没有断链 —— 所有双链都指向存在的笔记。
       </div>
     </section>
 
@@ -861,9 +979,9 @@ useHead({ title: '管理后台 · 拾光' })
     <!-- AI 增强设置：开关与密钥都在这里配，不用改 .env、也不用重启 -->
     <section v-if="canManage" class="mb-6 rounded-card border border-line bg-surface p-5">
       <h2 class="text-ds-lg font-semibold text-ink mb-1 flex items-center gap-2">
-        <Bot class="w-4 h-4 text-accent" />AI 增强设置
+        <Bot class="w-4 h-4 text-accent-text" />AI 增强设置
       </h2>
-      <p class="text-[12px] text-ink-3 mb-4">
+      <p class="text-ds-xs text-ink-3 mb-4">
         让大模型参与标签与领域的判定（增强规则引擎）。<b>不配置也能用</b>——规则引擎独立工作；
         配置后判定更准，但会产生上游 API 费用。配置立即生效，无需重启。
       </p>
@@ -872,7 +990,7 @@ useHead({ title: '管理后台 · 拾光' })
       <div class="rounded-card border border-line bg-surface-2 p-4 mb-4">
         <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
           <div>
-            <p class="text-[12px] text-ink-3 mb-1">当前状态</p>
+            <p class="text-ds-xs text-ink-3 mb-1">当前状态</p>
             <p class="text-ds-sm flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full"
                 :class="aiStatus.tone === 'ok' ? 'bg-evergreen' : (aiStatus.tone === 'warn' ? 'bg-growing' : 'bg-ink-3')"></span>
@@ -883,23 +1001,23 @@ useHead({ title: '管理后台 · 拾光' })
           </div>
 
           <div v-if="aiPub?.hasKey">
-            <p class="text-[12px] text-ink-3 mb-1">已存密钥</p>
+            <p class="text-ds-xs text-ink-3 mb-1">已存密钥</p>
             <p class="text-ds-sm text-ink-2 font-mono">••••••{{ aiPub.keyTail }}</p>
           </div>
 
           <div v-if="aiPub">
-            <p class="text-[12px] text-ink-3 mb-1">配置来源</p>
+            <p class="text-ds-xs text-ink-3 mb-1">配置来源</p>
             <p class="text-ds-sm text-ink-2">
               {{ aiPub.source === 'db' ? '本页保存的设置' : aiPub.source === 'env' ? '环境变量（TAG_LLM_*）' : '未配置' }}
             </p>
           </div>
         </div>
 
-        <p v-if="aiPub?.keyBroken" class="mt-3 flex items-start gap-1.5 text-[12px] text-danger">
+        <p v-if="aiPub?.keyBroken" class="mt-3 flex items-start gap-1.5 text-ds-xs text-danger">
           <AlertTriangle class="w-3.5 h-3.5 shrink-0 mt-0.5" />
           已存的密钥无法解密（通常是 AUTH_SECRET 变更过）—— 请重新填写密钥后保存。
         </p>
-        <p v-else-if="aiPub?.envFallback && aiPub?.source === 'db' && !aiPub?.hasKey" class="mt-3 flex items-start gap-1.5 text-[12px] text-ink-3">
+        <p v-else-if="aiPub?.envFallback && aiPub?.source === 'db' && !aiPub?.hasKey" class="mt-3 flex items-start gap-1.5 text-ds-xs text-ink-3">
           <Info class="w-3.5 h-3.5 shrink-0 mt-0.5" />
           环境变量里还有一份配置，本页未填密钥时会回退使用它。
         </p>
@@ -929,25 +1047,25 @@ useHead({ title: '管理后台 · 拾光' })
         </div>
 
         <label class="block">
-          <span class="block text-[12px] text-ink-3 mb-1.5">API 地址（OpenAI 兼容）</span>
+          <span class="block text-ds-xs text-ink-3 mb-1.5">API 地址（OpenAI 兼容）</span>
           <input
             v-model="aiForm.baseUrl"
             placeholder="https://api.deepseek.com/v1"
-            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
           />
         </label>
 
         <label class="block">
-          <span class="block text-[12px] text-ink-3 mb-1.5">模型名</span>
+          <span class="block text-ds-xs text-ink-3 mb-1.5">模型名</span>
           <input
             v-model="aiForm.model"
             placeholder="deepseek-chat"
-            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
           />
         </label>
 
         <label class="block">
-          <span class="block text-[12px] text-ink-3 mb-1.5">
+          <span class="block text-ds-xs text-ink-3 mb-1.5">
             API 密钥
             <span v-if="aiPub?.hasKey" class="text-ink-3">（已配置，留空表示不修改）</span>
           </span>
@@ -956,9 +1074,9 @@ useHead({ title: '管理后台 · 拾光' })
             type="password"
             autocomplete="new-password"
             :placeholder="aiPub?.hasKey ? '留空则沿用已保存的密钥' : 'sk-...'"
-            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface-2 border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
           />
-          <span class="block mt-1.5 text-[12px] text-ink-3 flex items-start gap-1.5">
+          <span class="block mt-1.5 text-ds-xs text-ink-3 flex items-start gap-1.5">
             <ShieldCheck class="w-3.5 h-3.5 shrink-0 mt-0.5" />
             密钥在服务端<b>加密后</b>才写入数据库（加密密钥来自 AUTH_SECRET，不在库里），且接口永不回传明文。
           </span>
@@ -999,7 +1117,7 @@ useHead({ title: '管理后台 · 拾光' })
           <AlertTriangle v-else class="w-4 h-4 shrink-0 mt-0.5" />
           {{ aiTest.message }}
         </p>
-        <p v-if="aiTest.detail" class="mt-1.5 text-[12px] text-ink-3 font-mono break-all">{{ aiTest.detail }}</p>
+        <p v-if="aiTest.detail" class="mt-1.5 text-ds-xs text-ink-3 font-mono break-all">{{ aiTest.detail }}</p>
       </div>
     </section>
 

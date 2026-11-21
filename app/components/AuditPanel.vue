@@ -312,20 +312,20 @@ onBeforeUnmount(stopPoll)
 <template>
   <section class="mb-6 rounded-card border border-line bg-surface p-5" data-testid="audit-panel">
     <h2 class="text-ds-lg font-semibold text-ink mb-1 flex items-center gap-2">
-      <ScanSearch class="w-4 h-4 text-accent" />AI 全库审计
+      <ScanSearch class="w-4 h-4 text-accent-text" />AI 全库审计
     </h2>
-    <p class="text-[12px] text-ink-3 mb-4">
+    <p class="text-ds-xs text-ink-3 mb-4">
       让模型逐篇读正文，指出**需要补充或修改**的地方（缺小节、结论缺失、表述含糊、明显错误），
       并给出可直接执行的改法。默认只出建议；要动手时服务端会先整库备份。
     </p>
 
     <!-- 范围 -->
     <div class="rounded-card border border-line bg-surface-2 p-4 mb-4 space-y-3">
-      <p class="text-[12px] text-ink-3">不填任何条件＝整库（受条数上限约束）。多个条件之间是「同时满足」。</p>
+      <p class="text-ds-xs text-ink-3">不填任何条件＝整库（受条数上限约束）。多个条件之间是「同时满足」。</p>
 
       <div class="grid gap-3 sm:grid-cols-2">
         <div>
-          <p class="text-[12px] text-ink-3 mb-1">文件夹</p>
+          <p class="text-ds-xs text-ink-3 mb-1">文件夹</p>
           <div class="flex items-center gap-1.5">
             <AppSelect v-model="folderInput" size="sm" class="flex-1 min-w-0" :options="[{ value: '', label: '选择目录…' }, ...dirOptions]" />
             <button class="px-2 py-1.5 rounded-ctl border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro" @click="addFolder(folderInput); folderInput = ''">
@@ -333,14 +333,14 @@ onBeforeUnmount(stopPoll)
             </button>
           </div>
           <div v-if="folders.length" class="flex flex-wrap gap-1 mt-1.5">
-            <span v-for="f in folders" :key="f" class="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full border border-line text-ink-2">
+            <span v-for="f in folders" :key="f" class="inline-flex items-center gap-1 text-ds-xs px-1.5 py-0.5 rounded-full border border-line text-ink-2">
               {{ f }}<button @click="removeFolder(f)"><X class="w-2.5 h-2.5" /></button>
             </span>
           </div>
         </div>
 
         <div>
-          <p class="text-[12px] text-ink-3 mb-1">标签</p>
+          <p class="text-ds-xs text-ink-3 mb-1">标签</p>
           <div class="flex items-center gap-1.5">
             <AppSelect v-model="tagInput" size="sm" class="flex-1 min-w-0" :options="[{ value: '', label: '选择标签…' }, ...tagOptions]" />
             <button class="px-2 py-1.5 rounded-ctl border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro" @click="addTag(tagInput); tagInput = ''">
@@ -348,14 +348,14 @@ onBeforeUnmount(stopPoll)
             </button>
           </div>
           <div v-if="tags.length" class="flex flex-wrap gap-1 mt-1.5">
-            <span v-for="t in tags" :key="t" class="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full border border-line text-ink-2">
+            <span v-for="t in tags" :key="t" class="inline-flex items-center gap-1 text-ds-xs px-1.5 py-0.5 rounded-full border border-line text-ink-2">
               {{ t }}<button @click="removeTag(t)"><X class="w-2.5 h-2.5" /></button>
             </span>
           </div>
         </div>
 
         <div>
-          <p class="text-[12px] text-ink-3 mb-1">领域</p>
+          <p class="text-ds-xs text-ink-3 mb-1">领域</p>
           <div class="flex items-center gap-1.5">
             <AppSelect v-model="domainInput" size="sm" class="flex-1 min-w-0" :options="[{ value: '', label: '选择领域…' }, ...domainOptions]" />
             <button class="px-2 py-1.5 rounded-ctl border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro" @click="addDomain(domainInput); domainInput = ''">
@@ -363,31 +363,31 @@ onBeforeUnmount(stopPoll)
             </button>
           </div>
           <div v-if="domains.length" class="flex flex-wrap gap-1 mt-1.5">
-            <span v-for="d in domains" :key="d" class="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full border border-line text-ink-2">
+            <span v-for="d in domains" :key="d" class="inline-flex items-center gap-1 text-ds-xs px-1.5 py-0.5 rounded-full border border-line text-ink-2">
               {{ d }}<button @click="removeDomain(d)"><X class="w-2.5 h-2.5" /></button>
             </span>
           </div>
         </div>
 
         <div>
-          <p class="text-[12px] text-ink-3 mb-1">关键词（标题或正文包含）</p>
+          <p class="text-ds-xs text-ink-3 mb-1">关键词（标题或正文包含）</p>
           <input
             v-model="keyword"
             placeholder="如：缓存 / 索引"
-            class="w-full px-3 py-2 rounded-ctl bg-surface border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
+            class="w-full px-3 py-2 rounded-ctl bg-surface border border-line-strong-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
           />
         </div>
       </div>
 
       <div class="flex flex-wrap items-end gap-3 pt-1">
-        <label class="text-[12px] text-ink-3">
+        <label class="text-ds-xs text-ink-3">
           <span class="block mb-1">最多扫描篇数（1–200）</span>
           <input
             v-model.number="limit"
             type="number"
             min="1"
             max="200"
-            class="w-[110px] px-2.5 py-1.5 rounded-ctl bg-surface border border-line-strong text-ds-sm text-ink font-mono focus:border-accent/60"
+            class="w-[110px] px-2.5 py-1.5 rounded-ctl bg-surface border border-line-strong-strong text-ds-sm text-ink font-mono focus:border-accent/60"
           />
         </label>
         <button
@@ -406,7 +406,7 @@ onBeforeUnmount(stopPoll)
         </button>
       </div>
 
-      <p v-if="preview" class="text-[12px] text-ink-2">
+      <p v-if="preview" class="text-ds-xs text-ink-2">
         匹配 <b class="font-mono">{{ preview.matched }}</b> 篇，本次将扫描
         <b class="font-mono">{{ preview.willScan }}</b> 篇（上限 {{ preview.limit }}）。
         <span v-if="preview.sample.length" class="text-ink-3">
@@ -417,24 +417,24 @@ onBeforeUnmount(stopPoll)
 
     <!-- 进度 -->
     <div v-if="running && !run" class="flex items-center gap-2 text-ds-sm text-ink-2 py-3">
-      <Loader2 class="w-4 h-4 animate-spin text-accent" />正在逐篇分析，报告完成后自动显示…
+      <Loader2 class="w-4 h-4 animate-spin text-accent-text" />正在逐篇分析，报告完成后自动显示…
     </div>
 
     <!-- 报告 -->
     <div v-if="run" data-testid="audit-report">
       <div class="rounded-card border border-line bg-surface-2 p-3 mb-3">
-        <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-[12px] text-ink-3">
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-ds-xs text-ink-3">
           <span>模型 <b class="text-ink-2">{{ run.model }}</b></span>
           <span>匹配 {{ run.noteCount }} 篇 · 已扫 {{ run.scannedCount }} 篇</span>
           <span v-if="run.failedCount" class="text-growing">模型失败 {{ run.failedCount }} 篇</span>
           <span v-if="run.failedCount" class="text-ink-3">失败原因见下</span>
           <span>{{ run.issues.length }} 条建议</span>
           <span v-if="run.backupId" class="text-evergreen">执行前备份 {{ run.backupId }}</span>
-          <span v-if="!run.complete" class="inline-flex items-center gap-1 text-accent">
+          <span v-if="!run.complete" class="inline-flex items-center gap-1 text-accent-text">
             <Loader2 class="w-3 h-3 animate-spin" />进行中
           </span>
         </div>
-        <p v-if="run.error" class="mt-2 flex items-start gap-1.5 text-[12px] text-danger">
+        <p v-if="run.error" class="mt-2 flex items-start gap-1.5 text-ds-xs text-danger">
           <AlertTriangle class="w-3.5 h-3.5 shrink-0 mt-0.5" />{{ run.error }}
         </p>
       </div>
@@ -445,13 +445,13 @@ onBeforeUnmount(stopPoll)
         data-testid="audit-fail-reasons"
         class="rounded-card border border-line bg-surface-2 p-3 mb-3"
       >
-        <p class="text-[12px] text-ink-3 mb-1">模型失败原因（最多记 8 条）：</p>
+        <p class="text-ds-xs text-ink-3 mb-1">模型失败原因（最多记 8 条）：</p>
         <ul class="space-y-0.5">
-          <li v-for="(r, i) in run.failReasons" :key="i" class="text-[12px] text-ink-2 font-mono break-all">
+          <li v-for="(r, i) in run.failReasons" :key="i" class="text-ds-xs text-ink-2 font-mono break-all">
             · {{ r }}
           </li>
         </ul>
-        <p class="mt-1.5 text-[12px] text-ink-3">
+        <p class="mt-1.5 text-ds-xs text-ink-3">
           常见原因：输出被截断（已自动放大重试一次）、上游超时或限流、模型名或密钥不对。
         </p>
       </div>
@@ -463,7 +463,7 @@ onBeforeUnmount(stopPoll)
       <template v-else>
         <div class="flex flex-wrap items-center gap-2 mb-2">
           <button
-            class="px-2.5 py-1.5 rounded-ctl text-[12px] border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro disabled:opacity-45"
+            class="px-2.5 py-1.5 rounded-ctl text-ds-xs border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro disabled:opacity-45"
             :disabled="!executable.length"
             @click="toggleAll"
           >{{ allPicked ? '全不选' : '全选可执行' }}</button>
@@ -476,7 +476,7 @@ onBeforeUnmount(stopPoll)
             <Loader2 v-if="applying" class="w-3.5 h-3.5 animate-spin" /><Check v-else class="w-3.5 h-3.5" />
             {{ applying ? '执行中…' : `执行选中的 ${picked.size} 条` }}
           </button>
-          <span class="text-[12px] text-ink-3">执行前会自动整库备份；纯建议类条目不可执行。</span>
+          <span class="text-ds-xs text-ink-3">执行前会自动整库备份；纯建议类条目不可执行。</span>
         </div>
 
         <div class="space-y-2">
@@ -501,29 +501,29 @@ onBeforeUnmount(stopPoll)
               <div class="min-w-0 flex-1">
                 <button class="flex flex-wrap items-center gap-1.5 text-left w-full" @click="toggleDetail(i.id)">
                   <component :is="openDetail.has(i.id) ? ChevronDown : ChevronRight" class="w-3.5 h-3.5 text-ink-3 shrink-0" />
-                  <span class="text-[11px] px-1.5 py-0.5 rounded-full border shrink-0" :class="kindClass(i.kind)">{{ kindLabel(i.kind) }}</span>
+                  <span class="text-ds-xs px-1.5 py-0.5 rounded-full border shrink-0" :class="kindClass(i.kind)">{{ kindLabel(i.kind) }}</span>
                   <span class="text-ds-sm text-ink font-medium">{{ i.title }}</span>
-                  <span class="text-[11px]" :class="sevClass(i.severity)">{{ i.severity === 'high' ? '重要' : i.severity === 'medium' ? '一般' : '可选' }}</span>
+                  <span class="text-ds-xs" :class="sevClass(i.severity)">{{ i.severity === 'high' ? '重要' : i.severity === 'medium' ? '一般' : '可选' }}</span>
                 </button>
-                <p class="mt-1 text-[12px] text-ink-3 break-all">
+                <p class="mt-1 text-ds-xs text-ink-3 break-all">
                   {{ i.noteTitle }} <span class="font-mono opacity-70">· {{ i.slug }}</span>
                 </p>
-                <p class="mt-1 text-[12px] text-ink-2">
+                <p class="mt-1 text-ds-xs text-ink-2">
                   <span class="text-ink-3">动作：</span>{{ actionLabel(i.action) }}
                 </p>
-                <p v-if="i.applied" class="mt-1 text-[12px] text-evergreen">已执行 {{ i.appliedAt }}</p>
-                <p v-if="i.error" class="mt-1 text-[12px] text-danger">失败：{{ i.error }}</p>
+                <p v-if="i.applied" class="mt-1 text-ds-xs text-evergreen">已执行 {{ i.appliedAt }}</p>
+                <p v-if="i.error" class="mt-1 text-ds-xs text-danger">失败：{{ i.error }}</p>
 
                 <div v-if="openDetail.has(i.id)" class="mt-2 rounded-ctl bg-surface border border-line p-2.5 space-y-2">
-                  <p class="text-[12px] text-ink-2 whitespace-pre-wrap">{{ i.detail }}</p>
-                  <div v-if="i.action?.type === 'append-section'" class="text-[12px] text-ink-2">
+                  <p class="text-ds-xs text-ink-2 whitespace-pre-wrap">{{ i.detail }}</p>
+                  <div v-if="i.action?.type === 'append-section'" class="text-ds-xs text-ink-2">
                     <p class="text-ink-3 mb-1">将追加：</p>
-                    <pre class="whitespace-pre-wrap font-mono text-[11px] text-ink-2 bg-surface-2 rounded p-2 max-h-[220px] overflow-y-auto">{{ `## ${i.action.heading}\n\n${i.action.body}` }}</pre>
+                    <pre class="whitespace-pre-wrap font-mono text-ds-xs text-ink-2 bg-surface-2 rounded p-2 max-h-[220px] overflow-y-auto">{{ `## ${i.action.heading}\n\n${i.action.body}` }}</pre>
                   </div>
-                  <p v-else-if="i.action?.type === 'add-tags'" class="text-[12px] text-ink-2">
+                  <p v-else-if="i.action?.type === 'add-tags'" class="text-ds-xs text-ink-2">
                     将补标签：<span class="font-mono">{{ i.action.tags?.join('、') }}</span>
                   </p>
-                  <p v-else-if="i.action?.type === 'set-domain'" class="text-[12px] text-ink-2">
+                  <p v-else-if="i.action?.type === 'set-domain'" class="text-ds-xs text-ink-2">
                     将把领域改为：<span class="font-mono">{{ i.action.domain }}</span>
                   </p>
                 </div>

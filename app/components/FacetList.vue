@@ -11,7 +11,7 @@ defineProps<{ facets: DomainFacet[]; activeDir?: string }>()
     <li v-for="f in facets" :key="f.name">
       <NuxtLink
         :to="f.dir ? `/notes?dir=${encodeURIComponent(f.dir)}` : '/notes'"
-        class="group flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors duration-micro"
+        class="group flex items-center gap-2 px-2.5 py-1.5 rounded-ctl transition-colors duration-micro"
         :class="activeDir === f.dir
           ? 'bg-[var(--accent-soft)] text-ink'
           : 'hover:bg-surface-3 text-ink-2 hover:text-ink'"

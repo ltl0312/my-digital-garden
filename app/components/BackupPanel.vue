@@ -82,7 +82,7 @@ const kindLabel = (k: string) =>
 const kindClass = (k: string) =>
   k === 'manual'
     ? 'border-line text-ink-3'
-    : 'border-accent/40 text-accent bg-[var(--accent-soft)]'
+    : 'border-accent/40 text-accent-text bg-[var(--accent-soft)]'
 
 const load = async () => {
   loading.value = true
@@ -219,9 +219,9 @@ onMounted(load)
 <template>
   <section class="mb-6 rounded-card border border-line bg-surface p-5" data-testid="backup-panel">
     <h2 class="text-ds-lg font-semibold text-ink mb-1 flex items-center gap-2">
-      <Database class="w-4 h-4 text-accent" />库备份与恢复
+      <Database class="w-4 h-4 text-accent-text" />库备份与恢复
     </h2>
-    <p class="text-[12px] text-ink-3 mb-4">
+    <p class="text-ds-xs text-ink-3 mb-4">
       备份包含 vault 里全部 <code>.md</code> 文件，以及**不在文件里**的元数据（手工指定的领域、成熟度、图谱配色、AI 设置）。
       只留最近 {{ storage?.keep ?? 10 }} 份，创建新备份后自动清理更旧的。
     </p>
@@ -230,19 +230,19 @@ onMounted(load)
     <div class="rounded-card border border-line bg-surface-2 p-4 mb-4">
       <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
         <div>
-          <p class="text-[12px] text-ink-3 mb-1">已用 / 份数</p>
+          <p class="text-ds-xs text-ink-3 mb-1">已用 / 份数</p>
           <p class="text-ds-sm text-ink-2 font-mono">
             {{ fmtBytes(storage?.usedBytes || 0) }} · {{ storage?.count || 0 }} / {{ storage?.keep || 10 }}
           </p>
         </div>
         <div class="min-w-0">
-          <p class="text-[12px] text-ink-3 mb-1">存放位置</p>
+          <p class="text-ds-xs text-ink-3 mb-1">存放位置</p>
           <p class="text-ds-sm text-ink-2 font-mono break-all">{{ storage?.dir || '—' }}</p>
         </div>
       </div>
       <p
         v-if="storage && !storage.persistent"
-        class="mt-3 flex items-start gap-1.5 text-[12px] text-growing"
+        class="mt-3 flex items-start gap-1.5 text-ds-xs text-growing"
       >
         <AlertTriangle class="w-3.5 h-3.5 shrink-0 mt-0.5" />
         当前备份目录在容器内部，<b>容器重建就会丢</b>。生产环境请给它挂载宿主持久目录（见 deploy/docker-compose.prod.yml）。
@@ -269,12 +269,12 @@ onMounted(load)
 
     <!-- 任意两份比较 -->
     <div class="flex flex-wrap items-end gap-2 mb-3">
-      <label class="text-[12px] text-ink-3">
+      <label class="text-ds-xs text-ink-3">
         <span class="block mb-1">对比（早 → 晚）</span>
         <AppSelect v-model="diffFrom" size="sm" class="w-[210px]" :options="[{ value: '', label: '选择较早的备份' }, ...items.map(i => ({ value: i.id, label: fmtTime(i.createdAt) }))]" />
       </label>
       <ArrowLeftRight class="w-3.5 h-3.5 text-ink-3 mb-2" />
-      <label class="text-[12px] text-ink-3">
+      <label class="text-ds-xs text-ink-3">
         <span class="block mb-1">目标</span>
         <AppSelect v-model="diffTo" size="sm" class="w-[210px]" :options="[{ value: '', label: '选择较晚的备份' }, ...items.map(i => ({ value: i.id, label: fmtTime(i.createdAt) }))]" />
       </label>
@@ -295,10 +295,10 @@ onMounted(load)
         未变 {{ diff.diff.unchanged }}
       </p>
       <div class="space-y-1 max-h-[220px] overflow-y-auto">
-        <p v-for="p in diff.diff.added" :key="`a-${p}`" class="text-[12px] font-mono text-evergreen break-all">+ {{ p }}</p>
-        <p v-for="p in diff.diff.removed" :key="`d-${p}`" class="text-[12px] font-mono text-danger break-all">− {{ p }}</p>
-        <p v-for="p in diff.diff.changed" :key="`c-${p}`" class="text-[12px] font-mono text-growing break-all">~ {{ p }}</p>
-        <p v-if="!diff.diff.added.length && !diff.diff.removed.length && !diff.diff.changed.length" class="text-[12px] text-ink-3">
+        <p v-for="p in diff.diff.added" :key="`a-${p}`" class="text-ds-xs font-mono text-evergreen break-all">+ {{ p }}</p>
+        <p v-for="p in diff.diff.removed" :key="`d-${p}`" class="text-ds-xs font-mono text-danger break-all">− {{ p }}</p>
+        <p v-for="p in diff.diff.changed" :key="`c-${p}`" class="text-ds-xs font-mono text-growing break-all">~ {{ p }}</p>
+        <p v-if="!diff.diff.added.length && !diff.diff.removed.length && !diff.diff.changed.length" class="text-ds-xs text-ink-3">
           两份备份的文件内容完全一致。
         </p>
       </div>
@@ -323,29 +323,29 @@ onMounted(load)
           >
             <component :is="expanded.has(m.id) ? ChevronDown : ChevronRight" class="w-3.5 h-3.5 text-ink-3 shrink-0" />
             <span class="text-ds-sm text-ink font-medium tabular-nums">{{ fmtTime(m.createdAt) }}</span>
-            <span class="text-[11px] px-1.5 py-0.5 rounded-full border" :class="kindClass(m.kind)">{{ kindLabel(m.kind) }}</span>
-            <span v-if="!m.complete" class="text-[11px] px-1.5 py-0.5 rounded-full border border-danger/50 text-danger">未完成</span>
+            <span class="text-ds-xs px-1.5 py-0.5 rounded-full border" :class="kindClass(m.kind)">{{ kindLabel(m.kind) }}</span>
+            <span v-if="!m.complete" class="text-ds-xs px-1.5 py-0.5 rounded-full border border-danger/50 text-danger">未完成</span>
           </button>
 
-          <span class="text-[12px] text-ink-3 font-mono shrink-0">
+          <span class="text-ds-xs text-ink-3 font-mono shrink-0">
             {{ m.fileCount }} 文件 · {{ fmtBytes(m.archiveBytes) }}
           </span>
 
           <div class="flex items-center gap-1.5 shrink-0">
             <button
-              class="px-2.5 py-1.5 rounded-ctl text-[12px] border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro disabled:opacity-45"
+              class="px-2.5 py-1.5 rounded-ctl text-ds-xs border border-line text-ink-2 hover:bg-surface-3 transition-colors duration-micro disabled:opacity-45"
               :disabled="busyId === m.id || !m.complete"
               @click="compareWithNeighbor(m)"
             >看差异</button>
             <button
-              class="px-2.5 py-1.5 rounded-ctl text-[12px] border border-accent/40 text-accent hover:bg-[var(--accent-soft)] transition-colors duration-micro disabled:opacity-45 inline-flex items-center gap-1"
+              class="px-2.5 py-1.5 rounded-ctl text-ds-xs border border-accent/40 text-accent-text hover:bg-[var(--accent-soft)] transition-colors duration-micro disabled:opacity-45 inline-flex items-center gap-1"
               :disabled="busyId === m.id || !m.complete"
               @click="restore(m)"
             >
               <RotateCcw v-if="busyId !== m.id" class="w-3 h-3" /><Loader2 v-else class="w-3 h-3 animate-spin" />恢复
             </button>
             <button
-              class="px-2 py-1.5 rounded-ctl text-[12px] border border-danger/40 text-danger hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] transition-colors duration-micro disabled:opacity-45"
+              class="px-2 py-1.5 rounded-ctl text-ds-xs border border-danger/40 text-danger hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] transition-colors duration-micro disabled:opacity-45"
               :disabled="busyId === m.id"
               title="删除这份备份"
               @click="remove(m)"
@@ -353,23 +353,23 @@ onMounted(load)
           </div>
         </div>
 
-        <p v-if="m.reason" class="px-3 pb-2 -mt-0.5 text-[12px] text-ink-3">{{ m.reason }}<span v-if="m.actor"> · {{ m.actor }}</span></p>
+        <p v-if="m.reason" class="px-3 pb-2 -mt-0.5 text-ds-xs text-ink-3">{{ m.reason }}<span v-if="m.actor"> · {{ m.actor }}</span></p>
 
         <!-- 展开：文件清单 -->
         <div v-if="expanded.has(m.id)" class="border-t border-line bg-surface px-3 py-2.5">
-          <div class="flex flex-wrap items-center gap-x-6 gap-y-1 mb-2 text-[12px] text-ink-3">
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-1 mb-2 text-ds-xs text-ink-3">
             <span class="inline-flex items-center gap-1"><Download class="w-3 h-3" />归档 {{ fmtBytes(m.archiveBytes) }}（未压缩 {{ fmtBytes(m.totalBytes) }}）</span>
             <span>笔记元数据 {{ m.noteCount }} 条</span>
             <span class="font-mono">{{ m.id }}</span>
           </div>
-          <div v-if="!detail[m.id]" class="text-[12px] text-ink-3 py-2 inline-flex items-center gap-1.5">
+          <div v-if="!detail[m.id]" class="text-ds-xs text-ink-3 py-2 inline-flex items-center gap-1.5">
             <Loader2 class="w-3 h-3 animate-spin" />读取文件清单…
           </div>
           <div v-else class="max-h-[260px] overflow-y-auto space-y-0.5">
             <p
               v-for="f in (detail[m.id]?.files || [])"
               :key="f.path"
-              class="text-[12px] font-mono text-ink-2 flex items-baseline gap-2"
+              class="text-ds-xs font-mono text-ink-2 flex items-baseline gap-2"
             >
               <span class="flex-1 min-w-0 break-all">{{ f.path }}</span>
               <span class="text-ink-3 shrink-0 tabular-nums">{{ fmtBytes(f.size) }}</span>
@@ -380,7 +380,7 @@ onMounted(load)
       </div>
     </div>
 
-    <p class="mt-3 text-[12px] text-ink-3 flex items-start gap-1.5">
+    <p class="mt-3 text-ds-xs text-ink-3 flex items-start gap-1.5">
       <Check class="w-3.5 h-3.5 shrink-0 mt-0.5" />
       恢复前会<b>自动</b>把当前状态再备一份（标记「恢复前自动」），恢复错了还能再恢复回来。
     </p>

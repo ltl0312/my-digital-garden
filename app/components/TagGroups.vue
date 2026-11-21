@@ -30,7 +30,7 @@ const nsTitle = (ns: string) => `${ns} · 组内标签合计计数`
     <div v-for="g in props.groups" :key="g.ns">
       <button
         data-tag-group
-        class="w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs uppercase tracking-wider font-bold transition-colors duration-micro"
+        class="w-full flex items-center gap-1.5 px-2 py-1 rounded-ctl text-xs uppercase tracking-wider font-bold transition-colors duration-micro"
         :class="isOpen(g) ? 'text-ink-2 hover:bg-surface-3' : 'text-ink-3 hover:bg-surface-3'"
         :aria-expanded="isOpen(g)"
         :title="nsTitle(g.ns)"
@@ -47,7 +47,7 @@ const nsTitle = (ns: string) => `${ns} · 组内标签合计计数`
           :to="`/notes?tag=${encodeURIComponent(t.name)}`"
           class="text-xs px-2 py-0.5 rounded-full border transition-colors duration-micro"
           :class="props.activeTag === t.name
-            ? 'border-accent text-accent bg-[var(--accent-soft)]'
+            ? 'border-accent text-accent-text bg-[var(--accent-soft)]'
             : 'border-line text-ink-2 hover:text-ink hover:border-ink-3'"
           :title="`#${t.name}（${t.count}）`"
         >

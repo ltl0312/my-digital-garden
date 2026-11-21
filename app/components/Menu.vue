@@ -121,7 +121,7 @@ watch(() => props.open, async (v) => {
           >
             <component :is="it.icon" v-if="it.icon" class="w-3.5 h-3.5 shrink-0" />
             <span class="flex-1 truncate">{{ it.label }}</span>
-            <span v-if="it.reason" class="text-[12px] text-ink-3 shrink-0">{{ it.reason }}</span>
+            <span v-if="it.reason" class="text-ds-xs text-ink-3 shrink-0">{{ it.reason }}</span>
           </button>
         </template>
       </div>

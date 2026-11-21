@@ -23,7 +23,7 @@ const meta = computed(() => {
 
 <template>
   <span
-    class="tap-y inline-flex items-center gap-1 h-[22px] px-2 rounded-full border text-[12px] font-semibold shrink-0"
+    class="tap-y inline-flex items-center gap-1 h-[22px] px-2 rounded-full border text-ds-xs font-semibold shrink-0"
     :class="meta.cls"
     :title="`成熟度：${meta.label}`"
   >

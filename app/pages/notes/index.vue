@@ -7,48 +7,28 @@ const router = useRouter()
 // 触屏长按逐行操作（交付物第 22 屏）；notesRev 在删除后自增，触发下方重新取数
 const { openNoteSheet, notesRev } = useNoteActions()
 
-const page = computed(() => Math.max(1, Number(route.query.page) || 1))
-const activeTag = computed(() => (typeof route.query.tag === 'string' ? route.query.tag : ''))
-const activeDir = computed(() => (typeof route.query.dir === 'string' ? route.query.dir : ''))
-const activeQ = computed(() => (typeof route.query.q === 'string' ? route.query.q : ''))
-const sort = computed(() => (typeof route.query.sort === 'string' ? route.query.sort : 'updated'))
+// 取数（参数拼装 / loading / error / route.query 监听）全部收在 useNoteList：
+// 这套语义要被「全部笔记」与 health 筛选共用，散在页面里必然漂移。
+// keepPreviousData 也在那里实现：换页 / 换筛选时旧列表留着，只在列表顶部走 2px 进度条。
+const {
+  list,
+  error: loadError,
+  firstLoad,
+  refreshing,
+  reload: loadNotes,
+  page,
+  q: activeQ,
+  tag: activeTag,
+  dir: activeDir,
+  sort,
+  health: activeHealth
+} = useNoteList({ pageSize: 20 })
 
 // 局部输入状态（提交式搜索，避免 computed 双向绑定）
 const searchInput = ref(activeQ.value)
 
-const requestFetch = useRequestFetch()
-const list = ref<any>(null)
-const loading = ref(false)
-// 失败与「没匹配」必须分开：搜索无结果要提示改关键词，请求失败要给重试
-const loadError = ref<unknown>(null)
-
-const loadNotes = async () => {
-  loading.value = true
-  loadError.value = null
-  try {
-    list.value = await requestFetch('/api/notes', {
-      query: {
-        page: page.value,
-        pageSize: 20,
-        q: activeQ.value,
-        tag: activeTag.value,
-        dir: activeDir.value,
-        sort: sort.value
-      }
-    })
-  } catch (e) {
-    loadError.value = e
-    list.value = null
-  } finally {
-    loading.value = false
-  }
-}
-
-// SSR 初始数据
+// SSR 初始数据：首屏没有旧数据可保留，骨架只顶一次，所以这里仍然 await
 await loadNotes()
-
-// 客户端 query 变化（分页/搜索/标签/领域/排序）→ 重新取数（手动模式，不依赖 useAsyncData 缓存语义）
-watch(() => route.query, () => loadNotes())
 
 // 长按面板删除笔记后重新取数（列表数据不归 useAsyncData 管，refreshNuxtData 覆盖不到）
 watch(notesRev, () => loadNotes())
@@ -78,23 +58,31 @@ const clearSearch = () => {
   updateQuery({ q: undefined, page: undefined })
 }
 
-/** 活动筛选清单（芯片可逐项移除，spec 5.3） */
+/** health 参数的展示名（芯片与空态共用一份，免得两处文案各说各的） */
+const HEALTH_LABEL: Record<'isolated' | 'linked', string> = {
+  isolated: '孤立笔记',
+  linked: '双向链接'
+}
+
+/** 活动筛选清单（芯片可逐项移除，spec 5.3）；health 是入口带过来的筛选，同样可清除 */
 const activeFilters = computed(() => {
-  const out: { key: 'q' | 'tag' | 'dir'; label: string; value: string }[] = []
+  const out: { key: 'q' | 'tag' | 'dir' | 'health'; label: string; value: string }[] = []
   if (activeQ.value) out.push({ key: 'q', label: '搜索', value: activeQ.value })
   if (activeTag.value) out.push({ key: 'tag', label: '标签', value: `#${activeTag.value}` })
   if (activeDir.value) out.push({ key: 'dir', label: '领域', value: activeDir.value.split('/').pop() || activeDir.value })
+  // health 没有「字段：值」的结构（它不是用户输入的取值），label 留空，芯片只显示「孤立笔记」
+  if (activeHealth.value) out.push({ key: 'health', label: '', value: HEALTH_LABEL[activeHealth.value] })
   return out
 })
 
-const removeFilter = (key: 'q' | 'tag' | 'dir') => {
+const removeFilter = (key: 'q' | 'tag' | 'dir' | 'health') => {
   if (key === 'q') searchInput.value = ''
   updateQuery({ [key]: undefined, page: undefined })
 }
 
 const clearAll = () => {
   searchInput.value = ''
-  updateQuery({ q: undefined, tag: undefined, dir: undefined, page: undefined })
+  updateQuery({ q: undefined, tag: undefined, dir: undefined, health: undefined, page: undefined })
 }
 
 const sortOptions = [
@@ -104,6 +92,10 @@ const sortOptions = [
 ]
 
 const emptyReason = computed(() => {
+  // health 分支必须排在最前：不加这一支，从首页「孤立笔记 / 双向链接」卡点进来而结果为空时，
+  // 空态会落到最后那句「vault 里还没有已发布的笔记」—— 明明是「没有孤立笔记」，却被说成库是空的。
+  if (activeHealth.value === 'isolated') return '没有孤立笔记 —— 每一篇都至少连着一条入链或出链，没有落单的。'
+  if (activeHealth.value === 'linked') return '没有带链接的笔记 —— 目前还没有任何笔记之间建立双链。'
   if (activeQ.value && activeTag.value) return '当前同时按关键词与标签筛选，两者都需命中。'
   if (activeQ.value) return '没有笔记同时命中该关键词（标题或正文）。'
   if (activeTag.value) return `没有笔记带 #${activeTag.value} 标签。`
@@ -119,7 +111,7 @@ useHead({ title: '全部笔记 · 拾光' })
     <header class="mb-6">
       <div class="flex items-baseline justify-between gap-3 mb-4">
         <h1 class="text-ds-2xl font-bold tracking-tight text-ink">全部笔记</h1>
-        <span v-if="list" class="text-[12px] text-ink-3 font-mono">{{ list.total }} 篇</span>
+        <span v-if="list" class="text-ds-xs text-ink-3 font-mono">{{ list.total }} 篇</span>
       </div>
 
       <!-- 工具栏：搜索（带清除）+ 排序 + 密度切换 -->
@@ -129,7 +121,7 @@ useHead({ title: '全部笔记 · 拾光' })
           <input
             v-model="searchInput"
             placeholder="搜索标题或正文…"
-            class="w-full pl-9 pr-9 py-2 rounded-ctl bg-surface-2 border border-line text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
+            class="w-full pl-9 pr-9 py-2 rounded-ctl bg-surface-2 border border-line-strong text-ds-sm text-ink placeholder-ink-3 focus:border-accent/60 transition-colors duration-micro"
             @keyup.enter="submitSearch"
           />
           <button
@@ -147,7 +139,7 @@ useHead({ title: '全部笔记 · 拾光' })
           <button
             v-for="o in sortOptions"
             :key="o.key"
-            class="px-2.5 h-7 rounded-xs text-[12px] transition-colors duration-micro"
+            class="px-2.5 h-7 rounded-xs text-ds-xs transition-colors duration-micro"
             :class="sort === o.key ? 'bg-accent text-[var(--accent-ink)] font-semibold' : 'text-ink-2 hover:bg-surface-3'"
             :aria-pressed="sort === o.key"
             @click="updateQuery({ sort: o.key === 'updated' ? undefined : o.key, page: undefined })"
@@ -177,24 +169,26 @@ useHead({ title: '全部笔记 · 拾光' })
 
       <!-- 活动筛选：可逐项移除 + 全部清除 -->
       <div v-if="activeFilters.length" class="flex flex-wrap items-center gap-2 mt-3">
-        <span class="text-[12px] text-ink-3">筛选：</span>
+        <span class="text-ds-xs text-ink-3">筛选：</span>
         <span
           v-for="f in activeFilters"
           :key="f.key"
-          class="inline-flex items-center gap-1 h-[24px] pl-2.5 pr-1.5 rounded-full border border-accent/35 bg-[var(--accent-soft)] text-[12px] text-accent"
+          class="inline-flex items-center gap-1 h-[24px] pl-2.5 pr-1.5 rounded-full border border-accent/35 bg-[var(--accent-soft)] text-ds-xs text-accent-text"
         >
-          {{ f.label }}：{{ f.value }}
+          <template v-if="f.label">{{ f.label }}：</template>{{ f.value }}
           <button
             class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-accent/15 transition-colors duration-micro"
             :aria-label="`移除筛选：${f.label}`"
             @click="removeFilter(f.key)"
           ><X class="w-3 h-3" /></button>
         </span>
-        <button class="text-[12px] text-ink-3 hover:text-ink underline underline-offset-2 ml-1" @click="clearAll">全部清除</button>
+        <button class="text-ds-xs text-ink-3 hover:text-ink underline underline-offset-2 ml-1" @click="clearAll">全部清除</button>
       </div>
     </header>
 
-    <NoteListSkeleton v-if="loading" :rows="8" />
+    <!-- 去闪烁：只有「首次加载」（本地还没有任何数据）才整屏骨架。换页 / 换筛选时旧 list 一直留着，
+         骨架只能顶这一种场景 —— 列表从 8 行骨架塌回 0 再撑开，滚动位置和刚点的标签会一起跑掉 -->
+    <NoteListSkeleton v-if="firstLoad" :rows="8" />
 
     <EmptyState
       v-else-if="loadError"
@@ -204,11 +198,24 @@ useHead({ title: '全部笔记 · 拾光' })
       @retry="loadNotes"
     />
 
-    <ul v-else-if="list?.notes?.length" class="space-y-1 mb-8" :class="density === 'compact' ? 'space-y-0.5' : ''">
-      <li v-for="note in list.notes" :key="note.slug">
-        <NoteRow :note="note" :compact="density === 'compact'" actions @longpress="openNoteSheet" />
-      </li>
-    </ul>
+    <div v-else-if="list?.notes?.length">
+      <!-- 2px 槽位常驻（无请求时为空）：若整条 div 随请求出现/消失，行内容会上下跳 2px -->
+      <div class="h-[2px] mb-2" aria-hidden="true">
+        <div v-if="refreshing" class="h-full rounded-full bg-accent animate-pulse" />
+      </div>
+      <ul class="space-y-1 mb-8" :class="density === 'compact' ? 'space-y-0.5' : ''" :aria-busy="refreshing">
+        <li v-for="note in list.notes" :key="note.slug">
+          <!-- highlight 传当前搜索词：NoteRow 用它把 snippet 里的命中片段标出来 -->
+          <NoteRow
+            :note="note"
+            :compact="density === 'compact'"
+            :highlight="activeQ"
+            actions
+            @longpress="openNoteSheet"
+          />
+        </li>
+      </ul>
+    </div>
 
     <EmptyState
       v-else

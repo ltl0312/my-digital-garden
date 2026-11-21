@@ -46,8 +46,9 @@ const maturityBuckets = computed<Bucket[]>(() => (overview.value as any)?.maturi
 // 三个"小统计"：链接与孤立笔记是原来图谱页独有的数字，图谱下线后挪到这里
 const stats4 = computed(() => [
   { label: '笔记总数', value: total.value, to: '/notes', icon: FileText },
-  { label: '双向链接', value: stats.value.links, to: '/notes', icon: Link2 },
-  { label: '孤立笔记', value: stats.value.isolated, to: '/notes', icon: Layers },
+  // 这两张卡带筛选跳转：直接落到「只看这一种」的列表，用户点数字就是想知道「是哪几篇」
+  { label: '双向链接', value: stats.value.links, to: '/notes?health=linked', icon: Link2 },
+  { label: '孤立笔记', value: stats.value.isolated, to: '/notes?health=isolated', icon: Layers },
   { label: '分区目录', value: sectionBuckets.value.length, to: '/notes', icon: Sparkles }
 ])
 
@@ -87,7 +88,7 @@ useHead({ title: '拾光' })
       <div class="min-w-0">
         <!-- 标题条 -->
         <header class="mb-8">
-          <p class="font-serif italic text-ds-base text-accent mb-2">Non-linear Knowledge Sanctuary</p>
+          <p class="font-serif italic text-ds-base text-accent-text mb-2">Non-linear Knowledge Sanctuary</p>
           <h1 class="text-[32px] sm:text-[38px] leading-[1.15] font-extrabold tracking-tight text-ink mb-2">
             拾光
           </h1>
@@ -106,7 +107,7 @@ useHead({ title: '拾光' })
               @click="commandOpen = true"
             >
               <Search class="w-4 h-4" />搜索
-              <kbd class="ml-1 text-[12px] font-mono bg-surface px-1.5 py-0.5 rounded border border-line">⌘K</kbd>
+              <kbd class="ml-1 text-ds-xs font-mono bg-surface px-1.5 py-0.5 rounded border border-line">⌘K</kbd>
             </button>
           </div>
         </header>
@@ -120,7 +121,7 @@ useHead({ title: '拾光' })
             class="px-4 py-3 rounded-card border border-line bg-surface hover:border-accent/40 transition-colors duration-base"
           >
             <p class="text-ds-2xl font-bold text-ink leading-title tabular-nums">{{ s.value }}</p>
-            <p class="text-[12px] text-ink-3 mt-0.5 flex items-center gap-1">
+            <p class="text-ds-xs text-ink-3 mt-0.5 flex items-center gap-1">
               <component :is="s.icon" class="w-3 h-3" />{{ s.label }}
             </p>
           </NuxtLink>
@@ -131,7 +132,7 @@ useHead({ title: '拾光' })
         <section class="mb-10">
           <div class="flex items-baseline justify-between mb-3">
             <h2 class="text-ds-xl font-semibold text-ink">最近更新</h2>
-            <NuxtLink to="/notes" class="text-ds-sm text-accent hover:underline inline-flex items-center gap-1">
+            <NuxtLink to="/notes" class="text-ds-sm text-accent-text hover:underline inline-flex items-center gap-1">
               全部笔记<ArrowRight class="w-3.5 h-3.5" />
             </NuxtLink>
           </div>
@@ -162,7 +163,7 @@ useHead({ title: '拾光' })
         <section class="mb-10">
           <div class="flex items-baseline justify-between mb-3">
             <h2 class="text-ds-xl font-semibold text-ink">按目录</h2>
-            <NuxtLink to="/notes" class="text-ds-sm text-accent hover:underline inline-flex items-center gap-1">
+            <NuxtLink to="/notes" class="text-ds-sm text-accent-text hover:underline inline-flex items-center gap-1">
               逐条浏览<ArrowRight class="w-3.5 h-3.5" />
             </NuxtLink>
           </div>
@@ -181,16 +182,16 @@ useHead({ title: '拾光' })
               </span>
               <div class="mt-1 flex items-baseline gap-2">
                 <span class="text-ds-2xl font-bold text-ink leading-none tabular-nums">{{ d.count }}</span>
-                <span class="text-[11px] text-ink-3">{{ share(d.count) }}%</span>
+                <span class="text-ds-xs text-ink-3">{{ share(d.count) }}%</span>
               </div>
-              <p class="mt-1 text-[11px] text-ink-3 truncate" :title="d.key">{{ d.key }}</p>
+              <p class="mt-1 text-ds-xs text-ink-3 truncate" :title="d.key">{{ d.key }}</p>
             </NuxtLink>
           </div>
           <p v-else class="text-ds-sm text-ink-3">还没有可统计的目录。</p>
           <button
             v-if="sectionBuckets.length > SECTION_PREVIEW"
             type="button"
-            class="mt-2 text-[12px] text-ink-3 hover:text-accent inline-flex items-center gap-1"
+            class="mt-2 text-ds-xs text-ink-3 hover:text-accent-text inline-flex items-center gap-1"
             @click="showAllSections = !showAllSections"
           >
             {{ showAllSections ? '收起长尾目录' : `展开其余 ${sectionBuckets.length - SECTION_PREVIEW} 个目录` }}
@@ -201,7 +202,7 @@ useHead({ title: '拾光' })
         <section class="mb-10">
           <div class="flex items-baseline justify-between mb-3">
             <h2 class="text-ds-xl font-semibold text-ink">按类型</h2>
-            <span class="text-[12px] text-ink-3">来自 type/* 标签</span>
+            <span class="text-ds-xs text-ink-3">来自 type/* 标签</span>
           </div>
           <div v-if="typeBuckets.length" class="grid grid-cols-2 lg:grid-cols-3 gap-2">
             <NuxtLink
@@ -218,7 +219,7 @@ useHead({ title: '拾光' })
                 </span>
                 <span class="text-ds-2xl font-bold text-ink leading-none tabular-nums">{{ t.count }}</span>
               </div>
-              <p class="mt-1.5 text-[12px] text-ink-3">占全部 {{ share(t.count) }}%</p>
+              <p class="mt-1.5 text-ds-xs text-ink-3">占全部 {{ share(t.count) }}%</p>
             </NuxtLink>
           </div>
           <p v-else class="text-ds-sm text-ink-3">还没有打上 type/* 标签的笔记。</p>
@@ -228,7 +229,7 @@ useHead({ title: '拾光' })
         <section class="mb-10">
           <div class="flex items-baseline justify-between mb-3">
             <h2 class="text-ds-xl font-semibold text-ink">按成熟度</h2>
-            <span class="text-[12px] text-ink-3">幼苗 → 生长中 → 常青</span>
+            <span class="text-ds-xs text-ink-3">幼苗 → 生长中 → 常青</span>
           </div>
           <ul v-if="maturityBuckets.length" class="space-y-1.5">
             <li v-for="m in maturityBuckets" :key="m.key">
@@ -256,7 +257,7 @@ useHead({ title: '拾光' })
       <aside class="min-w-0 space-y-6">
         <section class="rounded-card border border-line bg-surface p-4">
           <h3 class="text-ds-sm font-semibold text-ink mb-3 flex items-center gap-1.5">
-            <Sparkles class="w-3.5 h-3.5 text-accent" />快速入口
+            <Sparkles class="w-3.5 h-3.5 text-accent-text" />快速入口
           </h3>
           <ul class="space-y-1">
             <li v-for="q in quickLinks" :key="q.to">
@@ -264,10 +265,10 @@ useHead({ title: '拾光' })
                 :to="q.to"
                 class="flex items-start gap-2.5 px-2.5 py-2 rounded-ctl hover:bg-surface-3 transition-colors duration-micro group"
               >
-                <component :is="q.icon" class="w-4 h-4 mt-0.5 text-ink-3 group-hover:text-accent transition-colors duration-micro" />
+                <component :is="q.icon" class="w-4 h-4 mt-0.5 text-ink-3 group-hover:text-accent-text transition-colors duration-micro" />
                 <span class="min-w-0">
                   <span class="block text-ds-sm font-medium text-ink">{{ q.label }}</span>
-                  <span class="block text-[12px] text-ink-3 leading-summary">{{ q.desc }}</span>
+                  <span class="block text-ds-xs text-ink-3 leading-summary">{{ q.desc }}</span>
                 </span>
               </NuxtLink>
             </li>
@@ -301,9 +302,9 @@ useHead({ title: '拾光' })
 
         <section class="rounded-card border border-line bg-surface p-4">
           <h3 class="text-ds-sm font-semibold text-ink mb-3 flex items-center gap-1.5">
-            <Activity class="w-3.5 h-3.5 text-accent" />Vault 状态
+            <Activity class="w-3.5 h-3.5 text-accent-text" />Vault 状态
           </h3>
-          <dl class="space-y-1.5 text-[12px]">
+          <dl class="space-y-1.5 text-ds-xs">
             <div class="flex items-center justify-between">
               <dt class="text-ink-3">已发布笔记</dt>
               <dd class="font-mono text-ink-2 tabular-nums">{{ stats.total }}</dd>
@@ -317,7 +318,7 @@ useHead({ title: '拾光' })
               <dd class="font-mono text-ink-2 tabular-nums">{{ stats.isolated }}</dd>
             </div>
           </dl>
-          <p class="mt-3 text-[12px] text-ink-3 leading-summary">
+          <p class="mt-3 text-ds-xs text-ink-3 leading-summary">
             保存到 vault 的 Markdown 由 watcher 自动同步入库。
           </p>
         </section>

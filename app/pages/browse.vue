@@ -122,7 +122,7 @@ useHead({ title: () => (heading.value ? `${heading.value} · 拾光` : '分类�
   <div class="max-w-[880px] mx-auto px-4 sm:px-6 py-8">
     <NuxtLink
       to="/"
-      class="inline-flex items-center gap-1.5 text-[12px] text-ink-3 hover:text-ink transition-colors duration-micro mb-4"
+      class="inline-flex items-center gap-1.5 text-ds-xs text-ink-3 hover:text-ink transition-colors duration-micro mb-4"
     >
       <ArrowLeft class="w-3.5 h-3.5" />返回总览
     </NuxtLink>
@@ -130,7 +130,7 @@ useHead({ title: () => (heading.value ? `${heading.value} · 拾光` : '分类�
     <header class="mb-6">
       <div class="flex items-baseline justify-between gap-3 mb-3">
         <div class="min-w-0">
-          <p class="text-[12px] text-ink-3 mb-1 truncate">{{ subline }}</p>
+          <p class="text-ds-xs text-ink-3 mb-1 truncate">{{ subline }}</p>
           <h1 class="text-ds-2xl font-bold tracking-tight text-ink flex items-center gap-2 min-w-0">
             <i
               class="w-2 h-2 rounded-full hue-chip shrink-0"
@@ -140,7 +140,7 @@ useHead({ title: () => (heading.value ? `${heading.value} · 拾光` : '分类�
             <span class="truncate">{{ heading || '未知分类' }}</span>
           </h1>
         </div>
-        <span v-if="list" class="text-[12px] text-ink-3 font-mono shrink-0">{{ list.total }} 篇</span>
+        <span v-if="list" class="text-ds-xs text-ink-3 font-mono shrink-0">{{ list.total }} 篇</span>
       </div>
 
       <div class="flex flex-wrap items-center gap-2.5">
@@ -148,7 +148,7 @@ useHead({ title: () => (heading.value ? `${heading.value} · 拾光` : '分类�
           <button
             v-for="o in sortOptions"
             :key="o.key"
-            class="px-2.5 h-7 rounded-xs text-[12px] transition-colors duration-micro"
+            class="px-2.5 h-7 rounded-xs text-ds-xs transition-colors duration-micro"
             :class="sort === o.key ? 'bg-accent text-[var(--accent-ink)] font-semibold' : 'text-ink-2 hover:bg-surface-3'"
             :aria-pressed="sort === o.key"
             @click="updateQuery({ sort: o.key === 'updated' ? undefined : o.key, page: undefined })"
@@ -174,7 +174,7 @@ useHead({ title: () => (heading.value ? `${heading.value} · 拾光` : '分类�
           ><Rows3 class="w-4 h-4" /></button>
         </div>
 
-        <NuxtLink to="/notes" class="text-ds-sm text-accent hover:underline inline-flex items-center gap-1 ml-auto">
+        <NuxtLink to="/notes" class="text-ds-sm text-accent-text hover:underline inline-flex items-center gap-1 ml-auto">
           全部笔记<ArrowRight class="w-3.5 h-3.5" />
         </NuxtLink>
       </div>

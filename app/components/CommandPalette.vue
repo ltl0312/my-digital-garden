@@ -3,10 +3,14 @@
 // 分组结果（按领域）· 高亮命中 · 键盘导航（↑↓ / ↵ / ESC）· 底部快捷键提示
 import { Search, FileText } from 'lucide-vue-next'
 import { domainOfSlug } from '~/composables/useFacets'
+import { highlightHtml } from '~/composables/useNoteList'
 
 const open = defineModel<boolean>('open', { default: false })
 const q = ref('')
 const results = ref<any[]>([])
+/** 这批结果是用哪个词搜出来的：片段高亮必须跟着结果走，
+ *  否则用户多打一个字（新请求还在 200ms 防抖里）就会拿新词去标旧片段，标出风马牛不相及的词 */
+const hitQuery = ref('')
 const loading = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 const active = ref(0)
@@ -19,6 +23,7 @@ let requestSeq = 0
 watch(open, async (v) => {
   if (!v) {
     q.value = ''
+    hitQuery.value = ''
     results.value = []
     active.value = 0
     return
@@ -33,12 +38,16 @@ const search = async () => {
   debounceTimer = setTimeout(async () => {
     const seq = ++requestSeq
     loading.value = true
+    // 记下这次请求实际用的词：返回时 q 可能已经又被改过（下一轮还在防抖里），
+    // 高亮必须按「结果对应的词」算，否则会把旧片段标上风马牛不相及的新词
+    const needle = q.value.trim()
     try {
       const requestFetch = useRequestFetch()
       // 出参类型同首页：显式声明所需字段（results 本身即 any[]）
-      const data = await requestFetch<{ notes: any[] }>('/api/notes', { query: { q: q.value, pageSize: 8 } })
+      const data = await requestFetch<{ notes: any[] }>('/api/notes', { query: { q: needle, pageSize: 8 } })
       if (seq === requestSeq) {
         results.value = data.notes || []
+        hitQuery.value = needle
         active.value = 0
       }
     } finally {
@@ -62,9 +71,9 @@ const groups = computed(() => {
 const flat = computed(() => groups.value.flatMap(g => g.items))
 const idxOf = (slug: string) => flat.value.findIndex(n => n.slug === slug)
 
-/** 高亮命中：把标题里匹配查询词的片段包成 mark */
+/** 高亮命中：把标题里匹配查询词的片段包成 mark；用 hitQuery（结果对应的词）而不是当前输入框 */
 const segs = (title: string) => {
-  const query = q.value.trim()
+  const query = hitQuery.value
   if (!query) return [{ t: title, hit: false }]
   const out: { t: string; hit: boolean }[] = []
   const lower = title.toLowerCase()
@@ -82,6 +91,9 @@ const segs = (title: string) => {
   }
   return out
 }
+
+/** 片段高亮：先按纯文本转义再只把命中段包进 <mark>（不能把服务端字符串直接 v-html） */
+const snippetHtml = (snippet: string) => highlightHtml(snippet, hitQuery.value)
 
 const go = (slug: string) => {
   open.value = false
@@ -119,7 +131,7 @@ const onKeydown = (e: KeyboardEvent) => {
         class="w-full max-w-xl rounded-overlay border border-line-strong bg-surface shadow-ds3 overflow-hidden"
       >
         <div class="p-4 border-b border-line flex items-center gap-3">
-          <Search class="w-4 h-4 text-accent shrink-0" />
+          <Search class="w-4 h-4 text-accent-text shrink-0" />
           <input
             ref="inputRef"
             v-model="q"
@@ -129,12 +141,12 @@ const onKeydown = (e: KeyboardEvent) => {
             @input="search"
             @keydown="onKeydown"
           />
-          <kbd class="text-[12px] font-mono text-ink-3 bg-surface-3 px-2 py-1 rounded-ctl cursor-pointer shrink-0" @click="open = false">ESC</kbd>
+          <kbd class="text-ds-xs font-mono text-ink-3 bg-surface-3 px-2 py-1 rounded-ctl cursor-pointer shrink-0" @click="open = false">ESC</kbd>
         </div>
 
         <div ref="listRef" class="max-h-[58vh] sm:max-h-80 overflow-y-auto p-2">
           <template v-for="g in groups" :key="g.domain">
-            <p class="px-2.5 pt-2 pb-1 text-[12px] font-semibold text-ink-3">{{ g.domain }}</p>
+            <p class="px-2.5 pt-2 pb-1 text-ds-xs font-semibold text-ink-3">{{ g.domain }}</p>
             <button
               v-for="n in g.items"
               :key="n.slug"
@@ -144,15 +156,22 @@ const onKeydown = (e: KeyboardEvent) => {
               @click="go(n.slug)"
               @mousemove="active = idxOf(n.slug)"
             >
-              <FileText class="w-4 h-4 shrink-0" :class="idxOf(n.slug) === active ? 'text-accent' : 'text-ink-3'" />
+              <FileText class="w-4 h-4 shrink-0" :class="idxOf(n.slug) === active ? 'text-accent-text' : 'text-ink-3'" />
               <span class="min-w-0 flex-1">
                 <span class="block text-ds-sm font-semibold text-ink truncate">
                   <template v-for="(s, i) in segs(n.title)" :key="i">
-                    <mark v-if="s.hit" class="bg-[var(--accent-soft)] text-accent rounded-xs px-0.5">{{ s.t }}</mark>
+                    <mark v-if="s.hit" class="bg-[var(--accent-soft)] text-accent-text rounded-xs px-0.5">{{ s.t }}</mark>
                     <template v-else>{{ s.t }}</template>
                   </template>
                 </span>
-                <span class="block text-[12px] text-ink-3 line-clamp-1">{{ n.summary || n.slug }}</span>
+                <!-- 有命中片段就显示片段：调色板里最要紧的是「这个词出现在哪句话里」，
+                     摘要往往与关键词无关，看不出为什么这条会被搜出来 -->
+                <span
+                  v-if="n.snippet"
+                  class="block text-ds-xs text-ink-3 line-clamp-2 [&_mark]:bg-[var(--accent-soft)] [&_mark]:text-accent-text [&_mark]:rounded-xs [&_mark]:px-0.5"
+                  v-html="snippetHtml(n.snippet)"
+                ></span>
+                <span v-else class="block text-ds-xs text-ink-3 line-clamp-1">{{ n.summary || n.slug }}</span>
               </span>
               <StatusBadge :maturity="n.maturity" compact />
             </button>
@@ -165,7 +184,7 @@ const onKeydown = (e: KeyboardEvent) => {
         </div>
 
         <!-- 底部快捷键提示 -->
-        <div class="px-4 py-2.5 border-t border-line flex items-center gap-3 text-[12px] text-ink-3">
+        <div class="px-4 py-2.5 border-t border-line flex items-center gap-3 text-ds-xs text-ink-3">
           <span class="flex items-center gap-1"><kbd class="font-mono bg-surface-3 px-1.5 py-0.5 rounded">↑</kbd><kbd class="font-mono bg-surface-3 px-1.5 py-0.5 rounded">↓</kbd>选择</span>
           <span class="flex items-center gap-1"><kbd class="font-mono bg-surface-3 px-1.5 py-0.5 rounded">↵</kbd>打开</span>
           <span class="flex items-center gap-1"><kbd class="font-mono bg-surface-3 px-1.5 py-0.5 rounded">ESC</kbd>关闭</span>
