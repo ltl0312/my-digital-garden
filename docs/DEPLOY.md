@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-11-20 23:05 CST（v2.2.0 已上线，容器 `garden-app` 内存 98.88 MiB / 640 MiB，宿主磁盘 82%）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-11-21 09:47 CST（v2.2.1 已上线，容器 `garden-app` 内存 117.4 MiB / 640 MiB，宿主磁盘 83%）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v2.2.0` | `15b3aea45c6e` | **全链路体验升级（可达性 / 触控 / 状态闭环 / 信息架构）**：`--ink-3` 亮 `#7B838F`→`#616A77`（对四底色 5.47/4.97/5.20/4.76 全部达 AA）、暗 `#78829A`→`#828CA0`（surface-3 由 4.14 提到 4.71）；新增 `--line-strong`（亮 `#8E8778` 3.57/3.24、暗 `#5C6A7B` 5.52/5.01）接管控件描边；删 17 处 `focus:outline-none` + `:focus-visible` 去掉 `border-radius`（焦点环不再被工具类压掉、胶囊聚焦不再 9999→6px 跳变）；`TagPill` 无 `to` 时渲染 span 而非空 button（60 个死按钮归零）；胶囊/图标钮加 `.tap-y`/`.tap-44` 透明热区（390 宽下 under44 由 75 → 0）；列表骨架 `NoteListSkeleton.vue` + `EmptyState` 错误态与重试；首页「最近更新」上提到统计卡之后（top 1437→424）、`/browse` 提为一级导航（底栏 3→4）、正文 16→17px（仍 720px 列宽，42.4 字/行）；Tailwind 补 `pill`/`fab`/`xs` 圆角键与 `max-w-measure`，`z-index` 定为 command 1000 < sheet 1100 < dialog 1200 < popover 1300 < toast 1400；`ImportDialog` 58 处 legacy 调色板类归入设计令牌（**当前**） |
+| `latest` / `v2.2.1` | `8c40d5633e6f` | **滚动与侧栏状态修复**：①换一篇笔记回到顶部（内容区 `[data-scroll-root]` 是自绘滚动容器、`/notes/[...slug]` 又是 catch-all，换篇时组件复用、`scrollTop` 原样留着；`app/layouts/default.vue` 里 `watch(() => route.path)` 后 `nextTick` 归零，同页筛选 `?tag=` / `?dir=` 不动）；②侧栏展开态三层持久化（新增 `app/composables/useStickyList.ts`：`useState` 管面板切换、`localStorage` 管刷新、`onMounted` 才读盘避免水合不一致、`restored` 前不写盘防首帧覆盖）；③标签组默认全收（删掉 `EXPANDED_DEFAULT = 3` 与前 3 组恒展开规则，改为完全由持久化集合驱动，`type` / `前端` / `编程语言` 不再默认打开）。实测：滚到 1400 → 点树内另一篇 → `scrollTop` **0**；目录树 / 标签组展开后切面板与刷新均保留（**当前**） |
+| `v2.2.0` | `15b3aea45c6e` | **全链路体验升级（可达性 / 触控 / 状态闭环 / 信息架构）**：`--ink-3` 亮 `#7B838F`→`#616A77`（对四底色 5.47/4.97/5.20/4.76 全部达 AA）、暗 `#78829A`→`#828CA0`（surface-3 由 4.14 提到 4.71）；新增 `--line-strong`（亮 `#8E8778` 3.57/3.24、暗 `#5C6A7B` 5.52/5.01）接管控件描边；删 17 处 `focus:outline-none` + `:focus-visible` 去掉 `border-radius`（焦点环不再被工具类压掉、胶囊聚焦不再 9999→6px 跳变）；`TagPill` 无 `to` 时渲染 span 而非空 button（60 个死按钮归零）；胶囊/图标钮加 `.tap-y`/`.tap-44` 透明热区（390 宽下 under44 由 75 → 0）；列表骨架 `NoteListSkeleton.vue` + `EmptyState` 错误态与重试；首页「最近更新」上提到统计卡之后（top 1437→424）、`/browse` 提为一级导航（底栏 3→4）、正文 16→17px（仍 720px 列宽，42.4 字/行）；Tailwind 补 `pill`/`fab`/`xs` 圆角键与 `max-w-measure`，`z-index` 定为 command 1000 < sheet 1100 < dialog 1200 < popover 1300 < toast 1400；`ImportDialog` 58 处 legacy 调色板类归入设计令牌（v2.2.1 的回滚点） |
 | `v2.1.2` | `bf9400a5d018`（运行时 `7f56115fa52b`） | **首屏文档 802,626 → 82,426 B（-89.7%）**：侧栏目录树（`/api/vault/tree` 449,862 B）与标签（`/api/tags` 204,228 B）改 `server: false` 客户端取数，首屏 payload 722,128 → 10,643 B；配合 nginx 的 `proxy_buffering` 兜底，根治「文档被 CDN 512 KiB 掐断 → 不水合 → 侧栏点不动、要刷新 1~3 次」；另修 `markdown-sanitize.ts` 5 处 `noUncheckedIndexedAccess` 类型错误（v2.2.0 的回滚点） |
 | `v2.1.1` | `9236911f1af8` | **三个线上缺陷**：①侧栏宽度被 localStorage 脏值（`NaN`/`abc`/`1280`/`640`）撑宽且拖拽未做 pointer capture 导致 `resizing` 卡死、整页点不动——现在脏值一律丢弃回默认 320、拖拽四路收尾、补 `onBeforeUnmount`；②右键删除文件夹对非 root 管理员静默失效——菜单项不再用原生 `disabled`（浏览器不派发 click）改 `aria-disabled` + toast 说明，权限收紧为「有写权限即可、结构目录除外」，删除后同时刷新标签与统计；③侧栏「未分组」消失——新增 `shared/tag-group.ts` 按「人工映射 → 同篇共存证据 support≥2 → 目录派生领域 → 自身命名空间」推导 974 个历史裸标签的分组，标签真名不动 |
 | `v2.1.0` | `ee065a95720d` | **移除知识图谱页**（D3 力导向图整页 + `/api/graph/*` 配色与规则接口 + 全部 `GraphView`/`components/graph`/`useGraph*`/`lib/graph-*`，`shared/graph-domain.ts`→`shared/domain.ts`）；首页改为**笔记总览仪表盘**（笔记总数/双向链接/孤立笔记/目录数 + 按目录、按类型、按成熟度三段卡片），新增 `/browse?kind=dir|type|maturity&value=…` 分类浏览页；新增 `GET /api/overview`（单次 findMany + 内存分桶，30s 进程内缓存），`/api/notes` 增 `type` / `maturity` 参数 |
@@ -91,6 +92,40 @@ https://liutianle.cn
 > ② **恢复的两个坑（本轮实测踩到并修掉）** —— 清空 vault 再复制回会触发 524 个 `unlink`，watcher 把整库 Note 行删光又全量重建，`createdAt` 全部变成恢复当天、`updatedAt` 全被刷成同一秒，进而 `scheduleSuggestScan` 认为「全库刚导入」而排队生成 514 条建议。修法：新增 `server/utils/vault-busy.ts`（`beginVaultBusy`/`endVaultBusy`/`isVaultBusy`），watcher 的 `add`/`change`/`unlink` 与 `scheduleSuggestScan` 在整库操作期间直接跳过（结束留 5s 宽限，因为 chokidar 的 `awaitWriteFinish` 稳定窗口是 1s）；重建索引后用 `$executeRawUnsafe` 写回原始时间戳（Prisma 的 `update` 会强行把 `updatedAt` 设为 `now()`）。
 > ③ **AI 全库审计（仅初始管理员）** —— `server/utils/audit.ts`：范围可按文件夹/标签/领域/关键词任意组合，先「看看会扫多少篇」再真正跑；每篇交给模型产出**建议**（`append-section` / `add-tags` / `set-domain` 三种动作，刻意不提供「重写正文」），建议与执行分离，**执行前强制整库备份**（备份失败则一条都不执行）。报告按文件存在 `data/audits/<id>.json`，不进数据库（恢复备份时不该带回旧报告）。
 > ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。**v2.1.1 起这条已过时**：无前缀标签改由 `shared/tag-group.ts` 按共存证据与笔记目录派生分组，「未分组」组不再出现（标签真名与筛选行为不变）。
+### v2.2.1（滚动复位 + 侧栏展开态持久化 + 标签组默认全收）
+
+**为什么发这一版**：v2.2.0 上线后收到三条用户反馈，都是**状态管理与滚动容器**层面的真缺陷，不是样式问题：
+
+1. **换一篇笔记不回顶部** —— 滚动容器不是 `window` 而是 `app/layouts/default.vue:468` 的 `<main ref="scrollEl" data-scroll-root class="flex-1 min-w-0 h-full overflow-y-auto …">`；浏览器只会在 `window` 滚动时替你做路由复位。再叠上 `/notes/[...slug]` 是 catch-all 路由，同一篇换另一篇时组件被复用、`scrollTop` 原样留着。实测：滚到 1400 后打开另一篇，仍停在 1400。
+2. **侧栏展开态记不住** —— `app/components/FileTree.vue:57` 的 `useState('shell-tree-expanded')` 只在会话内共享、不落盘，刷新即回默认；`app/components/TagGroups.vue` 更进一步，`open` / `closed` 是局部 `ref<Set>`，而 `ContextSidebar.vue:415-420` 用 `v-if` / `v-else` 切面板，子组件销毁就把状态带走了 —— 所以**切个侧栏面板就变回默认**，比刷新失效更烦人。
+3. **标签组默认打开前三组** —— `EXPANDED_DEFAULT = 3` 让 `type` / `前端` / `编程语言` 恒默认展开，与「默认全收」的预期相反。
+
+**改了什么**：
+
+- `app/layouts/default.vue`：`watch(() => route.path, () => nextTick(() => { scrollEl.value && (scrollEl.value.scrollTop = 0) }))`。只认 **path** 变化 —— 列表页切 `?tag=` / `?dir=` 属同页筛选，保持原位更自然。
+- 新增 `app/composables/useStickyList.ts`：`useStickyList(stateKey, storageKey)` 与 `useStickyFlag(...)`。三层职责分离写进注释：`useState` 解决面板切换销毁，`localStorage` 解决刷新，**`onMounted` 才读盘**避免 SSR / hydration mismatch；`restored` 置真之前不写盘，否则首帧空数组会把上次存的值覆盖成 `[]`；`parseList` 只接受「数组 + 非空字符串」，被手改坏或旧版本残留的对象一律丢弃。
+- `app/components/FileTree.vue`：树展开态与 `promoted` 折叠态改走上面两个 composable；`reveal()` 展开祖先链仍走 `setExpanded`，所以「在结构树中定位」的结果也会被记住。
+- `app/components/TagGroups.vue`：删掉 `EXPANDED_DEFAULT` 与前 3 组恒展开规则，`isOpen` 改为纯查询持久化集合 —— 默认全收，展开/收起跨面板与刷新都保留；顺带给根节点加 `data-tag-groups`、组头加 `data-tag-group`（测试锚点，否则探针用 `button[aria-expanded]` 会误命中 536 个无关按钮）。
+
+**上线记录**：2026-11-21 00:24 CST。本地 `docker build -f deploy/Dockerfile -t my-digital-garden-app:v2.2.1 .`（镜像 `b31abc789108`，1.5 GB）→ `docker tag …:latest` → `docker save …:v2.2.1 | gzip -1 > garden-image-v2.2.1.tar.gz`（**316 MB**）→ `scp -i ~/.ssh/garden.pem … root@8.163.35.246:/opt/garden-docker/` → 服务器 `docker load -i garden-image-v2.2.1.tar.gz` → `docker tag my-digital-garden-app:v2.2.1 my-digital-garden-app:latest` → `cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate`（Recreated / Started）→ `docker ps` = `my-digital-garden-app:latest Up`，`curl 127.0.0.1:3000/login` 首次探测即 **200**。启动日志照旧 `No pending migrations to apply.` → `[garden] 迁移完成，启动应用...` → `[garden] watcher: 开始监听 /app/content/vault` → `Listening on http://[::]:3000`。服务器 classic store ImageID `8c40d5633e6f`（`latest` 与 `v2.2.1` 同一 ID），内存 117.4 MiB / 640 MiB（18.35%），宿主磁盘 40G 用 31G（83%）。回滚镜像 `15b3aea45c6e`（v2.2.0）。
+
+**验收（本机 `:3100` 生产产物，Puppeteer 1440×900）**：
+
+- A 滚动：`/notes/ltl/02-前端/导出/…` 滚到 `scrollTop = 1400` → 点结构树内 `/notes/KnowledgeBase/CLAUDE`（客户端路由）→ 路径变更后 **`scrollTop = 0`**。
+- B 目录树：初始四个一级目录 `KnowledgeBase/ltl/lyf/zrw` 全 `aria-expanded=false`；展开 `KnowledgeBase` → 切到标签面板再切回 → 仍 `open:true`；`localStorage['garden-tree-expanded'] = "[\"KnowledgeBase\"]"`；刷新后仍 `open:true`。
+- C 标签组：初始 `open: []`（全收，`[data-tag-group]` 共 532 组）；展开 `type` 组 → 切面板往返仍开 → 刷新后仍开（`localStorage['garden-tag-open-groups'] = "[\"type\"]"`）。
+- 验收套件：`m-verify` **47/47**、`m34-verify` **39/39**（含 hydration 与控制台 error 检查）。
+- 线上核验：`https://liutianle.cn/login` **200**、`/` **302**；含新逻辑的 chunk `/_nuxt/BQjWz-Z7.js` 公开可取（200）且能检索到 `garden-tree-expanded`。
+
+> **v2.2.1 无 schema 变更**（未动 `prisma/migrations`，启动日志 `No pending migrations to apply.`），与 v2.2.0 / v2.1.2 互滚都不丢数据。回滚到 v2.2.0：
+>
+> ```bash
+> cd /opt/garden-docker
+> docker tag my-digital-garden-app:v2.2.0 my-digital-garden-app:latest
+> docker compose -f docker-compose.prod.yml up -d --force-recreate
+> docker inspect -f '{{.Image}}' garden-app   # 应为 sha256:15b3aea45c6e...
+> ```
+
 ### v2.2.0（全链路 UI/UX 升级：可达性 / 触控 / 状态闭环 / 信息架构）
 
 **为什么发这一版**：专家团（UX 架构 / persona 走查 / UI 设计 / 像素验收）对本机 3000 端口外的临时实例 `:3100` 做了实测走查，用 Puppeteer 量出六类**能量化**的缺陷，而不是凭观感改样式：①浅色 `--ink-3 #7B838F` 对 `surface / canvas / surface-2 / surface-3` 实测 3.83 / 3.48 / 3.63 / 3.33，12px 说明文字全部不过 WCAG AA 4.5；②控件描边 `--line #E6E3D9` 对白 1.28、对 canvas 1.17，远低于 WCAG 1.4.11 要求的 3:1；③`focus:outline-none` 17 处，Tailwind 把它编译进 utilities 层、优先级压过 `main.css` 的 `:focus-visible`，`/notes` 与 `/admin` 各有 2 个可聚焦元素**完全没有可见焦点**；④`TagPill` 在没有 `to` 时渲染成没有 `@click` 的 `<button>`，列表页 20 行 × 3 = 60 个死按钮，同时它们都是 22px 触控目标；⑤三个主屏的加载态只有一行「加载中…」文字、没有错误态，首页「常用标签」的骨架分支与外层 `v-if` 互斥成了恒假死代码；⑥首页「最近更新」在 1440×900 视口里 top = **1437px**，要滚 537px 才看得到——而它恰恰是最高频入口。
