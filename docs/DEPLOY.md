@@ -4,7 +4,7 @@
 > 技术栈：Nuxt 4（Nitro 生产产物）+ PostgreSQL（**宿主原生**）+ Docker + Nginx + acme.sh
 > 线上域名：`https://liutianle.cn`
 >
-> 最后核实：2026-11-21 09:47 CST（v2.2.1 已上线，容器 `garden-app` 内存 117.4 MiB / 640 MiB，宿主磁盘 83%）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
+> 最后核实：2026-11-21 20:16 CST（v2.3.0 已上线，容器 `garden-app` 镜像 `6a6c124eb02d`，宿主磁盘 83%）。**线上由 Docker 容器承载，PM2 未在运行**（历史 PM2 路径见 §9）。
 
 ---
 
@@ -37,7 +37,8 @@ https://liutianle.cn
 
 | tag | ImageID | 内容 |
 |---|---|---|
-| `latest` / `v2.2.1` | `8c40d5633e6f` | **滚动与侧栏状态修复**：①换一篇笔记回到顶部（内容区 `[data-scroll-root]` 是自绘滚动容器、`/notes/[...slug]` 又是 catch-all，换篇时组件复用、`scrollTop` 原样留着；`app/layouts/default.vue` 里 `watch(() => route.path)` 后 `nextTick` 归零，同页筛选 `?tag=` / `?dir=` 不动）；②侧栏展开态三层持久化（新增 `app/composables/useStickyList.ts`：`useState` 管面板切换、`localStorage` 管刷新、`onMounted` 才读盘避免水合不一致、`restored` 前不写盘防首帧覆盖）；③标签组默认全收（删掉 `EXPANDED_DEFAULT = 3` 与前 3 组恒展开规则，改为完全由持久化集合驱动，`type` / `前端` / `编程语言` 不再默认打开）。实测：滚到 1400 → 点树内另一篇 → `scrollTop` **0**；目录树 / 标签组展开后切面板与刷新均保留（**当前**） |
+| `latest` / `v2.3.0` | `6a6c124eb02d` | **笔记库体验升级（保存可靠性 / 搜索一次到位 / 内容健康度 / 设计令牌）**：①保存链路重做 —— `PUT /api/vault/notes/<slug>` 增 `baseVersion`（`mtimeMs:sha256前16`）乐观锁，不符返 `409 NOTE_CONFLICT` 且**不写盘**；写盘后同步 `processMarkdownFile` 再回读，`version/updatedAt/indexed` 同响应返回；正文自带坏 frontmatter 一律 `400 FRONTMATTER_INVALID` 前置拦截（守卫改用 js-yaml 直解，**gray-matter 的引擎探测有模块级缓存、同进程只抛一次**）；同内容保存短路（`unchanged:true`，不再把 mtime 推高、不再等 10s 后弹「同步稍慢」）；编辑器新增六态状态条 + 离开守卫 + localStorage 草稿（`garden:draft:<slug>:<userId>`，800ms 防抖）。②搜索一次到位 —— `q` 扩到 `tags.name` 与 `slug`，返回 `snippet`/`matchField`，标题命中置顶；列表 keepPreviousData + 2px 刷新条。③内容健康度 —— `?health=isolated\|linked`（与 `/api/overview` 同口径）、`GET /api/notes/neighbors`、`GET\|POST /api/admin/health/broken`（分批 100、落 `data/health/broken.json`，全库实测 220 个断链目标 / 2.1s）。④设计令牌收口 —— `text-[12px]`/`text-[11px]` 206 处归入 `text-ds-xs`，13 处越界圆角归一，`--seedling` 亮 `#A85B0B`→`#96500A`、`--evergreen` `#0E7C5A`→`#0B6E50`（幼苗底 3.86→4.62 / 4.72）、新增 `--accent-text`、暗色 `--line-strong`→`#627184`（2.89→3.20）、6 处表单描边 `--line`→`--line-strong`（1.22→3.57）。⑤新建落点可选（8 步→4 步）、顶栏新建不再继承上次树内目录、面包屑全段可点 + 上/下篇、侧栏过滤 0 命中给全库搜索、「Vault Synced」接真实状态 |
+| `v2.2.1` | `8c40d5633e6f` | **滚动与侧栏状态修复**：①换一篇笔记回到顶部（内容区 `[data-scroll-root]` 是自绘滚动容器、`/notes/[...slug]` 又是 catch-all，换篇时组件复用、`scrollTop` 原样留着；`app/layouts/default.vue` 里 `watch(() => route.path)` 后 `nextTick` 归零，同页筛选 `?tag=` / `?dir=` 不动）；②侧栏展开态三层持久化（新增 `app/composables/useStickyList.ts`：`useState` 管面板切换、`localStorage` 管刷新、`onMounted` 才读盘避免水合不一致、`restored` 前不写盘防首帧覆盖）；③标签组默认全收（删掉 `EXPANDED_DEFAULT = 3` 与前 3 组恒展开规则，改为完全由持久化集合驱动，`type` / `前端` / `编程语言` 不再默认打开）。实测：滚到 1400 → 点树内另一篇 → `scrollTop` **0**；目录树 / 标签组展开后切面板与刷新均保留（**当前**） |
 | `v2.2.0` | `15b3aea45c6e` | **全链路体验升级（可达性 / 触控 / 状态闭环 / 信息架构）**：`--ink-3` 亮 `#7B838F`→`#616A77`（对四底色 5.47/4.97/5.20/4.76 全部达 AA）、暗 `#78829A`→`#828CA0`（surface-3 由 4.14 提到 4.71）；新增 `--line-strong`（亮 `#8E8778` 3.57/3.24、暗 `#5C6A7B` 5.52/5.01）接管控件描边；删 17 处 `focus:outline-none` + `:focus-visible` 去掉 `border-radius`（焦点环不再被工具类压掉、胶囊聚焦不再 9999→6px 跳变）；`TagPill` 无 `to` 时渲染 span 而非空 button（60 个死按钮归零）；胶囊/图标钮加 `.tap-y`/`.tap-44` 透明热区（390 宽下 under44 由 75 → 0）；列表骨架 `NoteListSkeleton.vue` + `EmptyState` 错误态与重试；首页「最近更新」上提到统计卡之后（top 1437→424）、`/browse` 提为一级导航（底栏 3→4）、正文 16→17px（仍 720px 列宽，42.4 字/行）；Tailwind 补 `pill`/`fab`/`xs` 圆角键与 `max-w-measure`，`z-index` 定为 command 1000 < sheet 1100 < dialog 1200 < popover 1300 < toast 1400；`ImportDialog` 58 处 legacy 调色板类归入设计令牌（v2.2.1 的回滚点） |
 | `v2.1.2` | `bf9400a5d018`（运行时 `7f56115fa52b`） | **首屏文档 802,626 → 82,426 B（-89.7%）**：侧栏目录树（`/api/vault/tree` 449,862 B）与标签（`/api/tags` 204,228 B）改 `server: false` 客户端取数，首屏 payload 722,128 → 10,643 B；配合 nginx 的 `proxy_buffering` 兜底，根治「文档被 CDN 512 KiB 掐断 → 不水合 → 侧栏点不动、要刷新 1~3 次」；另修 `markdown-sanitize.ts` 5 处 `noUncheckedIndexedAccess` 类型错误（v2.2.0 的回滚点） |
 | `v2.1.1` | `9236911f1af8` | **三个线上缺陷**：①侧栏宽度被 localStorage 脏值（`NaN`/`abc`/`1280`/`640`）撑宽且拖拽未做 pointer capture 导致 `resizing` 卡死、整页点不动——现在脏值一律丢弃回默认 320、拖拽四路收尾、补 `onBeforeUnmount`；②右键删除文件夹对非 root 管理员静默失效——菜单项不再用原生 `disabled`（浏览器不派发 click）改 `aria-disabled` + toast 说明，权限收紧为「有写权限即可、结构目录除外」，删除后同时刷新标签与统计；③侧栏「未分组」消失——新增 `shared/tag-group.ts` 按「人工映射 → 同篇共存证据 support≥2 → 目录派生领域 → 自身命名空间」推导 974 个历史裸标签的分组，标签真名不动 |
@@ -92,6 +93,37 @@ https://liutianle.cn
 > ② **恢复的两个坑（本轮实测踩到并修掉）** —— 清空 vault 再复制回会触发 524 个 `unlink`，watcher 把整库 Note 行删光又全量重建，`createdAt` 全部变成恢复当天、`updatedAt` 全被刷成同一秒，进而 `scheduleSuggestScan` 认为「全库刚导入」而排队生成 514 条建议。修法：新增 `server/utils/vault-busy.ts`（`beginVaultBusy`/`endVaultBusy`/`isVaultBusy`），watcher 的 `add`/`change`/`unlink` 与 `scheduleSuggestScan` 在整库操作期间直接跳过（结束留 5s 宽限，因为 chokidar 的 `awaitWriteFinish` 稳定窗口是 1s）；重建索引后用 `$executeRawUnsafe` 写回原始时间戳（Prisma 的 `update` 会强行把 `updatedAt` 设为 `now()`）。
 > ③ **AI 全库审计（仅初始管理员）** —— `server/utils/audit.ts`：范围可按文件夹/标签/领域/关键词任意组合，先「看看会扫多少篇」再真正跑；每篇交给模型产出**建议**（`append-section` / `add-tags` / `set-domain` 三种动作，刻意不提供「重写正文」），建议与执行分离，**执行前强制整库备份**（备份失败则一条都不执行）。报告按文件存在 `data/audits/<id>.json`，不进数据库（恢复备份时不该带回旧报告）。
 > ④ **「未分组」不是缺陷** —— 侧栏标签分组的规则是「标签名里有没有 `命名空间/` 前缀」（`app/composables/useFacets.ts` 的 `buildTagGroups`），领域分配不产生标签，所以无前缀的标签（线上 13 个、197 次引用）永远落在「未分组」。现在展开该组会给出说明与改法，不再让人以为是分配失败。**v2.1.1 起这条已过时**：无前缀标签改由 `shared/tag-group.ts` 按共存证据与笔记目录派生分组，「未分组」组不再出现（标签真名与筛选行为不变）。
+### v2.3.0（笔记库体验升级：保存可靠性 / 搜索一次到位 / 内容健康度 / 设计令牌）
+
+八项改动分两批：R1 修缺陷（保存链路、搜索语义、新建落点、首页死跳转），R2 提体验（keepPreviousData、阅读位置感、断链巡检、令牌与对比度）。
+
+**写路径契约（改前端保存逻辑前必读）**
+
+- `PUT /api/vault/notes/<slug>`：body `{ content, baseVersion? }`，`baseVersion` 形如 `1795250124511:347d721282ae0623`（`mtimeMs:sha256(磁盘原文)前16`）。判定顺序固定：鉴权 → 参数 → 文件不存在 `404 NOTE_NOT_FOUND` → frontmatter 损坏 `400 FRONTMATTER_INVALID` → 版本不符 `409 NOTE_CONFLICT`（带 `currentVersion`/`currentUpdatedAt`，**绝不写盘**）→ 原子写 → `invalidateGardenCache()` → `await processMarkdownFile()` → 回读算新 version。响应 `{ ok, slug, updatedAt, indexed, version, processed? , unchanged? }`。**不带 `baseVersion` 时保留旧的覆盖语义**，老调用方不受影响。
+- 同内容保存短路：`finalContent === existing` 时直接返回 `unchanged:true`，不碰 mtime、不失效缓存 —— 这条修掉了「空保存必等 10 秒再弹同步稍慢」。
+
+> ⚠️ **frontmatter 预校验必须用 js-yaml，不能用 gray-matter**。`gray-matter` 的引擎探测带模块级缓存：同进程内第一次解析坏头部会抛，之后永久静默返回 `{}`。用它做守卫时，服务刚启动的头一次请求正确返 400，第 2 次起就把坏头部写进磁盘（本地实测：坏载荷连发三次，只第一次被拦）。现在改为用 `js-yaml` 直接解析围栏内容，每次全新解析；`js-yaml` 取不到时降级回 gray-matter 并在日志留告警。附带修正：正文以分隔线 `---` 开头但**没有收尾围栏**时按普通正文放行，不再误判。
+
+**新增只读/巡检端点**
+
+- `GET /api/notes?health=isolated|linked`：与 `/api/overview` 的 `isolated = total - linked.size` **同口径**（零入度且零出度），否则首页数字与列表 total 对不上。实测全库 isolated `246` + linked `1862` == total。
+- `GET /api/notes/neighbors?slug=`：`{ prev, next }`，全库 `isPublished` 按 `updatedAt desc`（并列按 slug asc）排序取邻。
+- `GET|POST /api/admin/health/broken`：分批 100 篇扫描全库 wiki 链接，落 `data/health/broken.json`，仅 root/admin（`server/middleware/auth.ts` 的 `ADMIN_ONLY_PREFIXES` 已加 `/api/admin/health`）。POST 只回 `{ ok, scannedAt, total }`，**读结果走 GET**（前端 admin 页也是 POST 完回读 GET，别指望 POST 回 items）。全库实测 220 个断链目标、扫描 2.1s。
+
+**上线记录**：2026-11-21 20:15 CST。本地 `docker build -f deploy/Dockerfile -t my-digital-garden-app:v2.3.0 -t my-digital-garden-app:latest .`（镜像 `e529fccd964b`，1.05 GB）→ `docker save …:v2.3.0 | gzip -1 > garden-image-v2.3.0.tar.gz`（**331,215,080 B**，md5 `59e216aa46eb5f1120237eace0853c99`，两端一致）→ `scp -i ~/.ssh/garden.pem … root@8.163.35.246:/opt/`（69 秒）→ 服务器 `bash /opt/deploy-image.sh v2.3.0` → `curl 127.0.0.1:3000/login` 第 4 次探测 200 → 容器 `e245a9b7bc75` / 镜像 `6a6c124eb02d`，启动日志 `No pending migrations to apply.` → `[garden] 迁移完成，启动应用...` → `[garden] watcher: 开始监听 /app/content/vault` → `Listening on http://[::]:3000`，内存 111.5 MiB / 640 MiB（17.42%），宿主磁盘 40G 用 31G（83%）。回滚镜像 `8c40d5633e6f`（v2.2.1）。
+
+> ⚠️ **`deploy-image.sh` 不会把 `latest` 指向新版本**。`docker load` 只创建 `v2.3.0` 标签，而 `docker-compose.prod.yml` 用的是 `my-digital-garden-app:latest` —— 直接 `up -d --force-recreate` 会把**旧镜像**重新跑一遍（本次真实踩到：第一次重建后容器仍是 `8c40d5633e6f`）。必须补一步显式 tag：
+>
+> ```sh
+> docker tag my-digital-garden-app:v2.3.0 my-digital-garden-app:latest
+> docker compose -f docker-compose.prod.yml up -d --force-recreate
+> docker inspect garden-app --format '{{.Image}}'   # 与 docker images 里 v2.3.0 的 ID 逐位核对
+> ```
+>
+> 校验是否真的换了版本，不要只看 `/login` 200：比对 `curl -s https://liutianle.cn/login` 里的 `_nuxt/*.js` 文件名与本地 `.output/public/_nuxt/` 是否一致（本次 5 个 chunk 全部 MATCH）。
+
+> **v2.3.0 无 schema 变更**（未动 `prisma/migrations`，启动日志 `No pending migrations to apply.`），与 v2.2.1 / v2.2.0 互滚都不丢数据。回滚：`docker tag my-digital-garden-app:v2.2.1 my-digital-garden-app:latest && cd /opt/garden-docker && docker compose -f docker-compose.prod.yml up -d --force-recreate`。
+
 ### v2.2.1（滚动复位 + 侧栏展开态持久化 + 标签组默认全收）
 
 **为什么发这一版**：v2.2.0 上线后收到三条用户反馈，都是**状态管理与滚动容器**层面的真缺陷，不是样式问题：
